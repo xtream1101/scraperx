@@ -17,11 +17,12 @@ logger = logging.getLogger(__name__)
 class BaseDownload(ABC):
 
     def __init__(self, task, cli_args=None, cookies=None, headers=None,
-                 proxy=None):
+                 proxy=None, ignore_codes=[]):
         # General task and config setup
         self._scraper = inspect.getmodule(self)
         self.config = get_scraper_config(self._scraper, cli_args=cli_args)
         self.task = task
+        self.ignore_codes = ignore_codes
 
         # Set timestamps
         self.time_downloaded = datetime.datetime.utcnow()
@@ -332,7 +333,8 @@ class BaseDownload(ABC):
                                'task': self.task})
 
             if r.status_code != requests.codes.ok:
-                if _try_count < max_tries:
+                if (_try_count < max_tries
+                        and r.status_code not in self.ignore_codes):
                     kwargs = self.new_profile(**kwargs)
                     request_method = self._set_http_method(http_method)
                     return request_method(url,
