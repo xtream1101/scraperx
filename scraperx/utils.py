@@ -117,7 +117,7 @@ def get_files_from_s3(s3, files):
     return source_files
 
 
-def _get_context_type(context):
+def get_context_type(context):
         """Check which Base class this is
 
         Arguments:
@@ -138,7 +138,7 @@ def _get_context_type(context):
 def get_s3_resource(context):
     import boto3
 
-    context_type = _get_context_type(context)
+    context_type = get_context_type(context)
     try:
         endpoint_url_key = f'{context_type}_SAVE_DATA_ENDPOINT_URL'
         endpoint_url = context.config.get(endpoint_url_key)

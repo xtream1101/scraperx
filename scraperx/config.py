@@ -226,12 +226,12 @@ class Config:
                     # Also check that SAVE_DATA_BUCKET_NAME is set
                     key_type = key.split('_SAVE_DATA')[0].split('_')[-1]
                     default_bucket = f'DEFAULT_{key_type}_SAVE_DATA_BUCKET_NAME'
-                    this_buckey = key.replace('SERVICE', 'BUCKET_NAME')
+                    this_bucket = key.replace('SERVICE', 'BUCKET_NAME')
                     if (not config.get(default_bucket)
-                            and not config.get(this_buckey)):
+                            and not config.get(this_bucket)):
                         message = f"{default_bucket}"
-                        if default_bucket != this_buckey:
-                            message += f" or {this_buckey}"
+                        if default_bucket != this_bucket:
+                            message += f" or {this_bucket}"
                         issues.append(f"{message} must be set")
 
         if issues:

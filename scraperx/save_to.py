@@ -1,7 +1,7 @@
 import os
 import pathlib
 import logging
-from .utils import get_s3_resource, _get_context_type
+from .utils import get_s3_resource, get_context_type
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class SaveTo:
         Returns:
             str -- The filename with the template values filled in
         """
-        context_type = _get_context_type(context)
+        context_type = get_context_type(context)
         additional_args = {}
         if context_type == 'extractor':
             time_downloaded = context.download_results['time_downloaded']
@@ -65,63 +65,80 @@ class SaveTo:
         Returns:
             str -- File path to where it was saved
         """
-        context_type = _get_context_type(context)
+        context_type = get_context_type(context)
 
         if not filename:
             filename = self._get_filename(context, template_values)
 
         save_service = context.config.get(f'{context_type}_SAVE_DATA_SERVICE')
-        if (save_service == 's3'
-                or context.config.get('DISPATCH_SERVICE_TYPE') == 'sns'):
-            bucket_name_key = f'{context_type}_SAVE_DATA_BUCKET_NAME'
-            s3 = get_s3_resource(context)
-            return self.save_s3(s3,
-                                context.config.get(bucket_name_key),
-                                filename,
-                                metadata=metadata)
+        if save_service == 's3':
+            return SaveS3(self.raw_data,
+                          filename,
+                          context,
+                          metadata=metadata,
+                          content_type=self.content_type).save()
 
         elif save_service == 'local':
-            return self.save_local(filename)
+            return SaveLocal(self.raw_data, filename).save()
 
         else:
             logger.error(f"Not configured to save to {save_service}")
 
-    def save_local(self, filename):
-        """Save the file to the local file system
 
-        Arguments:
-            filename {str} -- The location to save the file to
+class SaveLocal:
 
-        Returns:
-            str -- The location the file was saved to
-        """
-        file_path = os.path.dirname(filename)
+    def __init__(self, data, filename):
+        self.data = data
+        self.filename = filename
+
+    def save(self):
+        file_path = os.path.dirname(self.filename)
         pathlib.Path(file_path).mkdir(parents=True, exist_ok=True)
 
         try:
-            with open(filename, 'w') as outfile:
-                    outfile.write(self.raw_data.read())
+            with open(self.filename, 'w') as outfile:
+                    outfile.write(self.data.read())
         except TypeError:
             # raw_data is BytesIO not StringIO
-            with open(filename, 'wb') as outfile:
-                outfile.write(self.raw_data.read())
+            with open(self.filename, 'wb') as outfile:
+                outfile.write(self.data.read())
 
-        return filename
+        return self.filename
 
-    def save_s3(self, s3, bucket, filename, metadata=None):
-        """Save the file to an s3 bucket
+
+class SaveS3:
+
+    def __init__(self, data, filename, context, metadata=None,
+                 content_type=None):
+        self.body = self._format_body(data)
+        self.filename = filename
+        self.context = context
+        self.metadata = self._format_metadata(metadata)
+        self.content_type = content_type
+
+        self.s3 = get_s3_resource(context)
+
+    def _get_bucket_name(self):
+        context_type = get_context_type(self.context)
+        bucket_name_key = f'{context_type}_SAVE_DATA_BUCKET_NAME'
+        return self.context.config.get(bucket_name_key)
+
+    def _format_body(self, data):
+        try:
+            return data.getvalue().encode()
+        except AttributeError:
+            return data.read()
+
+    def _format_metadata(self, metadata):
+        """Make sure all values in the metadata are strings
+
+        For s3 files the values must be strings
 
         Arguments:
-            s3 {boto3.resource} -- s3 resource from boto3
-            bucket {str} -- Name of the bucket
-            filename {str} -- The s3 key to save the data to
-
-        Keyword Arguments:
-            metadata {dict} -- The data to save into the s3 file
-                               (default: {None})
+            metadata {dict} -- The metadat to save
 
         Returns:
-            str -- bucket/key where the data was saved
+            dict -- The metadata that gets written into the file
         """
         if metadata is None:
             metadata = {}
@@ -130,16 +147,16 @@ class SaveTo:
         for k, v in metadata.items():
             metadata[k] = str(v)
 
-        try:
-            body = self.raw_data.getvalue().encode()
-        except AttributeError:
-            body = self.raw_data.read()
+        return metadata
 
-        response = s3.Object(bucket, filename)\
-                     .put(Body=body,
-                          ContentType=self.content_type,
-                          Metadata=metadata)
+    def save(self):
+        bucket = self._get_bucket_name()
+
+        response = self.s3.Object(bucket, self.filename)\
+                          .put(Body=self.body,
+                               ContentType=self.content_type,
+                               Metadata=self.metadata)
 
         logger.info(f"S3 upload response: {response}")
 
-        return f"{bucket}/{filename}"
+        return f"{bucket}/{self.filename}"
