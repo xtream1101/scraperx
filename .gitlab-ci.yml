@@ -9,4 +9,5 @@ flake8:
     - develop
     - master
   script:
+    - pip install detox
     - detox -e flake8
