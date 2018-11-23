@@ -1,0 +1,12 @@
+image: python:3.6
+
+stages:
+  - test
+
+flake8:
+  stage: test
+  only:
+    - develop
+    - master
+  script:
+    - detox -e flake8
