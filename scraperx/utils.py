@@ -108,7 +108,6 @@ def get_files_from_s3(s3, files):
     for file in files:
         tf = tempfile.NamedTemporaryFile(delete=False)
         with open(tf.name, 'w') as source_file:
-            logger.error(file)
             bucket, key = file.split('/', 1)
             file_object = s3.Object(bucket, key)
             file_object.download_file(source_file.name)

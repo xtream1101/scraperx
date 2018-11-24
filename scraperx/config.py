@@ -198,7 +198,11 @@ class Config:
 
             if key.endswith('DISPATCH_RATELIMIT_VALUE'):
                 try:
-                    config[key] = float(value)
+                    if '/' in value:
+                        config[key] = (float(value.split('/')[0])
+                                       / float(value.split('/')[1]))
+                    else:
+                        config[key] = float(value)
                 except (ValueError, TypeError):
                     issues.append(f"{key} must be an int or float")
 

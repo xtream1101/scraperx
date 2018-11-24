@@ -157,6 +157,9 @@ class SaveS3:
                                ContentType=self.content_type,
                                Metadata=self.metadata)
 
-        logger.info(f"S3 upload response: {response}")
+        if response['ResponseMetadata']['HTTPStatusCode'] != 200:
+            logger.info(f"S3 upload response: {response}")
+        else:
+            logger.debug(f"S3 upload response: {response}")
 
         return f"{bucket}/{self.filename}"

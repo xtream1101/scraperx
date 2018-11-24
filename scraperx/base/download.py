@@ -100,9 +100,12 @@ class BaseDownload(ABC):
             logger.error(f"Download Error: {e}",
                          extra={'task': self.task,
                                 'status_code': failed_status_code})
-
         else:
-            self._run_success(source_files, save_metadata, standalone)
+            if source_files:
+                self._run_success(source_files, save_metadata, standalone)
+            else:
+                logger.warning("No source file saved",
+                               extra={'task': self.task})
 
     def _run_success(self, source_files, save_metadata, standalone):
         """Download was successful
@@ -333,8 +336,9 @@ class BaseDownload(ABC):
                                'task': self.task})
 
             if r.status_code != requests.codes.ok:
-                if (_try_count < max_tries
-                        and r.status_code not in self.ignore_codes):
+                if r.status_code in self.ignore_codes:
+                    return Request(r)
+                elif _try_count < max_tries:
                     kwargs = self.new_profile(**kwargs)
                     request_method = self._set_http_method(http_method)
                     return request_method(url,

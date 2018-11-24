@@ -3,6 +3,7 @@ import logging
 import logging.config
 
 
+logging.getLogger('botocore.credentials').setLevel(logging.WARNING)
 logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
 
 logging.config.dictConfig({
@@ -23,7 +24,7 @@ logging.config.dictConfig({
     'loggers': {
         '': {
             'handlers': ['default'],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': True,
         },
     },
