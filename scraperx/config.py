@@ -146,14 +146,21 @@ class Config:
                 ###
                 # For Downloader
                 ###
-                if hasattr(cli_args, 'local') and cli_args.local is True:
-                    if c_key.endswith('SAVE_DATA_SERVICE'):
-                        config[c_key] = 'local'
+                # TODO
 
                 ###
                 # For Extractor
                 ###
                 # TODO
+
+                ###
+                # For Disparcher/Downloader/Extractor
+                ###
+                if hasattr(cli_args, 'local') and cli_args.local is True:
+                    if c_key.endswith('SAVE_DATA_SERVICE'):
+                        config[c_key] = 'local'
+                    if c_key.endswith('SERVICE_TYPE'):
+                        config[c_key] = 'local'
 
         return config
 
@@ -206,7 +213,7 @@ class Config:
                     else:
                         config[key] = float(value)
                 except (ValueError, TypeError):
-                    issues.append(f"{key} must be an int or float")
+                    issues.append(f"{key} must be an int or float. Not {value}")
 
                 if config[key] <= 0:
                     issues.append(f"{key} must be greater then 0")

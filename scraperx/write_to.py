@@ -1,6 +1,9 @@
 import io
 import json
+import logging
 from .save_to import SaveTo
+
+logger = logging.getLogger(__name__)
 
 
 class WriteTo:

@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 
 class BaseExtract(ABC):
 
-    def __init__(self, task, download_manifest):
+    def __init__(self, task, download_manifest, cli_args=None):
         self._scraper = inspect.getmodule(self)
-        self.config = get_scraper_config(self._scraper)
+        self.config = get_scraper_config(self._scraper, cli_args=cli_args)
         self.task = task
-        self.source_files = self._process_download_manifest(download_manifest)
+        # self.source_files = self._process_download_manifest(download_manifest)
         self.output = []
 
         self.download_manifest = download_manifest
@@ -39,9 +39,6 @@ class BaseExtract(ABC):
                 self.output.append(self.extract(raw_source))
                 logger.info('Extract finished', extra={'task': self.task})
 
-    def _process_download_manifest(self, download_manifest):
-        pass
-
     def _get_sources(self):
         """Get source files and its metadata if possiable
 
@@ -50,12 +47,16 @@ class BaseExtract(ABC):
         """
         source_files = []
         for source in self.download_manifest['source_files']:
+            logger.info("Getting source file", extra={'task': self.task,
+                                                      'file': source})
             if source['location'] == 's3':
                 s3 = get_s3_resource(self)
                 # Need to get the file from s3.
                 source_files.append(get_file_from_s3(s3,
                                                      source['bucket'],
                                                      source['key']))
+            elif source['location'] == 'local':
+                source_files.append(source['path'])
 
         return source_files
 

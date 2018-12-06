@@ -31,10 +31,12 @@ logging.config.dictConfig({
     },
 })
 
+
 def uncaught(exctype, value, tb):
     logger = logging.getLogger('uncaught')
     message = ''.join(traceback.format_exception(exctype, value, tb))
     logger.critical(message)
+
 
 sys.excepthook = uncaught
 

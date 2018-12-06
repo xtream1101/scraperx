@@ -37,7 +37,8 @@ def run_dispatch(args):
         # Dump data to local json file
         task_file = WriteTo(dispatcher.tasks).write_json()\
                                              .save_local('tasks.json')
-        logger.info(f"Saved {len(dispatcher.tasks)} tasks to {task_file['path']}")
+        num_tasks = len(dispatcher.tasks)
+        logger.info(f"Saved {num_tasks} tasks to {task_file['path']}")
 
     else:
         tasks = None
@@ -70,7 +71,6 @@ def run_extractor(args):
         # source_dir = os.fsencode(args.source)
         # for file in os.listdir(source_dir):
 
-
         # extractor = args.scraper.Extract(task, cli_args=args)
         # extractor.run()
         pass
@@ -80,12 +80,10 @@ def run_extractor(args):
         with open(metadata_file) as f:
             metadata = json.load(f)
 
-        from pprint import pprint
-        pprint(metadata)
-        task = metadata['task']
-        pprint(task)
-        download_manifest = metadata['download_manifest']
-        pprint(download_manifest)
+        extractor = args.scraper.Extract(metadata['task'],
+                                         metadata['download_manifest'],
+                                         cli_args=args)
+        extractor.run()
 
 
 def read_tasks(task_file):
@@ -132,23 +130,26 @@ if __name__ == '__main__':
                                  help="The scraper module to run")
 
     # At least one of these in a single group must be used
-    # TODO: if dump-tasks, then the other 2 cannot be used
+    parser_dispatch.add_argument('--limit', type=int,
+                                 help="Limit the number of tasks")
+    # TODO: if dump-tasks, then the others below cannot be used
     parser_dispatch.add_argument('--dump-tasks', action='store_true',
                                  help=("Save the tasks as json."
                                        "Will not dispatch when set"))
-    # These can be used together though
+    # Can be used with task-file, but only local or standalone should be set
     parser_dispatch.add_argument('--standalone', action='store_true',
                                  help="Do not trigger the downloader")
+    parser_dispatch.add_argument('--local', action='store_true',
+                                 help="Run/save everything locally")
+
     parser_dispatch.add_argument('--task-file',
                                  help="Output file from --dump-tasks")
 
     ratelimit_group = parser_dispatch.add_mutually_exclusive_group()
-    ratelimit_group.add_argument('--qps', type=float,
+    ratelimit_group.add_argument('--qps',
                                  help='Number of tasks to dispatch a second')
     ratelimit_group.add_argument('--period', type=float,
                                  help='Dispatch all tasks in n hours')
-    parser_dispatch.add_argument('--limit', type=int,
-                                 help="Limit the number of tasks")
 
     ###
     # Downloading
@@ -173,6 +174,8 @@ if __name__ == '__main__':
                                 help="The scraper module to run")
     parser_extract.add_argument('source',
                                 help="Local dir or source file to extract")
+    parser_extract.add_argument('--local', action='store_true',
+                                help="Save the extracted data locally")
 
     args = parser.parse_args()
 

@@ -16,6 +16,9 @@ class BaseDispatch(ABC):
         self._scraper = inspect.getmodule(self)
         self.config = get_scraper_config(self._scraper, cli_args=cli_args)
 
+        # Needed so it can be passed to the downlaoder when running locally
+        self.cli_args = cli_args
+
         if tasks:
             # Make sure tasks is a list and not just a single task
             if not isinstance(tasks, (list, tuple)):
@@ -24,7 +27,6 @@ class BaseDispatch(ABC):
         else:
             self.tasks = self.create_tasks()
 
-        print(self.config.get('DISPATCH_LIMIT'))
         if self.config.get('DISPATCH_LIMIT'):
             self.tasks = self.tasks[:self.config.get('DISPATCH_LIMIT')]
 
@@ -111,7 +113,7 @@ class BaseDispatch(ABC):
             task {dict} -- Single task to be run
         """
         try:
-            self._scraper.Download(task).run()
+            self._scraper.Download(task, cli_args=self.cli_args).run()
 
         except Exception:
             logger.critical("Local download failed",

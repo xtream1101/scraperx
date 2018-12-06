@@ -24,6 +24,9 @@ class BaseDownload(ABC):
         self.task = task
         self.ignore_codes = ignore_codes
 
+        # Needed so it can be passed to the extractor when running locally
+        self.cli_args = cli_args
+
         # Set timestamps
         self.time_downloaded = datetime.datetime.utcnow()
         self.date_downloaded = datetime.datetime.utcnow().date()
@@ -216,7 +219,10 @@ class BaseDownload(ABC):
             download_manifest {dict} -- The downloads manifest
         """
         try:
-            self._scraper.Extract(self.task, download_manifest).run()
+            self._scraper.Extract(self.task,
+                                  download_manifest,
+                                  cli_args=self.cli_args,
+                                  ).run()
         except Exception:
             logger.critical("Local extract failed",
                             extra={'task': self.task},
@@ -325,7 +331,7 @@ class BaseDownload(ABC):
 
             r = self.session.request(http_method, url, **kwargs)
 
-            logger.info(f"{http_method} request made",
+            logger.info(f"{http_method} request finished",
                         extra={'url': url,
                                'try_count': _try_count,
                                'max_tries': max_tries,

@@ -73,17 +73,22 @@ class SaveTo:
 
         save_service = context.config.get(f'{context_type}_SAVE_DATA_SERVICE')
         if save_service == 's3':
-            return SaveS3(self.raw_data,
-                          filename,
-                          context,
-                          metadata=metadata,
-                          content_type=self.content_type).save()
+            saved_file = SaveS3(self.raw_data,
+                                filename,
+                                context,
+                                metadata=metadata,
+                                content_type=self.content_type).save()
 
         elif save_service == 'local':
-            return self.save_local(filename)
+            saved_file = self.save_local(filename)
 
         else:
             logger.error(f"Not configured to save to {save_service}")
+            saved_file = None
+
+        logger.info("Saved file", extra={'task': context.task,
+                                         'file': saved_file})
+        return saved_file
 
     def save_local(self, filename):
         return SaveLocal(self.raw_data, filename).save()
