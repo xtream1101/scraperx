@@ -1,3 +1,4 @@
+import os
 import sys
 import json
 import logging
@@ -31,15 +32,20 @@ def run_dispatch(args):
     Arguments:
         args {argparse.Namespace} -- Cli args
     """
-    dispatcher = args.scraper.Dispatch(cli_args=args)
-
     if args.dump_tasks:
+        dispatcher = args.scraper.Dispatch(cli_args=args)
         # Dump data to local json file
         task_file = WriteTo(dispatcher.tasks).write_json()\
                                              .save_local('tasks.json')
-        logger.info(f"Saved {len(dispatcher.tasks)} tasks to {task_file}")
+        logger.info(f"Saved {len(dispatcher.tasks)} tasks to {task_file['path']}")
 
-    if args.dispatch:
+    else:
+        tasks = None
+        if args.task_file:
+            with open(args.task_file) as f:
+                tasks = json.load(f)
+
+        dispatcher = args.scraper.Dispatch(tasks=tasks, cli_args=args)
         dispatcher.dispatch(standalone=args.standalone)
 
 
@@ -51,8 +57,35 @@ def run_downloader(args):
     """
     for task in args.tasks:
         downloader = args.scraper.Download(task, cli_args=args)
-        downloader.run(save_metadata=args.save_metadata,
-                       standalone=args.standalone)
+        downloader.run(standalone=args.standalone)
+
+
+def run_extractor(args):
+    """Kick off the extractor for the scraper
+
+    Arguments:
+        args {argparse.Namespace} -- Cli args
+    """
+    if os.path.isdir(args.source):
+        # source_dir = os.fsencode(args.source)
+        # for file in os.listdir(source_dir):
+
+
+        # extractor = args.scraper.Extract(task, cli_args=args)
+        # extractor.run()
+        pass
+    else:
+        metadata_file = f"{args.source}.metadata.json"
+        metadata = {}
+        with open(metadata_file) as f:
+            metadata = json.load(f)
+
+        from pprint import pprint
+        pprint(metadata)
+        task = metadata['task']
+        pprint(task)
+        download_manifest = metadata['download_manifest']
+        pprint(download_manifest)
 
 
 def read_tasks(task_file):
@@ -101,19 +134,19 @@ if __name__ == '__main__':
     # At least one of these in a single group must be used
     # TODO: if dump-tasks, then the other 2 cannot be used
     parser_dispatch.add_argument('--dump-tasks', action='store_true',
-                                 help="Save the tasks as json")
+                                 help=("Save the tasks as json."
+                                       "Will not dispatch when set"))
     # These can be used together though
     parser_dispatch.add_argument('--standalone', action='store_true',
-                                 help="Trigger the downloader")
-    parser_dispatch.add_argument('--dispatch', action='store_true',
-                                 help="Loop through the tasks")
+                                 help="Do not trigger the downloader")
+    parser_dispatch.add_argument('--task-file',
+                                 help="Output file from --dump-tasks")
 
     ratelimit_group = parser_dispatch.add_mutually_exclusive_group()
     ratelimit_group.add_argument('--qps', type=float,
                                  help='Number of tasks to dispatch a second')
     ratelimit_group.add_argument('--period', type=float,
                                  help='Dispatch all tasks in n hours')
-
     parser_dispatch.add_argument('--limit', type=int,
                                  help="Limit the number of tasks")
 
@@ -126,10 +159,10 @@ if __name__ == '__main__':
                                  help="The scraper module to run")
     parser_download.add_argument('tasks', type=read_tasks,
                                  help="Task file of things to run")
+    parser_download.add_argument('--local', action='store_true',
+                                 help="Save the sources locally")
     parser_download.add_argument('--standalone', action='store_true',
-                                 help="Trigger the extractor")
-    parser_download.add_argument('--save-metadata', action='store_true',
-                                 help="Save a metadata file with the source")
+                                 help="Do not trigger the extractor")
 
     ###
     # Extracting
@@ -138,14 +171,14 @@ if __name__ == '__main__':
                                            help="Run the extractor")
     parser_extract.add_argument('scraper', type=import_scraper,
                                 help="The scraper module to run")
-    # TODO: Need the downloader to first save a local metadata file
-    #       with the task and the output files
+    parser_extract.add_argument('source',
+                                help="Local dir or source file to extract")
 
     args = parser.parse_args()
 
     command_actions = {'validate': validate_config,
                        'dispatch': run_dispatch,
                        'download': run_downloader,
-                       'extract': None,
+                       'extract': run_extractor,
                        }
     command_actions[args.command](args)

@@ -29,8 +29,8 @@ class SaveTo:
         context_type = get_context_type(context)
         additional_args = {}
         if context_type == 'extractor':
-            time_downloaded = context.download_results['time_downloaded']
-            date_downloaded = context.download_results['date_downloaded']
+            time_downloaded = context.download_manifest['time_downloaded']
+            date_downloaded = context.download_manifest['date_downloaded']
             additional_args = {'time_extracted': context.time_extracted,
                                'date_extracted': context.date_extracted,
                                'time_downloaded': time_downloaded,
@@ -68,7 +68,8 @@ class SaveTo:
         context_type = get_context_type(context)
 
         if not filename:
-            filename = self._get_filename(context, template_values)
+            filename = self._get_filename(context,
+                                          template_values=template_values)
 
         save_service = context.config.get(f'{context_type}_SAVE_DATA_SERVICE')
         if save_service == 's3':
@@ -79,10 +80,13 @@ class SaveTo:
                           content_type=self.content_type).save()
 
         elif save_service == 'local':
-            return SaveLocal(self.raw_data, filename).save()
+            return self.save_local(filename)
 
         else:
             logger.error(f"Not configured to save to {save_service}")
+
+    def save_local(self, filename):
+        return SaveLocal(self.raw_data, filename).save()
 
 
 class SaveLocal:
@@ -99,11 +103,14 @@ class SaveLocal:
             with open(self.filename, 'w') as outfile:
                     outfile.write(self.data.read())
         except TypeError:
+            self.data.seek(0)
             # raw_data is BytesIO not StringIO
             with open(self.filename, 'wb') as outfile:
                 outfile.write(self.data.read())
 
-        return self.filename
+        return {'location': 'local',
+                'path': self.filename,
+                }
 
 
 class SaveS3:
@@ -162,4 +169,7 @@ class SaveS3:
         else:
             logger.debug(f"S3 upload response: {response}")
 
-        return f"{bucket}/{self.filename}"
+        return {'location': 's3',
+                'bucket': bucket,
+                'key': self.filename,
+                }

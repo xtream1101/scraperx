@@ -3,22 +3,24 @@ import inspect
 import datetime
 from abc import ABC, abstractmethod
 
-from ..utils import get_scraper_config
+from ..utils import get_scraper_config, get_file_from_s3, get_s3_resource
 
 logger = logging.getLogger(__name__)
 
 
 class BaseExtract(ABC):
 
-    def __init__(self, task, download_results):
+    def __init__(self, task, download_manifest):
         self._scraper = inspect.getmodule(self)
         self.config = get_scraper_config(self._scraper)
         self.task = task
+        self.source_files = self._process_download_manifest(download_manifest)
         self.output = []
 
-        self.download_results = download_results
+        self.download_manifest = download_manifest
+
         self.time_extracted = datetime.datetime.utcnow()
-        self.date_extracted = datetime.datetime.utcnow().date()
+        self.date_extracted = self.time_extracted.date()
 
     def run(self):
         """Run the extraction
@@ -31,16 +33,31 @@ class BaseExtract(ABC):
 
         Use the data passed in to the __init__ to extract the data
         """
-        source_files_raw = self.download_results['source_files']
-        if not isinstance(source_files_raw, (list, tuple)):
-            # Make a list if its not, that way either one can be passed in
-            self.download_results['source_files'] = [source_files_raw]
-
-        for source_file in self.download_results['source_files']:
+        for source_file in self._get_sources():
             with open(source_file, 'r') as f:
                 raw_source = f.read()
                 self.output.append(self.extract(raw_source))
                 logger.info('Extract finished', extra={'task': self.task})
+
+    def _process_download_manifest(self, download_manifest):
+        pass
+
+    def _get_sources(self):
+        """Get source files and its metadata if possiable
+
+        Returns:
+            {list} - List of tmp files saved to disk
+        """
+        source_files = []
+        for source in self.download_manifest['source_files']:
+            if source['location'] == 's3':
+                s3 = get_s3_resource(self)
+                # Need to get the file from s3.
+                source_files.append(get_file_from_s3(s3,
+                                                     source['bucket'],
+                                                     source['key']))
+
+        return source_files
 
     @abstractmethod
     def extract(self):

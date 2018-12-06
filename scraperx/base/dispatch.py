@@ -24,6 +24,7 @@ class BaseDispatch(ABC):
         else:
             self.tasks = self.create_tasks()
 
+        print(self.config.get('DISPATCH_LIMIT'))
         if self.config.get('DISPATCH_LIMIT'):
             self.tasks = self.tasks[:self.config.get('DISPATCH_LIMIT')]
 
@@ -90,8 +91,8 @@ class BaseDispatch(ABC):
                                  (default: {False})
         """
         msg = "Dummy Trigger download" if standalone else "Trigger download"
-        logger.debug(msg, extra={'dispatch_service': dispatch_service,
-                                 'task': task})
+        logger.info(msg, extra={'dispatch_service': dispatch_service,
+                                'task': task})
         if not standalone:
             if dispatch_service == 'local':
                 self._dispatch_locally(task)

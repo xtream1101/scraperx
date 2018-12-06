@@ -9,7 +9,7 @@ from ..write_to import WriteTo
 from ..save_to import SaveTo
 from ..proxies import get_proxy
 from ..user_agent import get_user_agent
-from ..utils import get_scraper_config, get_files_from_s3, get_s3_resource
+from ..utils import get_scraper_config
 
 logger = logging.getLogger(__name__)
 
@@ -83,12 +83,10 @@ class BaseDownload(ABC):
         except AttributeError:
             return get_user_agent(device_type)
 
-    def run(self, save_metadata=False, standalone=False):
+    def run(self, standalone=False):
         """Start the download process
 
         Keyword Arguments:
-            save_metadata {bool} -- Save a metadata.json file next to the source
-                                    (default: {False})
             standalone {bool} -- Do not trigger the extractor if True
                                  (default: {False})
         """
@@ -102,35 +100,36 @@ class BaseDownload(ABC):
                                 'status_code': failed_status_code})
         else:
             if source_files:
-                self._run_success(source_files, save_metadata, standalone)
+                self._run_success(source_files, standalone)
             else:
                 logger.warning("No source file saved",
                                extra={'task': self.task})
 
-    def _run_success(self, source_files, save_metadata, standalone):
+    def _run_success(self, source_files, standalone):
         """Download was successful
 
         Save the metadata and dispatch the extractor
 
         Arguments:
             source_files {list} -- The paths of the downloaded files
-            save_metadata {bool} -- Should the metadata be saved with the source
             standalone {bool} -- Do not trigger the extractor if True
         """
         # Make sure source files are a list
         if not isinstance(source_files, (list, tuple)):
             source_files = [source_files]
 
-        download_results = {'source_files': source_files,
-                            # Date/times need to be strings since they
-                            #   need to be converted to json to be pased
-                            #   to the lambda
-                            'time_downloaded': str(self.time_downloaded),
-                            'date_downloaded': str(self.date_downloaded),
-                            }
+        download_manifest = {'source_files': source_files,
+                             # Date/times need to be strings since they
+                             #   need to be converted to json to be saved
+                             'time_downloaded': str(self.time_downloaded),
+                             'date_downloaded': str(self.date_downloaded),
+                             }
 
-        if save_metadata:
-            self._save_metadata(download_results)
+        save_service = self.config.get(f'DOWNLOADER_SAVE_DATA_SERVICE')
+        if save_service in ['local']:
+            # Save the metadata file next to the source since it cannot
+            #   write the data into the file itself
+            self._save_metadata(download_manifest)
 
         run_task_on = self.config.get('DISPATCH_SERVICE_TYPE')
         msg = "Dummy Trigger extract" if standalone else "Trigger extract"
@@ -141,58 +140,59 @@ class BaseDownload(ABC):
             try:
                 self._scraper.Extract
             except AttributeError:
-                logger.info("Scraper has no extract", extra={'task': self.task})
+                logger.info("Scraper has no extract",
+                            extra={'task': self.task})
             else:
                 if run_task_on == 'local':
-                    self._dispatch_locally(download_results)
+                    self._dispatch_locally(download_manifest)
 
                 elif run_task_on == 'lambda':
-                    self._dispatch_lambda(download_results)
+                    self._dispatch_lambda(download_manifest)
 
                 else:
                     logger.critical(f"{run_task_on} is not supported",
                                     extra={'task': self.task})
 
-    def _get_metadata(self, download_results):
+    def _get_metadata(self, download_manifest):
         """Create the metadata dict
 
         Arguments:
-            download_results {dict} -- The downloads manifest
+            download_manifest {dict} -- The downloads manifest
 
         Returns:
-            dict -- metadata
+            {dict} -- metadata
         """
         metadata = {'task': self.task,
                     'scraper': self._scraper.__name__,
-                    'download_results': download_results}
+                    'download_manifest': download_manifest}
         return metadata
 
-    def _save_metadata(self, download_results):
+    def _save_metadata(self, download_manifest):
         """Save the metadata with the download source
 
         Saves a file as the same name as the source with '.metadata.json'
         appended to the name
 
         Arguments:
-            download_results {dict} -- The downloads manifest
+            download_manifest {dict} -- The downloads manifest
         """
-        metadata = self._get_metadata(download_results)
+        metadata = self._get_metadata(download_manifest)
         metadata_file = WriteTo(metadata).write_json()
-        filename = metadata_file._get_filename(self)
+        filename = download_manifest['source_files'][0]['path']
         logger.info("Saving metadata file", extra={'task': self.task})
         metadata_file.save(self, filename=filename + '.metadata.json')
 
-    def _dispatch_lambda(self, download_results):
+    def _dispatch_lambda(self, download_manifest):
         """Send the task to a lambda via an SNS Topic
 
         Arguments:
-            download_results {dict} -- The downloads manifest
+            download_manifest {dict} -- The downloads manifest
         """
         try:
             import boto3
             client = boto3.client('sns')
             target_arn = self.config.get('DISPATCH_SERVICE_SNS_ARN')
-            message = self._get_metadata(download_results)
+            message = self._get_metadata(download_manifest)
             if target_arn is not None:
                 sns_message = json.dumps({'default': json.dumps(message)})
                 response = client.publish(TargetArn=target_arn,
@@ -209,18 +209,14 @@ class BaseDownload(ABC):
                             extra={'task': self.task},
                             exc_info=True)
 
-    def _dispatch_locally(self, download_results):
+    def _dispatch_locally(self, download_manifest):
         """Send the task directly to the download class
 
         Arguments:
-            download_results {dict} -- The downloads manifest
+            download_manifest {dict} -- The downloads manifest
         """
         try:
-            if self.config.get('DOWNLOADER_SAVE_DATA_SERVICE') == 's3':
-                # Need to get the files from s3.
-                s3 = get_s3_resource(self)
-                download_results['source_files'] = get_files_from_s3(s3, download_results['source_files'])  # noqa
-            self._scraper.Extract(self.task, download_results).run()
+            self._scraper.Extract(self.task, download_manifest).run()
         except Exception:
             logger.critical("Local extract failed",
                             extra={'task': self.task},

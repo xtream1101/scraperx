@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import queue
 import logging
@@ -19,9 +20,12 @@ def import_scraper(lib_name):
     Returns:
         module -- The imported scraper module
     """
-    logger.info('Import scraper', extra={'scraper': lib_name})
-    scraper = importlib.import_module(lib_name)
-
+    try:
+        logger.info('Import scraper', extra={'scraper': lib_name})
+        scraper = importlib.import_module(lib_name)
+    except ModuleNotFoundError as e:
+        logger.critical(e)
+        sys.exit(1)
     return scraper
 
 
@@ -93,27 +97,25 @@ def threads(num_threads, data, callback, *args, **kwargs):
     return item_list
 
 
-def get_files_from_s3(s3, files):
-    """Download files from s3
+def get_file_from_s3(s3, bucket, key):
+    """Download file from s3 and store in a local tmp file to be read in
 
     Arguments:
         s3 {boto3.resource} -- s3 resource from boto3
-        files {list} -- Files to download from s3
+        bucket {str} -- Bucket the file is stored in
+        key {str} -- The path of the file in the bucket
 
     Returns:
-        list -- Downloaded s3 file paths
+        str -- the name to a local tmp file
     """
-    # Download the files from s3 into tmp files
-    source_files = []
-    for file in files:
-        tf = tempfile.NamedTemporaryFile(delete=False)
-        with open(tf.name, 'w') as source_file:
-            bucket, key = file.split('/', 1)
-            file_object = s3.Object(bucket, key)
-            file_object.download_file(source_file.name)
-        source_files.append(tf.name)
+    # TODO: Add support for getting metadata from the file
 
-    return source_files
+    tf = tempfile.NamedTemporaryFile(delete=False)
+    with open(tf.name, 'w') as source_file:
+        file_object = s3.Object(bucket, key)
+        file_object.download_file(source_file.name)
+
+    return tf.name
 
 
 def get_context_type(context):

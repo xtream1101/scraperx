@@ -105,6 +105,16 @@ class Config:
         # Contains all values that are in the scrapers yaml
         config = config_flat_raw.copy()
 
+        # Set defaults for values that are not set and have default options
+        defaults = {'DEFAULT_EXTRACTOR_SAVE_DATA_SERVICE': 'local',
+                    'DEFAULT_DOWNLOADER_SAVE_DATA_SERVICE': 'local',
+                    'DEFAULT_DISPATCH_SERVICE_TYPE': 'local',
+                    'DEFAULT_DISPATCH_LIMIT': None,
+                    }
+        for d_key, d_value in defaults.items():
+            if d_key not in config:
+                config[d_key] = d_value
+
         for c_key in config.keys():
             # Check to see if any env vars exist for each config value
             if c_key in os.environ:
@@ -115,19 +125,19 @@ class Config:
                 ###
                 # For Dispatcher
                 ###
-                if hasattr(cli_args, 'limit') and cli_args.limit:
+                if hasattr(cli_args, 'limit') and cli_args.limit is not None:
                     if c_key.endswith('DISPATCH_LIMIT'):
                         config[c_key] = cli_args.limit
-                        # Set default here so it does not get defaulted below
+                        # Set default here to replace the default set above
                         config['DEFAULT_DISPATCH_LIMIT'] = cli_args.limit
 
-                if hasattr(cli_args, 'qps') and cli_args.qps:
+                if hasattr(cli_args, 'qps') and cli_args.qps is not None:
                     if c_key.endswith('DISPATCH_RATELIMIT_TYPE'):
                         config[c_key] = 'qps'
                     elif c_key.endswith('DISPATCH_RATELIMIT_VALUE'):
                         config[c_key] = cli_args.qps
 
-                if hasattr(cli_args, 'period') and cli_args.period:
+                if hasattr(cli_args, 'period') and cli_args.period is not None:
                     if c_key.endswith('DISPATCH_RATELIMIT_TYPE'):
                         config[c_key] = 'period'
                     elif c_key.endswith('DISPATCH_RATELIMIT_VALUE'):
@@ -136,22 +146,14 @@ class Config:
                 ###
                 # For Downloader
                 ###
-                # TODO
+                if hasattr(cli_args, 'local') and cli_args.local is True:
+                    if c_key.endswith('SAVE_DATA_SERVICE'):
+                        config[c_key] = 'local'
 
                 ###
                 # For Extractor
                 ###
                 # TODO
-
-        # Set defaults for values that are not set and have default options
-        defaults = {'DEFAULT_EXTRACTOR_SAVE_DATA_SERVICE': 'local',
-                    'DEFAULT_DOWNLOADER_SAVE_DATA_SERVICE': 'local',
-                    'DEFAULT_DISPATCH_SERVICE_TYPE': 'local',
-                    'DEFAULT_DISPATCH_LIMIT': None,
-                    }
-        for d_key, d_value in defaults.items():
-            if d_key not in config:
-                config[d_key] = d_value
 
         return config
 
