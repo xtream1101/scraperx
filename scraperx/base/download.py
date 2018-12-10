@@ -321,13 +321,16 @@ class BaseDownload(ABC):
                 # TODO: Find a better error to raise
                 raise ValueError("max_tries must be >= 1")
 
+            proxy_used = self.session.proxies.get('http')
             if 'proxy' in kwargs:
                 # Proxy is not a valid arg t pass in, so fix it
                 kwargs['proxies'] = self._format_proxy(kwargs['proxy'])
+                proxy_used = kwargs['proxies'].get('http')
                 del kwargs['proxy']
             elif 'proxies' in kwargs:
                 # Make sure they are in the correct format
                 kwargs['proxies'] = self._format_proxy(kwargs['proxies'])
+                proxy_used = kwargs['proxies'].get('http')
 
             r = self.session.request(http_method, url, **kwargs)
 
@@ -335,7 +338,8 @@ class BaseDownload(ABC):
                         extra={'url': url,
                                'try_count': _try_count,
                                'max_tries': max_tries,
-                               'task': self.task})
+                               'task': self.task,
+                               'proxy': proxy_used})
 
             if r.status_code != requests.codes.ok:
                 if r.status_code in self.ignore_codes:

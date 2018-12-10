@@ -32,6 +32,8 @@ class WriteTo:
         else:
             json_data = self.data
 
+        # TODO: Convert all non json types into strings.
+
         output_io = io.StringIO()
         json.dump(json_data, output_io, **json_args)
         output_io.seek(0)
