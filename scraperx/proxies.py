@@ -16,7 +16,8 @@ if proxy_file and os.path.isfile(proxy_file):
         with open(proxy_file, 'r') as f:
             reader = csv.DictReader(f)
             for row in reader:
-                proxies[row['country'].strip().upper()].append(row['proxy'].strip())
+                country = row['country'].strip().upper()
+                proxies[country].append(row['proxy'].strip())
     except Exception:
         logger.exception("Failed to read proxy file")
 
@@ -47,4 +48,3 @@ def get_proxy(country=None):
         return random.choice(available_proxies)
 
     return None
-
