@@ -2,12 +2,20 @@ image: python:3.6
 
 stages:
   - test
+  - release
 
 flake8:
   stage: test
-  only:
-    - develop
-    - master
   script:
     - pip install detox
     - detox -e flake8
+
+release-package:
+  stage: release
+  only:
+    - master
+  script:
+    - pip install twine
+    - rm -f dist/*
+    - python setup.py sdist
+    - twine upload --repository-url https://pypi.serverx.co -u ${PYPI_USER} -p ${PYPI_PASS} dist/*
