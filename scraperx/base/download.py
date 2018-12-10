@@ -51,7 +51,7 @@ class BaseDownload(ABC):
         """
         pass
 
-    def _get_proxy(self, alpha2=None, platform=None):
+    def _get_proxy(self, country=None):
         """Get a proxy to use
 
         Use the scrapers fn, otherwise use the default
@@ -65,9 +65,9 @@ class BaseDownload(ABC):
             str -- proxy string
         """
         try:
-            return self.get_proxy(alpha2=None, platform=None)
+            return self.get_proxy(country=country)
         except AttributeError:
-            return get_proxy(alpha2=None, platform=None)
+            return get_proxy(country=country)
 
     def _get_user_agent(self, device_type):
         """Get a User Agent
@@ -286,8 +286,7 @@ class BaseDownload(ABC):
             proxy_str = self.task.get('proxy')
         # If no proxy has been passed in, try and set one
         if not proxy_str:
-            proxy_str = self._get_proxy(alpha2=self.task.get('geo_alpha2'),
-                                        platform=self.task.get('platform'))
+            proxy_str = self._get_proxy(country=self.task.get('geo_alpha2'))
         self.session.proxies = self._format_proxy(proxy_str)
 
     def _init_http_methods(self):
@@ -395,8 +394,7 @@ class BaseDownload(ABC):
         #       let the scraper update if needed
 
         # Set new proxy
-        proxy_str = self._get_proxy(alpha2=self.task.get('geo_alpha2'),
-                                    platform=self.task.get('platform'))
+        proxy_str = self._get_proxy(country=self.task.get('geo_alpha2'),)
         if 'proxy' in kwargs:
             # Replace the request specific
             kwargs['proxy'] = proxy_str
