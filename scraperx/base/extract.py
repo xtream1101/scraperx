@@ -14,7 +14,6 @@ class BaseExtract(ABC):
         self._scraper = inspect.getmodule(self)
         self.config = get_scraper_config(self._scraper, cli_args=cli_args)
         self.task = task
-        # self.source_files = self._process_download_manifest(download_manifest)
         self.output = []
 
         self.download_manifest = download_manifest
@@ -37,7 +36,8 @@ class BaseExtract(ABC):
             with open(source_file, 'r') as f:
                 raw_source = f.read()
                 self.output.append(self.extract(raw_source))
-                logger.info('Extract finished', extra={'task': self.task})
+
+        logger.info('Extract finished', extra={'task': self.task})
 
     def _get_sources(self):
         """Get source files and its metadata if possiable

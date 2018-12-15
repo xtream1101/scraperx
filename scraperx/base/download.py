@@ -180,7 +180,7 @@ class BaseDownload(ABC):
             download_manifest {dict} -- The downloads manifest
         """
         metadata = self._get_metadata(download_manifest)
-        metadata_file = WriteTo(metadata).write_json()
+        metadata_file = WriteTo(metadata, context=self).write_json()
         filename = download_manifest['source_files'][0]['path']
         logger.info("Saving metadata file", extra={'task': self.task})
         metadata_file.save(self, filename=filename + '.metadata.json')
@@ -353,13 +353,13 @@ class BaseDownload(ABC):
                 else:
                     r.raise_for_status()
 
-            return Request(r)
+            return Request(self, r)
 
         return make_request
 
     def get_file(self, url, **kwargs):
         r = self.session.get(url, stream=True, **kwargs)
-        return Request(r, r.content)
+        return Request(self, r, r.content)
 
     def _set_session_ua(self):
         """Set up the session user agent
@@ -410,13 +410,13 @@ class BaseDownload(ABC):
 
 class Request(WriteTo):
 
-    def __init__(self, request, source=None):
+    def __init__(self, context, request, source=None):
         self.r = request
         if source:
             self.source = source
         else:
             self.source = self.r.text
-        super().__init__(self.source)
+        super().__init__(self.source, context=context)
 
 
 class File(SaveTo):

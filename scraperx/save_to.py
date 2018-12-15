@@ -8,8 +8,9 @@ logger = logging.getLogger(__name__)
 
 class SaveTo:
 
-    def __init__(self, raw_data, content_type='text/html'):
+    def __init__(self, raw_data, context=None, content_type='text/html'):
         self.raw_data = raw_data
+        self.context = context
         self.content_type = content_type
 
     def _get_filename(self, context, template_values={}):
@@ -48,7 +49,7 @@ class SaveTo:
 
         return filename
 
-    def save(self, context, template_values={}, filename=None, metadata=None):
+    def save(self, template_values={}, filename=None, metadata=None):
         """Save the file based on the config
 
         Arguments:
@@ -65,17 +66,17 @@ class SaveTo:
         Returns:
             str -- File path to where it was saved
         """
-        context_type = get_context_type(context)
+        context_type = get_context_type(self.context)
 
         if not filename:
-            filename = self._get_filename(context,
+            filename = self._get_filename(self.context,
                                           template_values=template_values)
 
-        save_service = context.config.get(f'{context_type}_SAVE_DATA_SERVICE')
+        save_service = self.context.config.get(f'{context_type}_SAVE_DATA_SERVICE')
         if save_service == 's3':
             saved_file = SaveS3(self.raw_data,
                                 filename,
-                                context,
+                                self.context,
                                 metadata=metadata,
                                 content_type=self.content_type).save()
 
@@ -86,7 +87,7 @@ class SaveTo:
             logger.error(f"Not configured to save to {save_service}")
             saved_file = None
 
-        logger.info("Saved file", extra={'task': context.task,
+        logger.info("Saved file", extra={'task': self.context.task,
                                          'file': saved_file})
         return saved_file
 

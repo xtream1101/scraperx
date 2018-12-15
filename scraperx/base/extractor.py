@@ -7,9 +7,10 @@ from ..write_to import WriteTo
 
 class BaseExtractor(WriteTo, ABC):
 
-    def __init__(self, raw_source, auto_parse=True, page_type='html'):
+    def __init__(self, context, raw_source, auto_parse=True, page_type='html'):
+        self.context = context
         self.results = []  # Expect this data to be a list of dicts to be saved
-        super().__init__(self.results)
+        super().__init__(self.results, context=self.context)
 
         if auto_parse is True:
             if page_type == 'html':
