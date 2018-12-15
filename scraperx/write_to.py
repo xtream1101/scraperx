@@ -124,4 +124,3 @@ class WriteTo:
                       context=self.context,
                       content_type='application/octet-stream',
                       file_ext='parquet')
-

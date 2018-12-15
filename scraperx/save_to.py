@@ -77,7 +77,8 @@ class SaveTo:
         if not filename.endswith(self.file_ext):
             filename += f'.{self.file_ext}'
 
-        save_service = self.context.config.get(f'{context_type}_SAVE_DATA_SERVICE')
+        save_service_key = f'{context_type}_SAVE_DATA_SERVICE'
+        save_service = self.context.config.get(save_service_key)
         if save_service == 's3':
             saved_file = SaveS3(self.raw_data,
                                 filename,
