@@ -40,7 +40,8 @@ class WriteTo:
         output_io.seek(0)
         return SaveTo(output_io,
                       context=self.context,
-                      content_type='application/json')
+                      content_type='application/json',
+                      file_ext='json')
 
     def write_file(self, content_type='text/html'):
         """Write data to a StringIO object without any additonal formatting
@@ -74,7 +75,8 @@ class WriteTo:
         output_io.seek(0)
         return SaveTo(output_io,
                       context=self.context,
-                      content_type=content_type)
+                      content_type=content_type,
+                      file_ext='zip')
 
     def write_csv(self, filename):
         # TODO
@@ -118,5 +120,8 @@ class WriteTo:
         output_io.seek(0)
 
         # TODO: Is this the correct content type for a parquet file?
-        return SaveTo(output_io, content_type='application/octet-stream')
+        return SaveTo(output_io,
+                      context=self.context,
+                      content_type='application/octet-stream',
+                      file_ext='parquet')
 

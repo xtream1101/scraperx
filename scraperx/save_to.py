@@ -8,10 +8,12 @@ logger = logging.getLogger(__name__)
 
 class SaveTo:
 
-    def __init__(self, raw_data, context=None, content_type='text/html'):
+    def __init__(self, raw_data, context=None, content_type='text/html',
+                 file_ext=''):
         self.raw_data = raw_data
         self.context = context
         self.content_type = content_type
+        self.file_ext = file_ext
 
     def _get_filename(self, context, template_values={}):
         """Generate the filename based on the config template
@@ -71,6 +73,9 @@ class SaveTo:
         if not filename:
             filename = self._get_filename(self.context,
                                           template_values=template_values)
+
+        if not filename.endswith(self.file_ext):
+            filename += f'.{self.file_ext}'
 
         save_service = self.context.config.get(f'{context_type}_SAVE_DATA_SERVICE')
         if save_service == 's3':
