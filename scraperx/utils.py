@@ -11,6 +11,10 @@ from .config import Config
 logger = logging.getLogger(__name__)
 
 
+class QAValueError(ValueError):
+    pass
+
+
 def import_scraper(lib_name):
     """Import the scraper module
 

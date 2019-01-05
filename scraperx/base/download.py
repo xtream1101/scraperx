@@ -9,7 +9,7 @@ from ..write_to import WriteTo
 from ..save_to import SaveTo
 from ..proxies import get_proxy
 from ..user_agent import get_user_agent
-from ..utils import get_scraper_config
+from ..utils import get_scraper_config, QAValueError
 
 logger = logging.getLogger(__name__)
 
@@ -223,6 +223,10 @@ class BaseDownload(ABC):
                                   download_manifest,
                                   cli_args=self.cli_args,
                                   ).run()
+        except QAValueError:
+            # A critical log is logged when this happens with the details
+            # This is here as a way to break out of the rest of the extraction
+            pass
         except Exception:
             logger.critical("Local extract failed",
                             extra={'task': self.task},

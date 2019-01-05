@@ -8,18 +8,23 @@ from collections import defaultdict
 logger = logging.getLogger(__name__)
 
 
-proxies = defaultdict(list)
-proxy_file = os.getenv('PROXY_FILE')
-if proxy_file and os.path.isfile(proxy_file):
-    try:
-        logger.info(f"Reading proxy file {proxy_file}")
-        with open(proxy_file, 'r') as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                country = row['country'].strip().upper()
-                proxies[country].append(row['proxy'].strip())
-    except Exception:
-        logger.exception("Failed to read proxy file")
+def _load_proxies():
+    global proxies
+    proxies = defaultdict(list)
+    proxy_file = os.getenv('PROXY_FILE')
+    if proxy_file and os.path.isfile(proxy_file):
+        try:
+            logger.info(f"Reading proxy file {proxy_file}")
+            with open(proxy_file, 'r') as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    country = row['country'].strip().upper()
+                    proxies[country].append(row['proxy'].strip())
+        except Exception:
+            logger.exception("Failed to read proxy file")
+
+    if not proxies:
+            logger.warning("No proxy list to choose from")
 
 
 def get_proxy(country=None):
@@ -31,6 +36,14 @@ def get_proxy(country=None):
     Returns:
         str/None -- The proxy string (or None) of the choosen proxy
     """
+    global proxies
+    print("Try and get proxy")
+    try:
+        proxies
+    except NameError:
+        # Proxies have not been loaded yet
+        _load_proxies()
+
     if not proxies:
         return None
 

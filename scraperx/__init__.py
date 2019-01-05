@@ -39,9 +39,3 @@ def uncaught(exctype, value, tb):
 
 
 sys.excepthook = uncaught
-
-# Bases
-from .base.dispatch import BaseDispatch  # noqa: F401
-from .base.extract import BaseExtract  # noqa: F401
-from .base.extractor import BaseExtractor  # noqa: F401
-from .base.download import BaseDownload  # noqa: F401

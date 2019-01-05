@@ -1,8 +1,12 @@
 import json
+import logging
 from parsel import Selector
 from abc import ABC, abstractmethod
 
 from ..write_to import WriteTo
+from ..utils import QAValueError
+
+logger = logging.getLogger(__name__)
 
 
 class BaseExtractor(WriteTo, ABC):
@@ -49,7 +53,37 @@ class BaseExtractor(WriteTo, ABC):
                               "`result_selectors` OR `results`"))
 
         for idx, item in enumerate(items, start=1):
-            self.results.append(self.extract_result(idx, item))
+            result = self.extract_result(idx, item)
+            self.qa_result(result)
+            self.results.append(result)
+
+    def qa_result(self, result):
+        """Use the scrapers data_type values if it has them set to
+           confirm the data types of the values
+
+        Arguments:
+            result {dict} -- Extracted data for the element that was extracted
+        """
+        try:
+            for field_name, data_type in self.data_types.items():
+                if not isinstance(data_type, (list, tuple)):
+                    data_type = (data_type,)
+
+                field_value = result.get(field_name)
+                field_type = type(field_value)
+                if field_type not in data_type:
+                    extra = {'task': self.context.task,
+                             'field': {'value': field_name,
+                                       'type': field_type,
+                                       'expected_type': data_type,
+                                       }
+                             }
+                    logger.critical("Invalid type for field", extra=extra)
+                    raise QAValueError()
+
+        except AttributeError:
+            # Scraper does not have data_types class variable set
+            pass
 
     @abstractmethod
     def extract_result(self, element):

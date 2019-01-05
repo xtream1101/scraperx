@@ -108,7 +108,7 @@ def read_tasks(task_file):
     return tasks
 
 
-if __name__ == '__main__':
+def main():
     parser = argparse.ArgumentParser(description='Run platform3')
 
     subparsers = parser.add_subparsers(dest='command', help='sub-command help')
@@ -185,3 +185,6 @@ if __name__ == '__main__':
                        'extract': run_extractor,
                        }
     command_actions[args.command](args)
+
+if __name__ == '__main__':
+    main()
