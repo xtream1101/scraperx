@@ -5,27 +5,23 @@ import datetime
 import requests
 from abc import ABC, abstractmethod
 
+from ..config import config, SCRAPER_NAME
 from ..write_to import WriteTo
 from ..save_to import SaveTo
 from ..proxies import get_proxy
 from ..user_agent import get_user_agent
-from ..utils import get_scraper_config, QAValueError
+from ..utils import QAValueError
 
 logger = logging.getLogger(__name__)
 
 
 class BaseDownload(ABC):
 
-    def __init__(self, task, cli_args=None, cookies=None, headers=None,
-                 proxy=None, ignore_codes=[]):
+    def __init__(self, task, headers=None, proxy=None, ignore_codes=[]):
         # General task and config setup
         self._scraper = inspect.getmodule(self)
-        self.config = get_scraper_config(self._scraper, cli_args=cli_args)
         self.task = task
         self.ignore_codes = ignore_codes
-
-        # Needed so it can be passed to the extractor when running locally
-        self.cli_args = cli_args
 
         # Set timestamps
         self.time_downloaded = datetime.datetime.utcnow()
@@ -35,7 +31,6 @@ class BaseDownload(ABC):
         self.session = requests.Session()
 
         self._init_headers(headers)
-        self._init_cookies(cookies)
         self._init_proxy(proxy)
         self._init_http_methods()
 
@@ -128,15 +123,14 @@ class BaseDownload(ABC):
                              'date_downloaded': str(self.date_downloaded),
                              }
 
-        save_service = self.config.get(f'DOWNLOADER_SAVE_DATA_SERVICE')
+        save_service = config['DOWNLOADER_SAVE_DATA_SERVICE']
         if save_service in ['local']:
             # Save the metadata file next to the source since it cannot
             #   write the data into the file itself
             self._save_metadata(download_manifest)
 
-        run_task_on = self.config.get('DISPATCH_SERVICE_TYPE')
         msg = "Dummy Trigger extract" if standalone else "Trigger extract"
-        logger.debug(msg, extra={'run_task_on': run_task_on,
+        logger.debug(msg, extra={'run_task_on': config['DISPATCH_SERVICE_NAME'],
                                  'task': self.task})
 
         if not standalone:
@@ -146,15 +140,16 @@ class BaseDownload(ABC):
                 logger.info("Scraper has no extract",
                             extra={'task': self.task})
             else:
-                if run_task_on == 'local':
+                if config['DISPATCH_SERVICE_NAME'] == 'local':
                     self._dispatch_locally(download_manifest)
 
-                elif run_task_on == 'lambda':
+                elif config['DISPATCH_SERVICE_NAME'] == 'lambda':
                     self._dispatch_lambda(download_manifest)
 
                 else:
-                    logger.critical(f"{run_task_on} is not supported",
-                                    extra={'task': self.task})
+                    crit_msg = (f"{config['DISPATCH_SERVICE_NAME']}"
+                                "is not supported")
+                    logger.critical(crit_msg, extra={'task': self.task})
 
     def _get_metadata(self, download_manifest):
         """Create the metadata dict
@@ -166,7 +161,7 @@ class BaseDownload(ABC):
             {dict} -- metadata
         """
         metadata = {'task': self.task,
-                    'scraper': self._scraper.__name__,
+                    'scraper': SCRAPER_NAME,
                     'download_manifest': download_manifest}
         return metadata
 
@@ -180,7 +175,7 @@ class BaseDownload(ABC):
             download_manifest {dict} -- The downloads manifest
         """
         metadata = self._get_metadata(download_manifest)
-        metadata_file = WriteTo(metadata, context=self).write_json()
+        metadata_file = WriteTo(metadata).write_json()
         filename = download_manifest['source_files'][0]['path']
         logger.info("Saving metadata file", extra={'task': self.task})
         metadata_file.save(self, filename=filename + '.metadata.json')
@@ -194,7 +189,7 @@ class BaseDownload(ABC):
         try:
             import boto3
             client = boto3.client('sns')
-            target_arn = self.config.get('DISPATCH_SERVICE_SNS_ARN')
+            target_arn = config['DISPATCH_SERVICE_SNS_ARN']
             message = self._get_metadata(download_manifest)
             if target_arn is not None:
                 sns_message = json.dumps({'default': json.dumps(message)})
@@ -221,7 +216,6 @@ class BaseDownload(ABC):
         try:
             self._scraper.Extract(self.task,
                                   download_manifest,
-                                  cli_args=self.cli_args,
                                   ).run()
         except QAValueError:
             # A critical log is logged when this happens with the details
@@ -264,16 +258,6 @@ class BaseDownload(ABC):
         # Set a UA if the scraper did not set one
         if 'user-agent' not in map(str.lower, self.session.headers.keys()):
             self._set_session_ua()
-
-    def _init_cookies(self, cookies):
-        """Set up the default session cookies
-
-        Arguments:
-            cookies {dict} -- Cookies passed in to the __init__
-        """
-        # Set cookies from init, then update with task cookies
-        self.session.cookies.update({} if cookies is None else cookies)
-        self.session.cookies.update(self.task.get('cookies', {}))
 
     def _init_proxy(self, proxy):
         """Set the default session proxy
@@ -393,18 +377,16 @@ class BaseDownload(ABC):
         #       let the scraper update more
         self._set_session_ua()
 
-        # TODO: Add option to update cookies
-        #       This sdk will not change any cookies
-        #       let the scraper update if needed
-
         # Set new proxy
         proxy_str = self._get_proxy(country=self.task.get('geo_alpha2'),)
         if 'proxy' in kwargs:
             # Replace the request specific
             kwargs['proxy'] = proxy_str
+
         elif 'proxies' in kwargs:
             # Replace the request specific
             kwargs['proxies'] = proxy_str
+
         else:
             # Replace the session proxy
             self.session.proxies = self._format_proxy(proxy_str)
@@ -420,7 +402,7 @@ class Request(WriteTo):
             self.source = source
         else:
             self.source = self.r.text
-        super().__init__(self.source, context=context)
+        super().__init__(self.source)
 
 
 class File(SaveTo):

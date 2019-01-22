@@ -8,9 +8,8 @@ logger = logging.getLogger(__name__)
 
 class WriteTo:
 
-    def __init__(self, data, context=None):
+    def __init__(self, data):
         self.data = data
-        self.context = context
 
     def write(self):
         pass
@@ -39,7 +38,6 @@ class WriteTo:
         json.dump(json_data, output_io, **json_args)
         output_io.seek(0)
         return SaveTo(output_io,
-                      context=self.context,
                       content_type='application/json',
                       file_ext='json')
 
@@ -57,7 +55,6 @@ class WriteTo:
         output_io.write(self.data)
         output_io.seek(0)
         return SaveTo(output_io,
-                      context=self.context,
                       content_type=content_type)
 
     def write_zip(self, content_type='application/zip'):
@@ -74,7 +71,6 @@ class WriteTo:
         output_io.write(self.data)
         output_io.seek(0)
         return SaveTo(output_io,
-                      context=self.context,
                       content_type=content_type,
                       file_ext='zip')
 
@@ -121,6 +117,5 @@ class WriteTo:
 
         # TODO: Is this the correct content type for a parquet file?
         return SaveTo(output_io,
-                      context=self.context,
                       content_type='application/octet-stream',
                       file_ext='parquet')

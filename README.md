@@ -10,7 +10,6 @@ Right now its just me (eddy) jotting down some notes, will re-format and clean u
 This is a dict of values that is passed to each step of the process. The scraper can put anything it wants here that it may need. But here are a few build in values that are not requiored, but are used if you do supply them:
 
 - `headers`: Dict of headers to use each request
-- `cookies`: Dict of cookies to use in each request
 - `proxy`: Full proxy string to be used
 - `geo_alpha2`: Used to get a proxy for this region, if this and `proxy` are not set, a random proxy will be used.
 - `platform`: Used when selecting a proxy if one was not passed in. Will keep from selecting proxies that do not work on a given site.
@@ -21,33 +20,32 @@ This is a dict of values that is passed to each step of the process. The scraper
 Uses a requests.Session to make get and post requests.
 The __init__ of the BaseDownload class can take the following args:
 - task: needed no matter what
-- cookies: dict to set cookies for the whole session. default: none
 - headers: dict to set headers for the whole session. default: random User-Agent for the device type, will use desktop if no device type is set)
 - proxy: the proxy string to use for the requests
 
 
 When using BaseDownloader, a requests session is created under `self.session`, so every get/post you make will use the same session per task.
-you can also set cookies/headers per call to by pasing the keyword args to self.get() and self.post(). Any kwargs you pass to self.get/post will be pased to the sessions get/post methods.  
+you can also set headers per call to by pasing the keyword args to self.get() and self.post(). Any kwargs you pass to self.get/post will be pased to the sessions get/post methods.  
 
 When using BaseDownloader's get & post functions, it will use the requests session created in __init__ and return you a Request object. From that, you can acess the raw requests request from `self.r` and the raw source at `self.source` (`r.text`)  
 
 The Request object also gives full access to the WriteTo class (see <here> about what that has)  
 
 
-A request will retry n (3 by default) times to get a successful status code, each retry it will try and trigger a function called `new_profile()` where you have the chance to switch the headers/cookies/proxy the request is using (will only update for that request?). If that function does not exist, it will try again with the same data.
+A request will retry n (3 by default) times to get a successful status code, each retry it will try and trigger a function called `new_profile()` where you have the chance to switch the headers/proxy the request is using (will only update for that request?). If that function does not exist, it will try again with the same data.
 
 
-### Setting headers/cookies/proxies
+### Setting headers/proxies
 
 The ones set in the `self.get/post` will override the ones set in the `__init__`
 
-self.get/post kwargs cookies/headers/proxy
+self.get/post kwargs headers/proxy
 will override
-self.task[cookies/headers/proxy]
+self.task[headers/proxy]
 will override
-__init__ kwargs cookies/headers/proxy
+__init__ kwargs headers/proxy
 
-Any header/cookie/proxy set on the request (get/post/etc) will only be set for that single request. For those values to be set in the session they must be set from the init or be in the task data.
+Any header/proxy set on the request (get/post/etc) will only be set for that single request. For those values to be set in the session they must be set from the init or be in the task data.
 
 
 ## Extracting
@@ -86,7 +84,7 @@ default:
     limit: 5  # Default None. Max number of tasks to dispatch. Do not set to run all tasks
     service:
       # This is where both the download and extractor services will run
-      type: local  # (local, sns) Default: local
+      name: local  # (local, sns) Default: local
       sns_arn: sns:arn:of:service:to:trigger  # Required if type is sns, if local this is not needed
     ratelimit:
       type: qps  # (qps, period) Required. `qps`: Queries per second to dispatch the tasks at. `period`: The time in hours to dispatch all of the tasks in.

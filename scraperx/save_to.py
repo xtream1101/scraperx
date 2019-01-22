@@ -1,6 +1,8 @@
 import os
 import pathlib
 import logging
+
+from .config import config
 from .utils import get_s3_resource, get_context_type
 
 logger = logging.getLogger(__name__)
@@ -8,10 +10,9 @@ logger = logging.getLogger(__name__)
 
 class SaveTo:
 
-    def __init__(self, raw_data, context=None, content_type='text/html',
+    def __init__(self, raw_data, content_type='text/html',
                  file_ext=''):
         self.raw_data = raw_data
-        self.context = context
         self.content_type = content_type
         self.file_ext = file_ext
 
@@ -44,14 +45,15 @@ class SaveTo:
                                'date_downloaded': context.date_downloaded,
                                }
 
-        filename = context.config.get(f'{context_type}_FILE_TEMPLATE')\
-                                 .format(**context.task,
-                                         **template_values,
-                                         **additional_args)
+        filename_template = f'{context_type}_FILE_TEMPLATE'
+
+        filename = config[filename_template].format(**context.task,
+                                                    **template_values,
+                                                    **additional_args)
 
         return filename
 
-    def save(self, template_values={}, filename=None, metadata=None):
+    def save(self, context, template_values={}, filename=None, metadata=None):
         """Save the file based on the config
 
         Arguments:
@@ -68,21 +70,21 @@ class SaveTo:
         Returns:
             str -- File path to where it was saved
         """
-        context_type = get_context_type(self.context)
+        context_type = get_context_type(context)
 
         if not filename:
-            filename = self._get_filename(self.context,
+            filename = self._get_filename(context,
                                           template_values=template_values)
 
         if not filename.endswith(self.file_ext):
             filename += f'.{self.file_ext}'
 
         save_service_key = f'{context_type}_SAVE_DATA_SERVICE'
-        save_service = self.context.config.get(save_service_key)
+        save_service = config[save_service_key]
         if save_service == 's3':
             saved_file = SaveS3(self.raw_data,
                                 filename,
-                                self.context,
+                                context,
                                 metadata=metadata,
                                 content_type=self.content_type).save()
 
@@ -93,7 +95,7 @@ class SaveTo:
             logger.error(f"Not configured to save to {save_service}")
             saved_file = None
 
-        logger.info("Saved file", extra={'task': self.context.task,
+        logger.info("Saved file", extra={'task': context.task,
                                          'file': saved_file})
         return saved_file
 
@@ -140,7 +142,7 @@ class SaveS3:
     def _get_bucket_name(self):
         context_type = get_context_type(self.context)
         bucket_name_key = f'{context_type}_SAVE_DATA_BUCKET_NAME'
-        return self.context.config.get(bucket_name_key)
+        return config[bucket_name_key]
 
     def _format_body(self, data):
         try:

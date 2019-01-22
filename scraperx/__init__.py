@@ -39,3 +39,16 @@ def uncaught(exctype, value, tb):
 
 
 sys.excepthook = uncaught
+
+
+# Init the cli args and the config after the logging is setup
+from .arguments import cli_args  # noqa: F401, F402
+from .config import config, SCRAPER_NAME  # noqa: F401, F402
+
+# Now figure out what action to take
+from .run import run  # noqa: F401, F402
+
+from .base.dispatch import BaseDispatch  # noqa: F401
+from .base.extract import BaseExtract  # noqa: F401
+from .base.extractor import BaseExtractor  # noqa: F401
+from .base.download import BaseDownload  # noqa: F401

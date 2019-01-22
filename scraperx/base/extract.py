@@ -1,18 +1,15 @@
 import logging
-import inspect
 import datetime
 from abc import ABC, abstractmethod
 
-from ..utils import get_scraper_config, get_file_from_s3, get_s3_resource
+from ..utils import get_file_from_s3, get_s3_resource
 
 logger = logging.getLogger(__name__)
 
 
 class BaseExtract(ABC):
 
-    def __init__(self, task, download_manifest, cli_args=None):
-        self._scraper = inspect.getmodule(self)
-        self.config = get_scraper_config(self._scraper, cli_args=cli_args)
+    def __init__(self, task, download_manifest):
         self.task = task
         self.output = []
 

@@ -1,61 +1,14 @@
-import os
-import sys
 import time
 import queue
 import logging
 import tempfile
-import importlib
 import threading
-from .config import Config
 
 logger = logging.getLogger(__name__)
 
 
 class QAValueError(ValueError):
     pass
-
-
-def import_scraper(lib_name):
-    """Import the scraper module
-
-    Arguments:
-        lib_name {str} -- The name of the scraper. Ex: demo.search
-
-    Returns:
-        module -- The imported scraper module
-    """
-    try:
-        logger.info('Import scraper', extra={'scraper': lib_name})
-        scraper = importlib.import_module(lib_name)
-    except ModuleNotFoundError as e:
-        logger.critical(e)
-        sys.exit(1)
-    return scraper
-
-
-def get_scraper_config(scraper, cli_args=None):
-    """Create a config object from the scrapers config
-
-    Arguments:
-        scraper {module|str} -- The scraper to get the config from
-
-    Keyword Arguments:
-        cli_args {argparse.Namespace} -- Cli args (default: {None})
-
-    Returns:
-        class -- Config class object
-    """
-    if isinstance(scraper, str):
-        # Need to convert it to a module if the name was passed in
-        scraper = import_scraper(scraper)
-
-    scraper_conifg = os.path.join(os.path.dirname(scraper.__file__),
-                                  'config.yaml')
-
-    scraper_name = scraper.__name__.split('.')[-1]
-    config = Config(scraper_name, scraper_conifg, cli_args=cli_args)
-
-    return config
 
 
 def threads(num_threads, data, callback, *args, **kwargs):

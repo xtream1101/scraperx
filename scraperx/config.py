@@ -2,76 +2,282 @@ import os
 import sys
 import yaml
 import logging
+from .arguments import cli_args
+
 
 logger = logging.getLogger(__name__)
 
 
-class Config:
+def _try_make_float(value):
+    """Try and convert the value to a float
 
-    def __init__(self, scraper_name, config_file, cli_args=None):
-        self.scraper_name = scraper_name
-        try:
-            self.config = Config.get_config_from_file(config_file,
-                                                      cli_args=cli_args)
-        except ValueError as e:
-            logger.critical(f"Invalid config \n{e}")
-            # Should not continue if there is an issue with the config
-            sys.exit(1)
+    Useful if the value is "1/2"
 
-    def get(self, config_key):
-        """Get the config value for a key
+    Arguments:
+        value {str} -- The value to try and convert
 
-        Check to see if the scraper has a value for the config_key
-        if not then use the default value.
+    Returns:
+        float/str -- The float value or the original string if unable
+    """
+    try:
+        if '/' in value:
+            return (float(value.split('/')[0])
+                    / float(value.split('/')[1]))
+        else:
+            return float(value)
+    except Exception:
+        pass
+
+    return value
+
+
+SCRAPER_NAME = os.path.basename(sys.argv[0]).rsplit('.', 1)[0]
+# All config keys must be UPPERCASE
+_CONFIG_STRUCTURE = {
+    # 'EXAMPLE': {  # Config value name
+    #     'default': 2,  # Optional: Will use if not cli_arg|yaml|env is set
+    #     'type': int,  # Required: Python type to enforce/cast value to be
+    #     'must_be': [1, 2, 3],  # Optional: The value must be in this list
+    #     'transformer': some_fn,  # Optional: Pass the value through this function and use its return  # noqa
+    #     'required_if':  # Optional: Forces this value required or not based on other values  # noqa
+    #         # Option 1
+    #         # Config key that needs to be set to not None
+    #         'foo_bar',
+    #         # Option 2
+    #         # Dict of a config key & value that it needs to be set to
+    #         {'FOO_BAR': 'hello'},
+    #         # Option 3
+    #         # Dict of a config key & a list of values it could be set to
+    #         {'FOO_BAR': ['hello', 'world']},
+    #         # Option 4
+    #         # List of the above options is allowed too
+    #         [
+    #             'TEST_KEY',
+    #             {'FOO_BAR': ['hello', 'world']},
+    #         ],
+    # },
+
+    ###
+    # Other
+    ##
+    'STANDALONE': {
+        'default': False,
+        'type': bool,
+    },
+    ###
+    # Dispatch
+    ###
+    'DISPATCH_SERVICE_NAME': {
+        'default': 'local',
+        'type': str,
+        'must_be': ['local', 'sns'],
+    },
+    'DISPATCH_SERVICE_SNS_ARN': {
+        'type': str,
+        'required_if': {'DISPATCH_SERVICE_NAME': 'sns'},
+    },
+    'DISPATCH_RATELIMIT_TYPE': {
+        'type': str,
+        'must_be': ['period', 'qps'],
+    },
+    'DISPATCH_RATELIMIT_VALUE': {
+        'type': float,
+        'transformer': _try_make_float,
+    },
+    'DISPATCH_LIMIT': {
+        'type': int,
+    },
+    ###
+    # Downloader
+    ###
+    'DOWNLOADER_SAVE_DATA_SERVICE': {
+        'type': str,
+        'must_be': ['local', 's3'],
+    },
+    'DOWNLOADER_SAVE_DATA_BUCKET_NAME': {
+        'type': str,
+        'required_if': {'DOWNLOADER_SAVE_DATA_SERVICE': 's3'},
+    },
+    'DOWNLOADER_SAVE_DATA_ENDPOINT_URL': {
+        'default': None,
+        'type': str,
+        'required_if': {'DOWNLOADER_SAVE_DATA_SERVICE': 's3'},
+    },
+    'DOWNLOADER_FILE_TEMPLATE': {
+        'default': "output/{id}_source.html",
+        'type': str,
+    },
+    ###
+    # Extractor
+    # TODO: Uses same as downloader, best way?
+    ###
+    'EXTRACTOR_SAVE_DATA_SERVICE': {
+        'type': str,
+        'must_be': ['local', 's3'],
+    },
+    'EXTRACTOR_SAVE_DATA_BUCKET_NAME': {
+        'type': str,
+        'required_if': {'EXTRACTOR_SAVE_DATA_SERVICE': 's3'},
+    },
+    'EXTRACTOR_SAVE_DATA_ENDPOINT_URL': {
+        'default': None,
+        'type': str,
+        'required_if': {'EXTRACTOR_SAVE_DATA_SERVICE': 's3'},
+    },
+    'EXTRACTOR_FILE_TEMPLATE': {
+        'default': "output/{id}_extracted.json",
+        'type': str,
+    },
+}
+
+
+class ConfigGen:
+
+    def __init__(self):
+        # TODO: Does the base_dir need to be in $PATH for the
+        #       scraper to import local files to it?
+        # Test by running the scraper from an outside dir with local imports
+        base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        config_file = os.path.join(base_dir, 'config.yaml')
+
+        raw_values = self._join_values(config_file)
+        self.values = self._validate_config_values(raw_values)
+
+    def __getitem__(self, key):
+        """Method to get the config value from the class via config['KEYNAME']
 
         Arguments:
-            config_key {str} -- Key name to get the value for.
-                                Should not contain the scraper name or default.
-                                This will check the correct locations.
+            key {str} -- The key to get from the config values
 
         Returns:
-            any -- The value of the config_key
+            str/None -- Value of the key passed in, or None if not found
+        """
+        return self.values.get(key.upper())
+
+    def _join_values(self, config_file):
+        """Join the values from the config file, cli args, and env vars
+
+        Arguments:
+            config_file {str} -- Config yaml path for the scraper
+
+        Returns:
+            dict -- A single value for each config key
 
         Raises:
-            ValueError -- if the config_key does not exist
+            ValueError -- If any of the config values are invalid
         """
-        try:
-            # Try and get scraper specific value first
-            key = '{}_{}'.format(self.scraper_name, config_key)
-            value = self.config[key.upper()]
-        except KeyError:
-            key = 'default_{}'.format(config_key)
-            try:
-                value = self.config[key.upper()]
-            except KeyError:
-                raise ValueError(f"No config value {key.upper()}")
+        file_values = ConfigGen._ingest_file(config_file)
+        cli_values = ConfigGen._ingest_cli_args(cli_args)
 
-        return value
+        final_config = {}
+        for key, struct in _CONFIG_STRUCTURE.items():
+            if key in cli_values:
+                # 1st check cli_args
+                final_config[key] = cli_values[key]
 
-    @staticmethod
-    def get_config_from_file(config_file, cli_args=None):
-        """Get all config values needed to run the scrape
+            elif key in os.environ:
+                # 2nd check env variables
+                final_config[key] = os.getenv(key)
 
-        Will handle reading in the scrapers config and updating with
-        any env vars or cli args as needed
+            elif key in file_values:
+                # 3rd check the config file
+                final_config[key] = file_values[key]
+
+            else:
+                # Use default value if it has one
+                final_config[key] = struct.get('default')
+
+        return final_config
+
+    def _validate_config_values(self, raw_values):
+        """Validate the config values
 
         Arguments:
-            config_file {str} -- The path for the scrapers config file
-
-        Keyword Arguments:
-            cli_args {argparse.Namespace} -- Any cli args that were set at
-                                             runtime (default: {None})
+            raw_values {dict} -- flattened keys with their values
 
         Returns:
-            dict -- The finial config keys and their values
+            dict -- Vlaues that have been validated and cast
         """
-        config_raw = Config._ingest_config_file(config_file)
-        config_raw = Config._update_config_values(config_raw, cli_args=cli_args)
-        return Config._validate_config_values(config_raw)
+        validated_values = {}
+
+        for key, struct in _CONFIG_STRUCTURE.items():
+            value = raw_values[key]
+
+            ###
+            # Required If
+            ###
+            if 'required_if' in struct:
+                required_if = struct['required_if']
+                if not isinstance(required_if, (list, tuple)):
+                    # Could be a single item or a list
+                    # Make into a list so the checks work the same
+                    required_if = [required_if]
+
+                for item in required_if:
+                    if isinstance(item, str):
+                        # Only care if required key is not None
+                        if raw_values[item] is not None and value is None:
+                            raise ValueError((f"Config key {key} is required "
+                                              f"since {item} is set"))
+
+                    elif isinstance(item, dict):
+                        # Care about what the value of the key is set to
+                        required_key = list(item.keys())[0]
+                        possiable_values = item[required_key]
+                        if isinstance(possiable_values, str):
+                            # Could be a single item or a list
+                            # Make into a list so the checks work the same
+                            possiable_values = [possiable_values]
+
+                        required_value = raw_values[required_key]
+                        if required_value in possiable_values and value is None:
+                            err = (f"Config key {key} is required if"
+                                   f" {required_key} is {required_value}")
+                            logger.critical(err)
+                            sys.exit(1)
+
+                if value is None:
+                    # If the value is None and nothing was raised
+                    # then we do not care about this value so move on
+                    continue
+
+            ###
+            # Transform
+            ###
+            if 'transformer' in struct:
+                value = struct['transformer'](value)
+
+            ###
+            # Must Be
+            ###
+            if 'must_be' in struct:
+                if value not in struct['must_be']:
+                    err = (f"Config value for {key} can only be these values:"
+                           f" {struct['must_be']}")
+                    logger.critical(err)
+                    sys.exit(1)
+
+            ###
+            # Type
+            ###
+            try:
+                if value is not None:
+                    value = struct['type'](value)
+            except ValueError:
+                err = (f"Config value for {key} must be the type"
+                       f" {struct['type'].__name__}")
+                logger.critical(err)
+                sys.exit(1)
+
+            validated_values[key] = value
+
+        return validated_values
 
     @staticmethod
-    def _ingest_config_file(config_file):
-        """Read in config yaml file
+    def _ingest_file(config_file):
+        """Read in config yaml
+
+        Only get the values for the scraper that is running
 
         Arguments:
             config_file {str} -- Scrapers config file
@@ -79,179 +285,16 @@ class Config:
         Returns:
             dict -- Dict of config keys flattened using underscores
         """
-        config_flat_raw = {}
+        current_config = {}
         with open(config_file, 'r') as stream:
-            config_flat_raw = Config.flatten(yaml.load(stream))
-        return config_flat_raw
+            all_config_values = yaml.load(stream)
+            default_config_raw = all_config_values.get('default', {})
+            current_config.update(ConfigGen.flatten(default_config_raw))
+            # Get scraper values
+            scraper_config_raw = all_config_values.get(SCRAPER_NAME, {})
+            current_config.update(ConfigGen.flatten(scraper_config_raw))
 
-    @staticmethod
-    def _update_config_values(config_flat_raw, cli_args=None):
-        """Update missing and override config vaules if needed
-
-        Override the config.yaml values with any environment vars that are set.
-        Override then with any cli args that were passed in at runtime
-
-        Arguments:
-            config_flat_raw {dict} -- Flattened config values from the
-                                      scrapers config
-
-        Keyword Arguments:
-            cli_args {argparse.Namespace} -- Any cli args that were set at
-                                             runtime (default: {None})
-
-        Returns:
-            dict -- Updated config values
-        """
-        # Contains all values that are in the scrapers yaml
-        config = config_flat_raw.copy()
-
-        # Set defaults for values that are not set and have default options
-        defaults = {'DEFAULT_EXTRACTOR_SAVE_DATA_SERVICE': 'local',
-                    'DEFAULT_DOWNLOADER_SAVE_DATA_SERVICE': 'local',
-                    'DEFAULT_DISPATCH_SERVICE_TYPE': 'local',
-                    'DEFAULT_DISPATCH_LIMIT': None,
-                    }
-        for d_key, d_value in defaults.items():
-            if d_key not in config:
-                config[d_key] = d_value
-
-        for c_key in config.keys():
-            # Check to see if any env vars exist for each config value
-            if c_key in os.environ:
-                config[c_key] = os.getenv(c_key)
-
-            # Override any config values with cli args
-            if cli_args:
-                ###
-                # For Dispatcher
-                ###
-                if hasattr(cli_args, 'limit') and cli_args.limit is not None:
-                    if c_key.endswith('DISPATCH_LIMIT'):
-                        config[c_key] = cli_args.limit
-                        # Set default here to replace the default set above
-                        config['DEFAULT_DISPATCH_LIMIT'] = cli_args.limit
-
-                if hasattr(cli_args, 'qps') and cli_args.qps is not None:
-                    if c_key.endswith('DISPATCH_RATELIMIT_TYPE'):
-                        config[c_key] = 'qps'
-                    elif c_key.endswith('DISPATCH_RATELIMIT_VALUE'):
-                        config[c_key] = cli_args.qps
-
-                if hasattr(cli_args, 'period') and cli_args.period is not None:
-                    if c_key.endswith('DISPATCH_RATELIMIT_TYPE'):
-                        config[c_key] = 'period'
-                    elif c_key.endswith('DISPATCH_RATELIMIT_VALUE'):
-                        config[c_key] = cli_args.period
-
-                ###
-                # For Downloader
-                ###
-                # TODO
-
-                ###
-                # For Extractor
-                ###
-                # TODO
-
-                ###
-                # For Disparcher/Downloader/Extractor
-                ###
-                if hasattr(cli_args, 'local') and cli_args.local is True:
-                    if c_key.endswith('SAVE_DATA_SERVICE'):
-                        config[c_key] = 'local'
-                    if c_key.endswith('SERVICE_TYPE'):
-                        config[c_key] = 'local'
-
-        return config
-
-    @staticmethod
-    def _validate_config_values(config):
-        """Validate the config values
-
-        Make sure all the required values are here and they have the correct
-        options set.
-        Will convert the types of some value to make sure they are correct
-
-        Arguments:
-            config {dict} -- The flattened and updated values
-
-        Returns:
-            dict -- The finial config keys and their values
-
-        Raises:
-            ValueError -- If any of the config values are invalid
-        """
-        issues = []  # Get all the issues before raising the exception
-
-        required_fields = ['DEFAULT_DISPATCH_RATELIMIT_VALUE',
-                           'DEFAULT_DISPATCH_SERVICE_TYPE',
-                           'DEFAULT_DOWNLOADER_SAVE_DATA_SERVICE',
-                           'DEFAULT_EXTRACTOR_SAVE_DATA_SERVICE',
-                           ]
-        # Check if required values are missing
-        for key in required_fields:
-            if config.get(key) is None:
-                issues.append(f"Config key {key} is required")
-
-        # Check that the values set are valid
-        for key, value in config.items():
-            if key.endswith('DISPATCH_LIMIT'):
-                if value is not None and not isinstance(value, int):
-                    issues.append(f"{key} must be not set or an int")
-                elif value is not None and value <= 0:
-                    issues.append(f"{key} must be greater then 0")
-
-            if key.endswith('DISPATCH_RATELIMIT_TYPE'):
-                if value not in ('qps', 'period'):
-                    issues.append(f"{key} must be qps or period")
-
-            if key.endswith('DISPATCH_RATELIMIT_VALUE'):
-                try:
-                    if '/' in value:
-                        config[key] = (float(value.split('/')[0])
-                                       / float(value.split('/')[1]))
-                    else:
-                        config[key] = float(value)
-                except (ValueError, TypeError):
-                    issues.append(f"{key} must be an int or float. Not {value}")
-
-                if config[key] <= 0:
-                    issues.append(f"{key} must be greater then 0")
-
-            if key.endswith('DISPATCH_SERVICE_TYPE'):
-                if value not in ('local', 'sns'):
-                    issues.append(f"{key} must be local or sns")
-                elif value == 'sns':
-                    # Also check that DISPATCH_SERVICE_SNS_ARN is set
-                    default_sns_arn = 'DEFAULT_DISPATCH_SERVICE_SNS_ARN'
-                    this_sns_arn = key.replace('TYPE', 'SNS_ARN')
-                    if (not config.get(default_sns_arn)
-                            and not config.get(this_sns_arn)):
-                        message = f"{default_sns_arn}"
-                        if default_sns_arn != this_sns_arn:
-                            message += f" or {this_sns_arn}"
-                        issues.append(f"{message} must be set")
-
-            if key.endswith('SAVE_DATA_SERVICE'):
-                if value not in ('local', 's3'):
-                    issues.append(f"{key} must be local or s3")
-                elif value == 's3':
-                    # Also check that SAVE_DATA_BUCKET_NAME is set
-                    key_type = key.split('_SAVE_DATA')[0].split('_')[-1]
-                    default_bucket = f'DEFAULT_{key_type}_SAVE_DATA_BUCKET_NAME'
-                    this_bucket = key.replace('SERVICE', 'BUCKET_NAME')
-                    if (not config.get(default_bucket)
-                            and not config.get(this_bucket)):
-                        message = f"{default_bucket}"
-                        if default_bucket != this_bucket:
-                            message += f" or {this_bucket}"
-                        issues.append(f"{message} must be set")
-
-        if issues:
-            formatted_issues = '\n'.join(issues)
-            raise ValueError(f"Invalid config: \n{formatted_issues}")
-
-        return config
+        return current_config
 
     @staticmethod
     def flatten(dict_obj, prev_key='', sep='_'):
@@ -274,8 +317,65 @@ class Config:
 
             new_key = new_key.upper()
             if isinstance(value, dict):
-                items.update(Config.flatten(value, new_key))
+                items.update(ConfigGen.flatten(value, new_key))
             else:
                 items[new_key] = value
 
         return items
+
+    @staticmethod
+    def _ingest_cli_args(cli_args):
+        """Map the cli arguments to the correct flattened key
+
+        Only return the keys that have values.
+        This is so that `None` can be a valid overide type if needed since we
+        can check if the key is even set or not.
+
+        Set the key without default/scraper_name in front
+
+        Arguments:
+            cli_args {argparser} -- The cli arguments from argparser
+
+        Returns:
+            dict -- Dict of flatten config keys that each cli argument maps to
+        """
+        cli_config = {}
+
+        try:
+            if cli_args.local:
+                cli_config['DISPATCH_SERVICE_NAME'] = 'local'
+                cli_config['DOWNLOADER_SAVE_DATA_SERVICE'] = 'local'
+                cli_config['EXTRACTOR_SAVE_DATA_SERVICE'] = 'local'
+        except AttributeError:
+            pass
+
+        try:
+            if cli_args.standalone:
+                cli_config['STANDALONE'] = cli_args.standalone
+        except AttributeError:
+            pass
+
+        try:
+            if cli_args.limit:
+                cli_config['DISPATCH_LIMIT'] = cli_args.limit
+        except AttributeError:
+            pass
+
+        try:
+            if cli_args.qps:
+                cli_config['DISPATCH_RATELIMIT_TYPE'] = 'qps'
+                cli_config['DISPATCH_RATELIMIT_VALUE'] = cli_args.qps
+        except AttributeError:
+            pass
+
+        try:
+            if cli_args.period:
+                cli_config['DISPATCH_RATELIMIT_TYPE'] = 'period'
+                cli_config['DISPATCH_RATELIMIT_VALUE'] = cli_args.period
+        except AttributeError:
+            pass
+
+        return cli_config
+
+
+config = ConfigGen()
