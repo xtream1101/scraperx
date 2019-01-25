@@ -28,13 +28,22 @@ class BaseExtract(ABC):
         files at the same time
 
         Use the data passed in to the __init__ to extract the data
+
+        Returns:
+            list -- Files generated in the extraction process
         """
         for source_file in self._get_sources():
             with open(source_file, 'r') as f:
                 raw_source = f.read()
-                self.output.append(self.extract(raw_source))
+                result = self.extract(raw_source)
+                if isinstance(result, (list, tuple)):
+                    self.output.extend(result)
+                else:
+                    self.output.append(result)
 
         logger.info('Extract finished', extra={'task': self.task})
+
+        return self.output
 
     def _get_sources(self):
         """Get source files and its metadata if possiable

@@ -19,5 +19,6 @@ setup(name='scraperx',
                         'requests',
                         'boto3',
                         'python-json-logger',
+                        'deepdiff',
                         ],
       )

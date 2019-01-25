@@ -49,10 +49,16 @@ parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers(dest='action')
 
 ###
-# Validation
+# Validate Config
 ###
 parser_validate = subparsers.add_parser('validate',
                                         help="Validate the yaml/env vars")
+
+###
+# Test Source files
+###
+parser_test = subparsers.add_parser('test',
+                                    help="Run tests on source files")
 
 ###
 # Dispatch Arguments

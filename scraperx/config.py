@@ -31,7 +31,12 @@ def _try_make_float(value):
     return value
 
 
+# TODO: Does the base_dir need to be in $PATH for the
+#       scraper to import local files to it?
+# Test by running the scraper from an outside dir with local imports
+BASE_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 SCRAPER_NAME = os.path.basename(sys.argv[0]).rsplit('.', 1)[0]
+
 # All config keys must be UPPERCASE
 _CONFIG_STRUCTURE = {
     # 'EXAMPLE': {  # Config value name
@@ -134,11 +139,7 @@ _CONFIG_STRUCTURE = {
 class ConfigGen:
 
     def __init__(self):
-        # TODO: Does the base_dir need to be in $PATH for the
-        #       scraper to import local files to it?
-        # Test by running the scraper from an outside dir with local imports
-        base_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-        config_file = os.path.join(base_dir, 'config.yaml')
+        config_file = os.path.join(BASE_DIR, 'config.yaml')
 
         raw_values = self._join_values(config_file)
         self.values = self._validate_config_values(raw_values)
@@ -153,6 +154,18 @@ class ConfigGen:
             str/None -- Value of the key passed in, or None if not found
         """
         return self.values.get(key.upper())
+
+    def _set_value(self, key, value):
+        """Only the test will need to change some values at runtime
+
+        Nothing else should use this except tests, which is why its private
+        TODO: Is there a better way for tests then doing this?
+
+        Arguments:
+            key {str} -- config key to change
+            value {str} -- value to set
+        """
+        self.values[key.upper()] = value
 
     def _join_values(self, config_file):
         """Join the values from the config file, cli args, and env vars
