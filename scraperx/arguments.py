@@ -69,13 +69,13 @@ parser_dispatch = subparsers.add_parser('dispatch',
                                                  dispatch_download_parser])
 parser_dispatch.add_argument('--dump-tasks', action='store_true',
                              help="Save the tasks as json")
+parser_dispatch.add_argument('-l', '--limit', type=int,
+                             help='Limit the amount of tasks dispatch')
 ratelimit_group = parser_dispatch.add_mutually_exclusive_group()
 ratelimit_group.add_argument('--qps',
                              help='Number of tasks to dispatch a second')
 ratelimit_group.add_argument('--period', type=float,
                              help='Dispatch all tasks in n hours')
-ratelimit_group.add_argument('-l', '--limit', type=int,
-                             help='Limit the amount of tasks dispatch')
 ###
 # Download Arguments
 ###
