@@ -330,7 +330,7 @@ class BaseDownload(ABC):
 
             if r.status_code != requests.codes.ok:
                 if r.status_code in self.ignore_codes:
-                    return Request(r)
+                    return Request(self, r)
                 elif _try_count < max_tries:
                     kwargs = self.new_profile(**kwargs)
                     request_method = self._set_http_method(http_method)
