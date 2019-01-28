@@ -27,6 +27,12 @@ class BaseDownload(ABC):
         self.time_downloaded = datetime.datetime.utcnow()
         self.date_downloaded = datetime.datetime.utcnow().date()
 
+        self.manifest = {'source_files': [],
+                         'requests': [],
+                         'time_downloaded': str(self.time_downloaded),
+                         'date_downloaded': str(self.date_downloaded),
+                         }
+
         # Set up a requests session
         self.session = requests.Session()
 
@@ -90,6 +96,10 @@ class BaseDownload(ABC):
         """
         try:
             source_files = self.download()
+            if not isinstance(source_files, (list, tuple)):
+                # Make sure source files is a list
+                source_files = [source_files]
+            self.manifest['source_files'].extend(source_files)
 
         except requests.exceptions.HTTPError as e:
             failed_status_code = e.response.status_code
@@ -102,6 +112,9 @@ class BaseDownload(ABC):
             else:
                 logger.warning("No source file saved",
                                extra={'task': self.task})
+        finally:
+            # Always save the metadata of the download (even on failure)
+            self._save_metadata()
 
     def _run_success(self, source_files, standalone):
         """Download was successful
@@ -112,23 +125,6 @@ class BaseDownload(ABC):
             source_files {list} -- The paths of the downloaded files
             standalone {bool} -- Do not trigger the extractor if True
         """
-        # Make sure source files are a list
-        if not isinstance(source_files, (list, tuple)):
-            source_files = [source_files]
-
-        download_manifest = {'source_files': source_files,
-                             # Date/times need to be strings since they
-                             #   need to be converted to json to be saved
-                             'time_downloaded': str(self.time_downloaded),
-                             'date_downloaded': str(self.date_downloaded),
-                             }
-
-        save_service = config['DOWNLOADER_SAVE_DATA_SERVICE']
-        if save_service in ['local']:
-            # Save the metadata file next to the source since it cannot
-            #   write the data into the file itself
-            self._save_metadata(download_manifest)
-
         msg = "Dummy Trigger extract" if standalone else "Trigger extract"
         logger.debug(msg, extra={'run_task_on': config['DISPATCH_SERVICE_NAME'],
                                  'task': self.task})
@@ -141,17 +137,17 @@ class BaseDownload(ABC):
                             extra={'task': self.task})
             else:
                 if config['DISPATCH_SERVICE_NAME'] == 'local':
-                    self._dispatch_locally(download_manifest)
+                    self._dispatch_locally(self.manifest)
 
                 elif config['DISPATCH_SERVICE_NAME'] == 'lambda':
-                    self._dispatch_lambda(download_manifest)
+                    self._dispatch_lambda(self.manifest)
 
                 else:
                     crit_msg = (f"{config['DISPATCH_SERVICE_NAME']}"
                                 "is not supported")
                     logger.critical(crit_msg, extra={'task': self.task})
 
-    def _get_metadata(self, download_manifest):
+    def _get_metadata(self):
         """Create the metadata dict
 
         Arguments:
@@ -162,10 +158,11 @@ class BaseDownload(ABC):
         """
         metadata = {'task': self.task,
                     'scraper': SCRAPER_NAME,
-                    'download_manifest': download_manifest}
+                    'download_manifest': self.manifest,
+                    }
         return metadata
 
-    def _save_metadata(self, download_manifest):
+    def _save_metadata(self):
         """Save the metadata with the download source
 
         Saves a file as the same name as the source with '.metadata.json'
@@ -174,9 +171,9 @@ class BaseDownload(ABC):
         Arguments:
             download_manifest {dict} -- The downloads manifest
         """
-        metadata = self._get_metadata(download_manifest)
+        metadata = self._get_metadata()
         metadata_file = WriteTo(metadata).write_json()
-        filename = download_manifest['source_files'][0]['path']
+        filename = self.manifest['source_files'][0]['path']
         logger.info("Saving metadata file", extra={'task': self.task})
         metadata_file.save(self, filename=filename + '.metadata.json')
 
@@ -320,6 +317,20 @@ class BaseDownload(ABC):
                 proxy_used = kwargs['proxies'].get('http')
 
             r = self.session.request(http_method, url, **kwargs)
+
+            # Add request to manifest
+            try:
+                request_data = {'status_code': r.status_code,
+                                'url': r.url,
+                                'proxy': self.session.proxies,
+                                'headers': dict(r.headers),
+                                'response_time': r.elapsed.total_seconds(),
+                                }
+                self.manifest['requests'].append(request_data)
+            except Exception:
+                logger.exception("Failed to save request to manifest",
+                                 extra={'task': self.task,
+                                        'url': url})
 
             logger.info(f"{http_method} request finished",
                         extra={'url': url,

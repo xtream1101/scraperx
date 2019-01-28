@@ -37,7 +37,7 @@ def get_proxy(country=None):
         str/None -- The proxy string (or None) of the choosen proxy
     """
     global proxies
-    print("Try and get proxy")
+    logger.info("Try and get proxy")
     try:
         proxies
     except NameError:

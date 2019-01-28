@@ -16,7 +16,7 @@ class SaveTo:
         self.content_type = content_type
         self.file_ext = file_ext
 
-    def _get_filename(self, context, template_values={}, filename_template=None):
+    def _get_filename(self, context, template_values={}, name_template=None):
         """Generate the filename based on the config template
 
         Arguments:
@@ -45,12 +45,12 @@ class SaveTo:
                                'date_downloaded': context.date_downloaded,
                                }
 
-        if not filename_template:
-            filename_template = config[f'{context_type}_FILE_TEMPLATE']
+        if not name_template:
+            name_template = config[f'{context_type}_FILE_TEMPLATE']
 
-        filename = filename_template.format(**context.task,
-                                            **template_values,
-                                            **additional_args)
+        filename = name_template.format(**context.task,
+                                        **template_values,
+                                        **additional_args)
 
         return filename
 
