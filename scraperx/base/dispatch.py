@@ -100,9 +100,11 @@ class BaseDispatch(ABC):
         Arguments:
             task {dict} -- Single task to be run
         """
+        from multiprocessing import Process
         try:
-            self._scraper.Download(task).run()
-
+            p = Process(target=self._scraper.Download(task).run)
+            p.start()
+            p.join()
         except Exception:
             logger.critical("Local download failed",
                             extra={'task': task},
