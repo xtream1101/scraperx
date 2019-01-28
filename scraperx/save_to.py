@@ -75,7 +75,7 @@ class SaveTo:
 
         filename = self._get_filename(context,
                                       template_values=template_values,
-                                      filename_template=filename)
+                                      name_template=filename)
 
         if not filename.endswith(self.file_ext):
             filename += f'.{self.file_ext}'
