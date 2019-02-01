@@ -15,16 +15,17 @@ class WriteTo:
         pass
         # TODO (will work like .save())
 
-    def write_json(self):
+    def write_json(self, json_args=None):
         """Write json data to a StringIO object
 
         Returns:
             StringIO -- The data in a json format
         """
-        json_args = {'sort_keys': True,
-                     'indent': 4,
-                     'ensure_ascii': False,
-                     }
+        if json_args is None:
+            json_args = {'sort_keys': True,
+                         'indent': 4,
+                         'ensure_ascii': False,
+                         }
 
         if isinstance(self.data, str):
             # Convert raw string to dict to be saved as json

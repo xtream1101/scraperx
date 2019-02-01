@@ -21,10 +21,19 @@ logging.config.dictConfig({
             'formatter': 'json',
             'stream': sys.stdout,
         },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'level': 'INFO',
+            'formatter': 'json',
+            'filename': './scraper.json',
+            'mode': 'a',
+            'maxBytes': 10485760,
+            'backupCount': 5,
+        },
     },
     'loggers': {
         '': {
-            'handlers': ['default'],
+            'handlers': ['default', 'file'],
             'level': 'INFO',
             'propagate': True,
         },

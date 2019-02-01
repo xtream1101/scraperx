@@ -10,7 +10,6 @@ from ..write_to import WriteTo
 from ..save_to import SaveTo
 from ..proxies import get_proxy
 from ..user_agent import get_user_agent
-from ..utils import QAValueError
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +25,11 @@ class BaseDownload(ABC):
         # Set timestamps
         self.time_downloaded = datetime.datetime.utcnow()
         self.date_downloaded = datetime.datetime.utcnow().date()
+
+        logger.info("Start Download",
+                    extra={'task': self.task,
+                           'time_started': str(self.time_downloaded),
+                           })
 
         self.manifest = {'source_files': [],
                          'requests': [],
@@ -101,20 +105,26 @@ class BaseDownload(ABC):
                 source_files = [source_files]
             self.manifest['source_files'].extend(source_files)
 
-        except requests.exceptions.HTTPError as e:
-            failed_status_code = e.response.status_code
-            logger.error(f"Download Error: {e}",
-                         extra={'task': self.task,
-                                'status_code': failed_status_code})
+        except requests.exceptions.HTTPError:
+            # The status code was logged during the request, no need to repeat
+            pass
+        except Exception:
+            logger.exception("Download Exception",
+                             extra={'task': self.task})
         else:
             if source_files:
                 self._run_success(source_files, standalone)
             else:
-                logger.warning("No source file saved",
-                               extra={'task': self.task})
-        finally:
-            # Always save the metadata of the download (even on failure)
-            self._save_metadata()
+                # If it got here and there is not saved file then thats an issue
+                logger.error("No source file saved",
+                             extra={'task': self.task,
+                                    'manifest': self.manifest,
+                                    })
+
+        logger.info('Download finished',
+                    extra={'task': self.task,
+                           'time_finished': str(datetime.datetime.utcnow()),
+                           })
 
     def _run_success(self, source_files, standalone):
         """Download was successful
@@ -162,21 +172,6 @@ class BaseDownload(ABC):
                     }
         return metadata
 
-    def _save_metadata(self):
-        """Save the metadata with the download source
-
-        Saves a file as the same name as the source with '.metadata.json'
-        appended to the name
-
-        Arguments:
-            download_manifest {dict} -- The downloads manifest
-        """
-        metadata = self._get_metadata()
-        metadata_file = WriteTo(metadata).write_json()
-        filename = self.manifest['source_files'][0]['path']
-        logger.info("Saving metadata file", extra={'task': self.task})
-        metadata_file.save(self, filename=filename + '.metadata.json')
-
     def _dispatch_lambda(self, download_manifest):
         """Send the task to a lambda via an SNS Topic
 
@@ -210,14 +205,11 @@ class BaseDownload(ABC):
         Arguments:
             download_manifest {dict} -- The downloads manifest
         """
+        from multiprocessing import Process
         try:
-            self._scraper.Extract(self.task,
-                                  download_manifest,
-                                  ).run()
-        except QAValueError:
-            # A critical log is logged when this happens with the details
-            # This is here as a way to break out of the rest of the extraction
-            pass
+            p = Process(target=self._scraper.Extract(self.task,
+                                                     download_manifest).run)
+            p.start()
         except Exception:
             logger.critical("Local extract failed",
                             extra={'task': self.task},
@@ -316,6 +308,7 @@ class BaseDownload(ABC):
                 kwargs['proxies'] = self._format_proxy(kwargs['proxies'])
                 proxy_used = kwargs['proxies'].get('http')
 
+            time_of_request = datetime.datetime.utcnow()
             r = self.session.request(http_method, url, **kwargs)
 
             # Add request to manifest
@@ -323,8 +316,10 @@ class BaseDownload(ABC):
                 request_data = {'status_code': r.status_code,
                                 'url': r.url,
                                 'proxy': self.session.proxies,
-                                'headers': dict(r.headers),
+                                'headers': {'request': dict(r.request.headers),
+                                            'response': dict(r.headers)},
                                 'response_time': r.elapsed.total_seconds(),
+                                'num_tries': _try_count,
                                 }
                 self.manifest['requests'].append(request_data)
             except Exception:
@@ -332,17 +327,22 @@ class BaseDownload(ABC):
                                  extra={'task': self.task,
                                         'url': url})
 
-            logger.info(f"{http_method} request finished",
-                        extra={'url': url,
-                               'try_count': _try_count,
+            logger.info("Request finished",
+                        extra={'url': r.url,
+                               'method': http_method,
+                               'status_code': r.status_code,
+                               'headers': {'request': dict(r.request.headers),
+                                           'response': dict(r.headers)},
+                               'response_time': r.elapsed.total_seconds(),
+                               'time_of_request:': str(time_of_request),
+                               'num_tries': _try_count,
                                'max_tries': max_tries,
                                'task': self.task,
                                'proxy': proxy_used})
 
             if r.status_code != requests.codes.ok:
-                if r.status_code in self.ignore_codes:
-                    return Request(self, r)
-                elif _try_count < max_tries:
+                if (_try_count < max_tries
+                   and r.status_code not in self.ignore_codes):
                     kwargs = self.new_profile(**kwargs)
                     request_method = self._set_http_method(http_method)
                     return request_method(url,

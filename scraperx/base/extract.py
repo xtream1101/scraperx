@@ -18,6 +18,11 @@ class BaseExtract(ABC):
         self.time_extracted = datetime.datetime.utcnow()
         self.date_extracted = self.time_extracted.date()
 
+        logger.info("Start Extract",
+                    extra={'task': self.task,
+                           'time_started': str(self.time_extracted),
+                           })
+
     def run(self):
         """Run the extraction
 
@@ -41,7 +46,10 @@ class BaseExtract(ABC):
                 else:
                     self.output.append(result)
 
-        logger.info('Extract finished', extra={'task': self.task})
+        logger.info('Extract finished',
+                    extra={'task': self.task,
+                           'time_finished': str(datetime.datetime.utcnow()),
+                           })
 
         return self.output
 

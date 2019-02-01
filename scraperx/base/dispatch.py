@@ -104,7 +104,6 @@ class BaseDispatch(ABC):
         try:
             p = Process(target=self._scraper.Download(task).run)
             p.start()
-            p.join()
         except Exception:
             logger.critical("Local download failed",
                             extra={'task': task},
