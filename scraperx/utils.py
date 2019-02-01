@@ -76,21 +76,21 @@ def get_file_from_s3(s3, bucket, key):
 
 
 def get_context_type(context):
-        """Check which Base class this is
+    """Check which Base class this is
 
-        Arguments:
-            context {class} -- Either the BaseDownload or BaseExtractor class.
+    Arguments:
+        context {class} -- Either the BaseDownload or BaseExtractor class.
 
-        Returns:
-            str -- either downloader or extractor
-        """
-        try:
-            context.download
-            context_type = 'downloader'
-        except AttributeError:
-            context_type = 'extractor'
+    Returns:
+        str -- either downloader or extractor
+    """
+    try:
+        context.download
+        context_type = 'downloader'
+    except AttributeError:
+        context_type = 'extractor'
 
-        return context_type
+    return context_type
 
 
 def get_s3_resource(context):

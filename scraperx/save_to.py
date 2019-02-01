@@ -116,7 +116,7 @@ class SaveLocal:
 
         try:
             with open(self.filename, 'w') as outfile:
-                    outfile.write(self.data.read())
+                outfile.write(self.data.read())
         except TypeError:
             self.data.seek(0)
             # raw_data is BytesIO not StringIO

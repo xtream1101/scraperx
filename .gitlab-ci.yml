@@ -8,8 +8,8 @@ stages:
 flake8:
   stage: test
   script:
-    - pip install detox
-    - detox -e flake8
+    - pip install tox
+    - tox -e flake8
 
 release-package:
   stage: release

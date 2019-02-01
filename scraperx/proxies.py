@@ -24,7 +24,7 @@ def _load_proxies():
             logger.exception("Failed to read proxy file")
 
     if not proxies:
-            logger.warning("No proxy list to choose from")
+        logger.warning("No proxy list to choose from")
 
 
 def get_proxy(country=None):
