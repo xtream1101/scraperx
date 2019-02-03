@@ -37,7 +37,7 @@ A request will retry n (3 by default) times to get a successful status code, eac
 
 ### Setting headers/proxies
 
-The ones set in the `self.get/post` will override the ones set in the `__init__`
+The ones set in the `self.get/post` will be combines with the ones set in the `__init__` and override if the key is the same.  
 
 self.get/post kwargs headers/proxy
 will override
@@ -55,7 +55,7 @@ Coming to a Readme near you...
 ## Config
 
 3 Ways of setting config values:
-- CLI Argument: Will override any other type of config value
+- CLI Argument: Will override any other type of config value. Use `-h` to see available options
 - Environment variable: Will override a config value in the yaml
 - Yaml file: Will use these values if no other way is set for a key
 
@@ -94,10 +94,10 @@ default:
 If you are using the `*file_name` template, a python `.format()` runs on this string so you can use `{key_name}` to make it dynamic. The keys you will have direct access to are the following:
     - All keys in your task that was dispatched
     - Any thing you pass into the `template_values={}` kwarg for the `.save()` fn
-    - `time_downloaded`: time (utc) passed from the downloader
-    - `date_downloaded`: date (utc) passed from the downloader
-    - `time_extracted`: time (utc) passed from the extractor
-    - `date_extracted`: date (utc) passed from the extractor
+    - `time_downloaded`: time (utc) passed from the downloader (in both the downlaoder and extractor)
+    - `date_downloaded`: date (utc) passed from the downloader (in both the downlaoder and extractor)
+    - `time_extracted`: time (utc) passed from the extractor (just in the extractor)
+    - `date_extracted`: date (utc) passed from the extractor (just in the extractor)
 
 Anything under the `default` section can also have its own value per scraper. So if we have a scraper named `search` and we want it to use a different rate limit then all the other scrapers you can do:
 ```yaml
@@ -106,4 +106,105 @@ search:
     ratelimit:
       type: period
       value: 5
+```
+
+
+
+### Sample scraper
+
+```python
+import logging
+from scraperx import (run, BaseDispatch, BaseDownload,
+                      BaseExtract, BaseExtractor)
+
+logger = logging.getLogger(__name__)
+
+
+class Dispatch(BaseDispatch):
+
+    def create_tasks(self):
+        """Gather the data that needs to be scraped
+
+        Used to create a list of dicts that contain the data to send to the downloader
+        """
+        tasks = []
+        for pg in range(1, 3):
+            # Here is where you hit your db or some other source to get the data you want
+            tasks.append({'url': f'https://example.com/search?page={pg}',
+                          'page': pg,
+                          'scraper_name': 'Test Test Test',
+                          })
+        return tasks
+
+
+class Download(BaseDownload):
+
+    def __init__(self, *args, **kwargs):
+        # ignore_codes are status codes it will not re try on
+        super().__init__(*args, **kwargs, ignore_codes=[404, 429])
+
+    def download(self):
+        # Will raise `r.raise_for_status()` If it is a failed staus code
+        # No need to catch it here unless you want to do something with it
+        request = self.get(self.task['url'])
+        # Save the data
+        file_data = request.write_file().save(self)
+
+        # TODO: Make it so the scraper is not required to return the saved files
+        return file_data
+
+
+class Extract(BaseExtract):
+
+    def extract(self, raw_source):
+        """Extracts the data
+
+        The input is the download output
+
+        Run the code that extracts the data from the source passed in
+
+        Arguments:
+            task {dict} -- the task from the download() output
+        """
+        extracted_data = SomeExtractor(self.task, raw_source)
+        extracted_data_file = extracted_data.write_json().save(self)
+
+        return extracted_data_file
+
+
+class SomeExtractor(BaseExtractor):
+
+    def __init__(self, task, raw_source):
+        super().__init__(task, raw_source)
+
+        # List of css selectors that will return the items of the page you want
+        result_selectors = ['#item-wrapper']
+        self.extract_results(result_selectors)
+
+    def extract_result(self, idx, element):
+        """Extract the contents of a single result
+
+        Arguments:
+            idx {int} - The index of the element in the list of results
+            element {Parsel object} -- Element of a single element selected by
+                                       the result_selectors in the __init__
+
+        Returns:
+            list -- List of the extracted files, currently does not do
+                    anything with them
+        """
+        data = {'rank': idx,
+                'page': self.task['page'],
+                }
+
+        # Get the title of the product
+        title_selector = '#main div.item-page-info h1::text'
+        data['title'] = element.css(title_selector).extract_first().strip()
+
+        # Return the data for a single extracted item
+        return data
+
+
+if __name__ == '__main__':
+    run(Dispatch, Download, Extract)
 ```

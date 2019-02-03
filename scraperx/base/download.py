@@ -32,7 +32,6 @@ class BaseDownload(ABC):
                            })
 
         self.manifest = {'source_files': [],
-                         'requests': [],
                          'time_downloaded': str(self.time_downloaded),
                          'date_downloaded': str(self.date_downloaded),
                          }
@@ -299,7 +298,7 @@ class BaseDownload(ABC):
 
             proxy_used = self.session.proxies.get('http')
             if 'proxy' in kwargs:
-                # Proxy is not a valid arg t pass in, so fix it
+                # Proxy is not a valid arg to pass in, so fix it
                 kwargs['proxies'] = self._format_proxy(kwargs['proxy'])
                 proxy_used = kwargs['proxies'].get('http')
                 del kwargs['proxy']
@@ -310,22 +309,6 @@ class BaseDownload(ABC):
 
             time_of_request = datetime.datetime.utcnow()
             r = self.session.request(http_method, url, **kwargs)
-
-            # Add request to manifest
-            try:
-                request_data = {'status_code': r.status_code,
-                                'url': r.url,
-                                'proxy': self.session.proxies,
-                                'headers': {'request': dict(r.request.headers),
-                                            'response': dict(r.headers)},
-                                'response_time': r.elapsed.total_seconds(),
-                                'num_tries': _try_count,
-                                }
-                self.manifest['requests'].append(request_data)
-            except Exception:
-                logger.exception("Failed to save request to manifest",
-                                 extra={'task': self.task,
-                                        'url': url})
 
             logger.info("Request finished",
                         extra={'url': r.url,
