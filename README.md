@@ -91,13 +91,13 @@ default:
       value: 1  # Required. Can be an int or a float. When using period, value is in hours
 ```
 
-If you are using the `*file_name` template, a python `.format()` runs on this string so you can use `{key_name}` to make it dynamic. The keys you will have direct access to are the following:
-    - All keys in your task that was dispatched
-    - Any thing you pass into the `template_values={}` kwarg for the `.save()` fn
-    - `time_downloaded`: time (utc) passed from the downloader (in both the downlaoder and extractor)
-    - `date_downloaded`: date (utc) passed from the downloader (in both the downlaoder and extractor)
-    - `time_extracted`: time (utc) passed from the extractor (just in the extractor)
-    - `date_extracted`: date (utc) passed from the extractor (just in the extractor)
+If you are using the `*_file_template` config, a python `.format()` runs on this string so you can use `{key_name}` to make it dynamic. The keys you will have direct access to are the following:
+  - All keys in your task that was dispatched
+  - Any thing you pass into the `template_values={}` kwarg for the `.save()` fn
+  - `time_downloaded`: time (utc) passed from the downloader (in both the downlaoder and extractor)
+  - `date_downloaded`: date (utc) passed from the downloader (in both the downlaoder and extractor)
+  - `time_extracted`: time (utc) passed from the extractor (just in the extractor)
+  - `date_extracted`: date (utc) passed from the extractor (just in the extractor)
 
 Anything under the `default` section can also have its own value per scraper. So if we have a scraper named `search` and we want it to use a different rate limit then all the other scrapers you can do:
 ```yaml
@@ -190,8 +190,7 @@ class SomeExtractor(BaseExtractor):
                                        the result_selectors in the __init__
 
         Returns:
-            list -- List of the extracted files, currently does not do
-                    anything with them
+            dict -- The data to be saved from this element
         """
         data = {'rank': idx,
                 'page': self.task['page'],

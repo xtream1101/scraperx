@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 class BaseExtractor(WriteTo, ABC):
 
-    def __init__(self, task, raw_source, auto_parse=True, page_type='html'):
-        self.task = task  # TODO: Find a way to not have to pass this around
+    def __init__(self, context, raw_source, auto_parse=True, page_type='html'):
+        self.context = context  # TODO: Find a way to not have to pass this around
         self.results = []  # Expect this data to be a list of dicts to be saved
         super().__init__(self.results)
 
@@ -72,7 +72,7 @@ class BaseExtractor(WriteTo, ABC):
                 field_value = result.get(field_name)
                 field_type = type(field_value)
                 if field_type not in data_type:
-                    extra = {'task': self.task,
+                    extra = {'task': self.context.task,
                              'field': {'value': field_name,
                                        'type': field_type,
                                        'expected_type': data_type,
