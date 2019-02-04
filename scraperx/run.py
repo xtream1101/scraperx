@@ -124,7 +124,6 @@ def run_extract(extract_cls):
 
 def run(dispatch=None, download=None, extract=None):
 
-    print("Run:", cli_args.action)
     if cli_args.action == 'validate':
         from pprint import pprint
         print("Testing the config....")

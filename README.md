@@ -81,7 +81,7 @@ default:
     file_template: test_output/{scraper_name}/{id}_source.html  # Optional, if not set then a file name must be passed in when saving
 
   dispatch:
-    limit: 5  # Default None. Max number of tasks to dispatch. Do not set to run all tasks
+    limit: 5  # Default None. Max number of tasks to dispatch. If not set, all tasks will run
     service:
       # This is where both the download and extractor services will run
       name: local  # (local, sns) Default: local
@@ -101,6 +101,7 @@ If you are using the `*_file_template` config, a python `.format()` runs on this
 
 Anything under the `default` section can also have its own value per scraper. So if we have a scraper named `search` and we want it to use a different rate limit then all the other scrapers you can do:
 ```yaml
+# Name of the python file
 search:
   dispatch:
     ratelimit:
@@ -207,3 +208,10 @@ class SomeExtractor(BaseExtractor):
 if __name__ == '__main__':
     run(Dispatch, Download, Extract)
 ```
+
+
+
+
+### Gettings stats from the logs
+
+If running locally, then all the logs should in a local file with the name of the scraper.

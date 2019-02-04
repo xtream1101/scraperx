@@ -47,6 +47,7 @@ dispatch_download_parser.add_argument('--tasks',
 ###
 parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers(dest='action')
+subparsers.required = True
 
 ###
 # Validate Config

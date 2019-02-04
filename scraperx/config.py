@@ -3,7 +3,7 @@ import sys
 import yaml
 import logging
 from .arguments import cli_args
-
+from . import BASE_DIR, SCRAPER_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +30,6 @@ def _try_make_float(value):
 
     return value
 
-
-# TODO: Does the base_dir need to be in $PATH for the
-#       scraper to import local files to it?
-# Test by running the scraper from an outside dir with local imports
-BASE_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
-SCRAPER_NAME = os.path.basename(sys.argv[0]).rsplit('.', 1)[0]
 
 # All config keys must be UPPERCASE
 _CONFIG_STRUCTURE = {

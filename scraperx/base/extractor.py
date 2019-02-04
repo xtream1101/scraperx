@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class BaseExtractor(WriteTo, ABC):
 
     def __init__(self, context, raw_source, auto_parse=True, page_type='html'):
-        self.context = context  # TODO: Find a way to not have to pass this around
+        self.context = context  # TODO: Find a way to not pass this around
         self.results = []  # Expect this data to be a list of dicts to be saved
         super().__init__(self.results)
 
