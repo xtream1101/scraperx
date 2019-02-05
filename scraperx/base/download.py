@@ -138,6 +138,8 @@ class BaseDownload(ABC):
         logger.debug(msg, extra={'run_task_on': config['DISPATCH_SERVICE_NAME'],
                                  'task': self.task})
 
+        self._save_metadata()
+
         if not standalone:
             try:
                 self._scraper.Extract
@@ -155,6 +157,18 @@ class BaseDownload(ABC):
                     crit_msg = (f"{config['DISPATCH_SERVICE_NAME']}"
                                 "is not supported")
                     logger.critical(crit_msg, extra={'task': self.task})
+
+    def _save_metadata(self):
+        """Save the metadata with the download source
+
+        Saves a file as the same name as the source with '.metadata.json'
+        appended to the name
+        """
+        metadata = self._get_metadata()
+        metadata_file = WriteTo(metadata).write_json()
+        filename = metadata['download_manifest']['source_files'][0]['path']
+        logger.info("Saving metadata file", extra={'task': self.task})
+        metadata_file.save(self, filename=filename + '.metadata.json')
 
     def _get_metadata(self):
         """Create the metadata dict
@@ -271,13 +285,13 @@ class BaseDownload(ABC):
         Makes it simpler to use
         """
         # Create http methods
-        self.get = self._set_http_method('GET')
-        self.post = self._set_http_method('POST')
+        self.request_get = self._set_http_method('GET')
+        self.request_post = self._set_http_method('POST')
         # Not sure if these are needed, but it doesn't hurt to have them
-        self.head = self._set_http_method('HEAD')
-        self.put = self._set_http_method('PUT')
-        self.patch = self._set_http_method('PATCH')
-        self.delete = self._set_http_method('DELETE')
+        self.request_head = self._set_http_method('HEAD')
+        self.request_put = self._set_http_method('PUT')
+        self.request_patch = self._set_http_method('PATCH')
+        self.request_delete = self._set_http_method('DELETE')
 
     def _set_http_method(self, http_method):
         """Closure for creating the http method functions

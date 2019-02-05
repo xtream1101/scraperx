@@ -2,6 +2,7 @@ import os
 import pathlib
 import logging
 
+from . import SCRAPER_NAME
 from .config import config
 from .utils import get_s3_resource, get_context_type
 
@@ -31,19 +32,19 @@ class SaveTo:
             str -- The filename with the template values filled in
         """
         context_type = get_context_type(context)
-        additional_args = {}
+        additional_args = {'scraper_name': SCRAPER_NAME}
         if context_type == 'extractor':
             time_downloaded = context.download_manifest['time_downloaded']
             date_downloaded = context.download_manifest['date_downloaded']
-            additional_args = {'time_extracted': context.time_extracted,
-                               'date_extracted': context.date_extracted,
-                               'time_downloaded': time_downloaded,
-                               'date_downloaded': date_downloaded,
-                               }
+            additional_args.update({'time_extracted': context.time_extracted,
+                                    'date_extracted': context.date_extracted,
+                                    'time_downloaded': time_downloaded,
+                                    'date_downloaded': date_downloaded,
+                                    })
         elif context_type == 'downloader':
-            additional_args = {'time_downloaded': context.time_downloaded,
-                               'date_downloaded': context.date_downloaded,
-                               }
+            additional_args.update({'time_downloaded': context.time_downloaded,
+                                    'date_downloaded': context.date_downloaded,
+                                    })
 
         if not name_template:
             name_template = config[f'{context_type}_FILE_TEMPLATE']

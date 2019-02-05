@@ -1,0 +1,39 @@
+# If the scraper does not have a custom setting, use the default
+# Any value in the default section can also be set in a specific scraper as well
+default:
+  dispatch:
+    service:
+      type: local
+    ratelimit:
+      type: qps
+      value: 1
+
+  downloader:
+    save_data:
+      service: local
+    file_template: "source/source.html"
+
+  extractor:
+    save_data:
+      service: local
+    file_template: "extracted/extracted.json"
+
+# Custom per scraper
+minimal:
+  downloader:
+    file_template: "source/{scraper_name}/minimal.html"
+  extractor:
+    file_template: "extracted/{scraper_name}/minimal.json"
+
+multiple_extractors:
+  downloader:
+    file_template: "source/{scraper_name}/multiple_extractors.html"
+  extractor:
+    file_template: "extracted/{scraper_name}/multi_test_{extractor_name}.json"
+
+
+json_source:
+  downloader:
+    file_template: "source/{scraper_name}/json_source.json"
+  extractor:
+    file_template: "extracted/{scraper_name}/json_source_data.json"

@@ -16,13 +16,13 @@ class BaseDispatch(ABC):
     def __init__(self, tasks=None):
         self._scraper = inspect.getmodule(self)
 
-        if tasks:
-            # Make sure tasks is a list and not just a single task
-            if not isinstance(tasks, (list, tuple)):
-                tasks = [tasks]
-            self.tasks = tasks
-        else:
-            self.tasks = self.create_tasks()
+        if not tasks:
+            tasks = self.create_tasks()
+
+        # Make sure tasks is a list and not just a single task
+        if not isinstance(tasks, (list, tuple)):
+            tasks = [tasks]
+        self.tasks = tasks
 
         if config['DISPATCH_LIMIT']:
             self.tasks = self.tasks[:config['DISPATCH_LIMIT']]
