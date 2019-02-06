@@ -37,3 +37,9 @@ json_source:
     file_template: "source/{scraper_name}/json_source.json"
   extractor:
     file_template: "extracted/{scraper_name}/json_source_data.json"
+
+qa_results:
+  downloader:
+    file_template: "source/{scraper_name}/qa_source.json"
+  extractor:
+    file_template: "extracted/{scraper_name}/qa_data.json"

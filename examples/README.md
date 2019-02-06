@@ -24,6 +24,12 @@ use extractor_name is saving of the data
 `json_source.py`  
 Downlaod and parse a json file
 
+
+### QA results
+`qa_results.py`  
+Set rules around each field and during extraction the check will make sure the extracted data complies with the rules. If not then the extraction fails and no data is saved. The reason is logged as an error.
+
+
 --------------------------------------------------------------------------------
 
 ### Example
@@ -33,11 +39,6 @@ use template_vars in saving of source
 ### Example
 trigger to download again from info that was extracted (think best sellers)  
 TODO: first refactor the triggering code
-
-
-### Example
-have extracted data qa'd
-
 
 ### Example
 save extracted data as parquet

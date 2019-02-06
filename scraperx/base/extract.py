@@ -4,7 +4,7 @@ from parsel import Selector
 from abc import ABC, abstractmethod
 
 from ..write_to import WriteTo
-from ..utils import get_file_from_s3, get_s3_resource
+from ..utils import get_file_from_s3, get_s3_resource, QAValueError
 
 logger = logging.getLogger(__name__)
 
@@ -71,28 +71,90 @@ class BaseExtract(ABC):
                     # source is already a list
                     source_items = extract_source
 
-                output = []
-                # Used when you want to start at a different number
-                offset = extraction_task.get('idx_offset', 0)
-                for idx, item in enumerate(source_items, start=offset):
-                    output.append(extraction_task['callback'](item, idx))
+                try:
+                    output = []
+                    # Used when you want to start at a different number
+                    offset = extraction_task.get('idx_offset', 0)
+                    for idx, item in enumerate(source_items, start=offset):
+                        result = extraction_task['callback'](item, idx)
+                        # QA Result
+                        # TODO: Should the QA cast to the types?
+                        #       Or just make sure it is that type
+                        self._qa_result(idx, extraction_task.get('qa'), result)
+                        output.append(result)
 
-                # Save the data
-                tv = extraction_task.get('file_name_vars', {})
-                tv.update({'extractor_name': extraction_task.get('name', '')})
-                save_as = extraction_task.get('save_as', 'json')
+                except QAValueError as e:
+                    logger.error(f"Extraction Failed: {e}",
+                                 extra={'task': self.task})
+                except Exception:
+                    logger.exception("Extraction Failed")
 
-                if save_as == 'json':
-                    WriteTo(output).write_json().save(self, template_values=tv)
                 else:
-                    logger.error(f"Can not save in the format `{save_as}`",
-                                 extra={'task': self.task,
-                                        })
+                    # Save the data if the extraction was successful
+                    tv = extraction_task.get('file_name_vars', {})
+                    tv.update({'extractor_name': extraction_task.get('name', '')})
+                    save_as = extraction_task.get('save_as', 'json')
+
+                    if save_as == 'json':
+                        WriteTo(output).write_json().save(self, template_values=tv)
+                    else:
+                        logger.error(f"Can not save in the format `{save_as}`",
+                                     extra={'task': self.task,
+                                            })
 
         logger.info('Extract finished',
                     extra={'task': self.task,
                            'time_finished': str(datetime.datetime.utcnow()),
                            })
+
+    def _qa_result(self, idx, qa_rules, result):
+        if not qa_rules:
+            return
+
+        for qa_field, qa_rule in qa_rules.items():
+            # Check required
+            if result[qa_field] is None:
+                if qa_rule.get('required', False) is True:
+                    raise QAValueError((f"Field {qa_field} is required"
+                                        f" at result {idx}"))
+                else:
+                    # It is None and is allowed to be, so move on
+                    continue
+
+            # value_type_name also used in length check except
+            value_type_name = type(result[qa_field]).__name__
+
+            # Check Type
+            if (qa_rule.get('type')
+               and not isinstance(result[qa_field], qa_rule['type'])):
+                err_msg = (f"Type of {qa_field} is {value_type_name}."
+                           f" Expected to be of type {qa_rule['type'].__name__}"
+                           f" at result {idx}")
+                raise QAValueError(err_msg)
+
+            # Check length
+            try:
+                if qa_rule.get('max_length') is not None:
+                    if len(result[qa_field]) > qa_rule['max_length']:
+                        raise QAValueError((f"Field {qa_field} is longer then"
+                                            f" {qa_rule['max_length']}"
+                                            f" at result {idx}"))
+                if qa_rule.get('min_length') is not None:
+                    if len(result[qa_field]) < qa_rule['min_length']:
+                        raise QAValueError((f"Field {qa_field} is shorter then"
+                                            f" {qa_rule['min_length']}"
+                                            f" at result {idx}"))
+
+            except TypeError:
+                # This type of value does not support length
+                logger.warning((f"The field {qa_field} of type"
+                                f" {value_type_name} does not support"
+                                " the length check"),
+                               extra={'task': self.task})
+
+    def _validate_qa_rules(self, qa_rules):
+        # TODO: Validate for each extraction_task in run()
+        pass
 
     def _validate_extraction_task(self, extraction_task):
         """Validate the key/values in the extraction task
