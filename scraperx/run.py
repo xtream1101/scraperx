@@ -105,14 +105,15 @@ def run_extract(extract_cls):
         extract_cls {class} -- Class of the extract action from the scraper
     """
     if os.path.isdir(cli_args.source):
-        # source_dir = os.fsencode(cli_args.source)
-        # for file in os.listdir(source_dir):
-
-        # extractor = cli_args.scraper.Extract(task, cli_args=args)
-        # extractor.run()
-        pass
+        metadata_files = []
+        for file in os.listdir(os.fsencode(cli_args.source)):
+            filename = os.fsdecode(file)
+            if filename.endswith('.metadata.json'):
+                metadata_files.append(os.path.join(cli_args.source, filename))
     else:
-        metadata_file = f"{cli_args.source}.metadata.json"
+        metadata_files = [f"{cli_args.source}.metadata.json"]
+
+    for metadata_file in metadata_files:
         metadata = {}
         with open(metadata_file) as f:
             metadata = json.load(f)
