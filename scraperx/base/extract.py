@@ -92,11 +92,12 @@ class BaseExtract(ABC):
                 else:
                     # Save the data if the extraction was successful
                     tv = extraction_task.get('file_name_vars', {})
-                    tv.update({'extractor_name': extraction_task.get('name', '')})
+                    tv['extractor_name'] = extraction_task.get('name', '')
                     save_as = extraction_task.get('save_as', 'json')
 
                     if save_as == 'json':
-                        WriteTo(output).write_json().save(self, template_values=tv)
+                        WriteTo(output).write_json()\
+                                       .save(self, template_values=tv)
                     else:
                         logger.error(f"Can not save in the format `{save_as}`",
                                      extra={'task': self.task,
