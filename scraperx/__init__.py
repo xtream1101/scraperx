@@ -64,6 +64,5 @@ from .config import config  # noqa: F401, F402
 from .run import run  # noqa: F401, F402
 
 from .base.dispatch import BaseDispatch  # noqa: F401
-from .base.extract import BaseExtract  # noqa: F401
-from .base.extractor import BaseExtractor  # noqa: F401
 from .base.download import BaseDownload  # noqa: F401
+from .base.extract import BaseExtract  # noqa: F401
