@@ -4,7 +4,7 @@ import inspect
 import logging
 from abc import ABC, abstractmethod
 
-from ..config import config, SCRAPER_NAME
+from .. import config, SCRAPER_NAME
 from ..utils import (rate_limited, threads,
                      rate_limit_from_period)
 
@@ -60,11 +60,11 @@ class BaseDispatch(ABC):
     def dispatch(self):
         """Spin up the threads to send the tasks in
         """
-        logger.debug('Dispatch',
-                     extra={'qps': self.qps,
-                            'scraper': SCRAPER_NAME,
-                            'dispatch_service': config['DISPATCH_SERVICE_NAME'],
-                            'num_tasks': len(self.tasks)})
+        logger.info(f'Dispatch {len(self.tasks)} tasks for {SCRAPER_NAME}',
+                    extra={'qps': self.qps,
+                           'scraper': SCRAPER_NAME,
+                           'dispatch_service': config['DISPATCH_SERVICE_NAME'],
+                           'num_tasks': len(self.tasks)})
         # Have 3 times the numbers of threads so a task will not bottleneck
         num_threads = math.ceil(self.qps * 3)
         threads(num_threads,
@@ -80,7 +80,8 @@ class BaseDispatch(ABC):
         msg = "Dummy Trigger" if config['STANDALONE'] else "Trigger download"
         logger.info(msg,
                     extra={'dispatch_service': config['DISPATCH_SERVICE_NAME'],
-                           'task': task})
+                           'task': task,
+                           'scraper_name': SCRAPER_NAME})
 
         if not config['STANDALONE']:
             if config['DISPATCH_SERVICE_NAME'] == 'local':
@@ -92,7 +93,7 @@ class BaseDispatch(ABC):
             else:
                 logger.error((f"The {config['DISPATCH_SERVICE_NAME']}"
                               "is not setup"),
-                             extra={'task': task})
+                             extra={'task': task, 'scraper_name': SCRAPER_NAME})
 
     def _dispatch_locally(self, task):
         """Send the task directly to the download class
@@ -106,7 +107,7 @@ class BaseDispatch(ABC):
             p.start()
         except Exception:
             logger.critical("Local download failed",
-                            extra={'task': task},
+                            extra={'task': task, 'scraper_name': SCRAPER_NAME},
                             exc_info=True)
 
     def _dispatch_sns(self, task):
@@ -120,7 +121,7 @@ class BaseDispatch(ABC):
             client = boto3.client('sns')
             target_arn = config['DISPATCH_SERVICE_SNS_ARN']
             message = {'task': task,
-                       'scraper': SCRAPER_NAME}
+                       'scraper_name': SCRAPER_NAME}
             if target_arn is not None:
                 sns_message = json.dumps({'default': json.dumps(message)})
                 response = client.publish(TargetArn=target_arn,
@@ -128,11 +129,14 @@ class BaseDispatch(ABC):
                                           MessageStructure='json'
                                           )
                 logger.debug(f"SNS Response: {response}",
-                             extra={'task': task})
+                             extra={'task': task,
+                                    'scraper_name': SCRAPER_NAME})
             else:
                 logger.error("Must configure sns_arn if using sns",
-                             extra={'task': task})
+                             extra={'task': task,
+                                    'scraper_name': SCRAPER_NAME})
         except Exception:
             logger.critical("Failed to dispatch sns downloader",
-                            extra={'task': task},
+                            extra={'task': task,
+                                   'scraper_name': SCRAPER_NAME},
                             exc_info=True)

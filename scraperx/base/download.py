@@ -5,7 +5,7 @@ import datetime
 import requests
 from abc import ABC, abstractmethod
 
-from ..config import config, SCRAPER_NAME
+from .. import config, SCRAPER_NAME
 from ..write_to import WriteTo
 from ..save_to import SaveTo
 from ..proxies import get_proxy
@@ -28,6 +28,7 @@ class BaseDownload(ABC):
 
         logger.info("Start Download",
                     extra={'task': self.task,
+                           'scraper_name': SCRAPER_NAME,
                            'time_started': str(self.time_downloaded),
                            })
 
@@ -109,7 +110,8 @@ class BaseDownload(ABC):
             pass
         except Exception:
             logger.exception("Download Exception",
-                             extra={'task': self.task})
+                             extra={'task': self.task,
+                                    'scraper_name': SCRAPER_NAME})
         else:
             if source_files:
                 self._run_success(source_files, standalone)
@@ -117,11 +119,13 @@ class BaseDownload(ABC):
                 # If it got here and there is not saved file then thats an issue
                 logger.error("No source file saved",
                              extra={'task': self.task,
+                                    'scraper_name': SCRAPER_NAME,
                                     'manifest': self.manifest,
                                     })
 
         logger.info('Download finished',
                     extra={'task': self.task,
+                           'scraper_name': SCRAPER_NAME,
                            'time_finished': str(datetime.datetime.utcnow()),
                            })
 
@@ -135,8 +139,9 @@ class BaseDownload(ABC):
             standalone {bool} -- Do not trigger the extractor if True
         """
         msg = "Dummy Trigger extract" if standalone else "Trigger extract"
-        logger.debug(msg, extra={'run_task_on': config['DISPATCH_SERVICE_NAME'],
-                                 'task': self.task})
+        logger.info(msg, extra={'run_task_on': config['DISPATCH_SERVICE_NAME'],
+                                'task': self.task,
+                                'scraper_name': SCRAPER_NAME})
 
         self._save_metadata()
 
@@ -145,7 +150,8 @@ class BaseDownload(ABC):
                 self._scraper.Extract
             except AttributeError:
                 logger.info("Scraper has no extract",
-                            extra={'task': self.task})
+                            extra={'task': self.task,
+                                   'scraper_name': SCRAPER_NAME})
             else:
                 if config['DISPATCH_SERVICE_NAME'] == 'local':
                     self._dispatch_locally(self.manifest)
@@ -156,7 +162,9 @@ class BaseDownload(ABC):
                 else:
                     crit_msg = (f"{config['DISPATCH_SERVICE_NAME']}"
                                 "is not supported")
-                    logger.critical(crit_msg, extra={'task': self.task})
+                    logger.critical(crit_msg,
+                                    extra={'task': self.task,
+                                           'scraper_name': SCRAPER_NAME})
 
     def _save_metadata(self):
         """Save the metadata with the download source
@@ -167,7 +175,9 @@ class BaseDownload(ABC):
         metadata = self._get_metadata()
         metadata_file = WriteTo(metadata).write_json()
         filename = metadata['download_manifest']['source_files'][0]['path']
-        logger.info("Saving metadata file", extra={'task': self.task})
+        logger.info("Saving metadata file",
+                    extra={'task': self.task,
+                           'scraper_name': SCRAPER_NAME})
         metadata_file.save(self, filename=filename + '.metadata.json')
 
     def _get_metadata(self):
@@ -203,13 +213,16 @@ class BaseDownload(ABC):
                                           MessageStructure='json'
                                           )
                 logger.debug(f"SNS Response: {response}",
-                             extra={'task': self.task})
+                             extra={'task': self.task,
+                                    'scraper_name': SCRAPER_NAME})
             else:
                 logger.error("Must configure sns_arn when running in lambda",
-                             extra={'task': self.task})
+                             extra={'task': self.task,
+                                    'scraper_name': SCRAPER_NAME})
         except Exception:
             logger.critical("Failed to dispatch lambda extractor",
-                            extra={'task': self.task},
+                            extra={'task': self.task,
+                                   'scraper_name': SCRAPER_NAME},
                             exc_info=True)
 
     def _dispatch_locally(self, download_manifest):
@@ -225,7 +238,8 @@ class BaseDownload(ABC):
             p.start()
         except Exception:
             logger.critical("Local extract failed",
-                            extra={'task': self.task},
+                            extra={'task': self.task,
+                                   'scraper_name': SCRAPER_NAME},
                             exc_info=True)
 
     def _format_proxy(self, proxy):
@@ -237,7 +251,9 @@ class BaseDownload(ABC):
         Returns:
             dict -- Format that requests wants proxies in
         """
-        logger.debug(f"Setting proxy {proxy}", extra={'task': self.task})
+        logger.debug(f"Setting proxy {proxy}",
+                     extra={'task': self.task,
+                            'scraper_name': SCRAPER_NAME})
         if isinstance(proxy, dict) and 'http' in proxy and 'https' in proxy:
             # Nothing more to do
             return proxy
@@ -335,6 +351,7 @@ class BaseDownload(ABC):
                                'num_tries': _try_count,
                                'max_tries': max_tries,
                                'task': self.task,
+                               'scraper_name': SCRAPER_NAME,
                                'proxy': proxy_used})
 
             if r.status_code != requests.codes.ok:
@@ -367,7 +384,9 @@ class BaseDownload(ABC):
             ua = self._get_user_agent(device_type)
             self.session.headers.update({'user-agent': ua})
         except ValueError:
-            logger.error("Invalid device type {device_type} for UA")
+            logger.error("Invalid device type {device_type} for UA",
+                         extra={'task': self.task,
+                                'scraper_name': SCRAPER_NAME})
 
     def new_profile(self, **kwargs):
         """Set a new user agent and proxy to be used for the request

@@ -2,8 +2,7 @@ import os
 import pathlib
 import logging
 
-from . import SCRAPER_NAME
-from .config import config
+from . import config, SCRAPER_NAME
 from .utils import get_s3_resource, get_context_type
 
 logger = logging.getLogger(__name__)
@@ -97,8 +96,10 @@ class SaveTo:
             logger.error(f"Not configured to save to {save_service}")
             saved_file = None
 
-        logger.info("Saved file", extra={'task': context.task,
-                                         'file': saved_file})
+        logger.info(f"Saved file: {saved_file}",
+                    extra={'task': context.task,
+                           'scraper_name': SCRAPER_NAME,
+                           'file': saved_file})
         return saved_file
 
     def save_local(self, filename):
