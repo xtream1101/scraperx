@@ -1,3 +1,5 @@
+*.json
+*.html
 dist/*
 *.egg-info
 __pycache__*
