@@ -1,7 +1,15 @@
 # ScraperX  SDK
 
-Docs are a WIP.  
-Right now its just me (eddy) jotting down some notes, will re-format and clean up later.
+
+### Getting Started
+
+1. Create a new directory where the scraper will live and add the following files:
+    - A config file: `config.yaml` [(Example)](./exmaples/config.yaml)
+    - The scraper file: `your_scraper.py` [(Example)](./exmaples/minimal.py)
+1. Next install this library from pypi: `pip install scraperx`
+1. Run the full scraper by running `python your_scraper.py dispatch`
+    - To see the arguments for the command: `python your_scraper.py dispatch -h`
+    - See all the commands available: `python your_scraper.py -h`
 
 
 ## Dispatching
@@ -113,9 +121,3 @@ search:
 
 ### Sample scrapers
 Samle scrapers can be found in the [examples](./examples) folder of this repo
-
-
-
-### Gettings stats from the logs
-
-If running locally, then all the logs should in a local file with the name of the scraper.
