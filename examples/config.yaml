@@ -43,3 +43,10 @@ qa_results:
     file_template: "source/{scraper_name}/qa_source.json"
   extractor:
     file_template: "extracted/{scraper_name}/qa_data.json"
+
+
+multiple_sources:
+  downloader:
+    file_template: "source/{scraper_name}/multiple_sources_{source_name}.json"
+  extractor:
+    file_template: "extracted/{scraper_name}/multiple_sources.json"

@@ -7,15 +7,16 @@ from abc import ABC, abstractmethod
 from .. import config, SCRAPER_NAME
 from ..utils import (rate_limited, threads,
                      rate_limit_from_period)
+from ..trigger import run_task
 
 logger = logging.getLogger(__name__)
 
 
 class BaseDispatch(ABC):
 
-    def __init__(self, tasks=None):
+    def __init__(self, tasks=None, download_cls=None):
         self._scraper = inspect.getmodule(self)
-
+        self.download_cls = download_cls
         if not tasks:
             tasks = self.create_tasks()
 
@@ -74,69 +75,10 @@ class BaseDispatch(ABC):
     def submit_task(self, task):
         """Send a single task off to be downloaded
 
+        Call this and not run_task directly since this function has the
+        rate limit applied to it
+
         Arguments:
             task {dict} -- Single task to send to the downloader
         """
-        msg = "Dummy Trigger" if config['STANDALONE'] else "Trigger download"
-        logger.info(msg,
-                    extra={'dispatch_service': config['DISPATCH_SERVICE_NAME'],
-                           'task': task,
-                           'scraper_name': SCRAPER_NAME})
-
-        if not config['STANDALONE']:
-            if config['DISPATCH_SERVICE_NAME'] == 'local':
-                self._dispatch_locally(task)
-
-            elif config['DISPATCH_SERVICE_NAME'] == 'sns':
-                self._dispatch_sns(task)
-
-            else:
-                logger.error((f"The {config['DISPATCH_SERVICE_NAME']}"
-                              "is not setup"),
-                             extra={'task': task, 'scraper_name': SCRAPER_NAME})
-
-    def _dispatch_locally(self, task):
-        """Send the task directly to the download class
-
-        Arguments:
-            task {dict} -- Single task to be run
-        """
-        from multiprocessing import Process
-        try:
-            p = Process(target=self._scraper.Download(task).run)
-            p.start()
-        except Exception:
-            logger.critical("Local download failed",
-                            extra={'task': task, 'scraper_name': SCRAPER_NAME},
-                            exc_info=True)
-
-    def _dispatch_sns(self, task):
-        """Send the task to a lambda via an SNS Topic
-
-        Arguments:
-            task {dict} -- Single task to be run
-        """
-        try:
-            import boto3
-            client = boto3.client('sns')
-            target_arn = config['DISPATCH_SERVICE_SNS_ARN']
-            message = {'task': task,
-                       'scraper_name': SCRAPER_NAME}
-            if target_arn is not None:
-                sns_message = json.dumps({'default': json.dumps(message)})
-                response = client.publish(TargetArn=target_arn,
-                                          Message=sns_message,
-                                          MessageStructure='json'
-                                          )
-                logger.debug(f"SNS Response: {response}",
-                             extra={'task': task,
-                                    'scraper_name': SCRAPER_NAME})
-            else:
-                logger.error("Must configure sns_arn if using sns",
-                             extra={'task': task,
-                                    'scraper_name': SCRAPER_NAME})
-        except Exception:
-            logger.critical("Failed to dispatch sns downloader",
-                            extra={'task': task,
-                                   'scraper_name': SCRAPER_NAME},
-                            exc_info=True)
+        run_task(task)

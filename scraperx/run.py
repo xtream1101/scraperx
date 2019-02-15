@@ -10,8 +10,11 @@ from .config import config, SCRAPER_NAME
 
 logger = logging.getLogger(__name__)
 
+dispatch_cls = None
+download_cls = None
+extract_cls = None
 
-def run_test(extract_cls):
+def run_test():
     # TODO: Loop over test dir for scraper and extract
     #       compare the json files using code from centrifuge
     #       delete the test file after the chekc runs
@@ -64,7 +67,7 @@ def run_test(extract_cls):
         os.remove(test_file)
 
 
-def run_dispatch(dispatch_cls):
+def run_dispatch():
     """Kick off the dispatcher for the scraper
 
     Arguments:
@@ -74,8 +77,7 @@ def run_dispatch(dispatch_cls):
     if cli_args.tasks:
         tasks = cli_args.tasks
 
-    # If a limit is set, the dispatcher init will handle it
-    dispatcher = dispatch_cls(tasks=tasks)
+    dispatcher = dispatch_cls(tasks=tasks, download_cls=download_cls)
     if cli_args.dump_tasks:
         # Dump data to local json file
         task_file = WriteTo(dispatcher.tasks).write_json()\
@@ -87,7 +89,7 @@ def run_dispatch(dispatch_cls):
     dispatcher.dispatch()
 
 
-def run_download(download_cls):
+def run_download():
     """Kick off the downloader for the scraper
 
     Arguments:
@@ -98,7 +100,7 @@ def run_download(download_cls):
         downloader.run()
 
 
-def run_extract(extract_cls):
+def run_extract():
     """Kick off the extractor for the scraper
 
     Arguments:
@@ -124,6 +126,11 @@ def run_extract(extract_cls):
 
 
 def run(dispatch=None, download=None, extract=None):
+    global dispatch_cls, download_cls, extract_cls
+
+    dispatch_cls = dispatch
+    download_cls = download
+    extract_cls = extract
 
     if cli_args.action == 'validate':
         from pprint import pprint
@@ -131,13 +138,13 @@ def run(dispatch=None, download=None, extract=None):
         pprint(config.values)
 
     elif cli_args.action == 'test':
-        run_test(extract)
+        run_test()
 
     elif cli_args.action == 'dispatch':
-        run_dispatch(dispatch)
+        run_dispatch()
 
     elif cli_args.action == 'download':
-        run_download(download)
+        run_download()
 
     elif cli_args.action == 'extract':
-        run_extract(extract)
+        run_extract()

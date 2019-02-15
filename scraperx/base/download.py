@@ -1,15 +1,15 @@
-import json
 import inspect
 import logging
 import datetime
 import requests
 from abc import ABC, abstractmethod
 
-from .. import config, SCRAPER_NAME
+from .. import SCRAPER_NAME
 from ..write_to import WriteTo
 from ..save_to import SaveTo
 from ..proxies import get_proxy
 from ..user_agent import get_user_agent
+from ..trigger import run_task
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +114,9 @@ class BaseDownload(ABC):
                                     'scraper_name': SCRAPER_NAME})
         else:
             if source_files:
-                self._run_success(source_files, standalone)
+                self._save_metadata()
+                run_task(self.task, download_manifest=self.manifest)
+                # self._run_success(source_files, standalone)
             else:
                 # If it got here and there is not saved file then thats an issue
                 logger.error("No source file saved",
@@ -128,43 +130,6 @@ class BaseDownload(ABC):
                            'scraper_name': SCRAPER_NAME,
                            'time_finished': str(datetime.datetime.utcnow()),
                            })
-
-    def _run_success(self, source_files, standalone):
-        """Download was successful
-
-        Save the metadata and dispatch the extractor
-
-        Arguments:
-            source_files {list} -- The paths of the downloaded files
-            standalone {bool} -- Do not trigger the extractor if True
-        """
-        msg = "Dummy Trigger extract" if standalone else "Trigger extract"
-        logger.info(msg, extra={'run_task_on': config['DISPATCH_SERVICE_NAME'],
-                                'task': self.task,
-                                'scraper_name': SCRAPER_NAME})
-
-        self._save_metadata()
-
-        if not standalone:
-            try:
-                self._scraper.Extract
-            except AttributeError:
-                logger.info("Scraper has no extract",
-                            extra={'task': self.task,
-                                   'scraper_name': SCRAPER_NAME})
-            else:
-                if config['DISPATCH_SERVICE_NAME'] == 'local':
-                    self._dispatch_locally(self.manifest)
-
-                elif config['DISPATCH_SERVICE_NAME'] == 'lambda':
-                    self._dispatch_lambda(self.manifest)
-
-                else:
-                    crit_msg = (f"{config['DISPATCH_SERVICE_NAME']}"
-                                "is not supported")
-                    logger.critical(crit_msg,
-                                    extra={'task': self.task,
-                                           'scraper_name': SCRAPER_NAME})
 
     def _save_metadata(self):
         """Save the metadata with the download source
@@ -194,53 +159,6 @@ class BaseDownload(ABC):
                     'download_manifest': self.manifest,
                     }
         return metadata
-
-    def _dispatch_lambda(self, download_manifest):
-        """Send the task to a lambda via an SNS Topic
-
-        Arguments:
-            download_manifest {dict} -- The downloads manifest
-        """
-        try:
-            import boto3
-            client = boto3.client('sns')
-            target_arn = config['DISPATCH_SERVICE_SNS_ARN']
-            message = self._get_metadata(download_manifest)
-            if target_arn is not None:
-                sns_message = json.dumps({'default': json.dumps(message)})
-                response = client.publish(TargetArn=target_arn,
-                                          Message=sns_message,
-                                          MessageStructure='json'
-                                          )
-                logger.debug(f"SNS Response: {response}",
-                             extra={'task': self.task,
-                                    'scraper_name': SCRAPER_NAME})
-            else:
-                logger.error("Must configure sns_arn when running in lambda",
-                             extra={'task': self.task,
-                                    'scraper_name': SCRAPER_NAME})
-        except Exception:
-            logger.critical("Failed to dispatch lambda extractor",
-                            extra={'task': self.task,
-                                   'scraper_name': SCRAPER_NAME},
-                            exc_info=True)
-
-    def _dispatch_locally(self, download_manifest):
-        """Send the task directly to the download class
-
-        Arguments:
-            download_manifest {dict} -- The downloads manifest
-        """
-        from multiprocessing import Process
-        try:
-            p = Process(target=self._scraper.Extract(self.task,
-                                                     download_manifest).run)
-            p.start()
-        except Exception:
-            logger.critical("Local extract failed",
-                            extra={'task': self.task,
-                                   'scraper_name': SCRAPER_NAME},
-                            exc_info=True)
 
     def _format_proxy(self, proxy):
         """Convert the proxy string into a dict the way requests likes it
