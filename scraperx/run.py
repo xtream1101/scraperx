@@ -14,6 +14,7 @@ dispatch_cls = None
 download_cls = None
 extract_cls = None
 
+
 def run_test():
     # TODO: Loop over test dir for scraper and extract
     #       compare the json files using code from centrifuge
