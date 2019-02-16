@@ -33,7 +33,6 @@ logging.config.dictConfig({
             'formatter': 'json',
             'filename': f'./scraperx_{SCRAPER_NAME}_logs.jsonl',
             'mode': 'a',
-            'maxBytes': 10485760,
             'backupCount': 5,
         },
     },
