@@ -42,7 +42,7 @@ class WriteTo:
                       content_type='application/json',
                       file_ext='json')
 
-    def write_json_line(self, json_args=None):
+    def write_json_lines(self, json_args=None):
         """Write json data to a StringIO object
 
         Returns:
