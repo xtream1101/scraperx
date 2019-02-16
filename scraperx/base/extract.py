@@ -103,6 +103,9 @@ class BaseExtract(ABC):
                     if save_as == 'json':
                         WriteTo(output).write_json()\
                                        .save(self, template_values=tv)
+                    elif save_as == 'jsonl':
+                        WriteTo(output).write_json_line()\
+                                       .save(self, template_values=tv)
                     else:
                         logger.error(f"Can not save in the format `{save_as}`",
                                      extra={'task': self.task,

@@ -28,8 +28,8 @@ class WriteTo:
                          }
 
         if isinstance(self.data, str):
-            # Convert raw string to dict to be saved as json
-            json_data = json.loads(self.data)
+            # Convert raw string into a list to be saved as json
+            json_data = [self.data]
         else:
             json_data = self.data
 
@@ -41,6 +41,35 @@ class WriteTo:
         return SaveTo(output_io,
                       content_type='application/json',
                       file_ext='json')
+
+    def write_json_line(self, json_args=None):
+        """Write json data to a StringIO object
+
+        Returns:
+            StringIO -- The data in a json format
+        """
+        if json_args is None:
+            json_args = {'sort_keys': True,
+                         'ensure_ascii': False,
+                         }
+
+        if isinstance(self.data, str):
+            # Convert raw string into a list to be saved as json
+            json_data = [self.data]
+        else:
+            json_data = self.data
+
+        # TODO: Convert all non json types into strings.
+
+        output_io = io.StringIO()
+        for row in json_data:
+            json.dump(row, output_io, **json_args)
+            output_io.write('\n')
+
+        output_io.seek(0)
+        return SaveTo(output_io,
+                      content_type='application/json',
+                      file_ext='jsonl')
 
     def write_file(self, content_type='text/html'):
         """Write data to a StringIO object without any additonal formatting
