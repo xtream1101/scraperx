@@ -210,7 +210,7 @@ class BaseDownload(ABC):
             proxy_str = self.task.get('proxy')
         # If no proxy has been passed in, try and set one
         if not proxy_str:
-            proxy_str = self._get_proxy(country=self.task.get('geo_alpha2'))
+            proxy_str = self._get_proxy(country=self.task.get('proxy_country'))
         self.session.proxies = self._format_proxy(proxy_str)
 
     def _init_http_methods(self):

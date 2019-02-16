@@ -46,11 +46,9 @@ def get_proxy(country=None):
     if not proxies:
         return None
 
-    country = country.upper() if country is not None else country
-
     available_proxies = []
-    if country:
-        available_proxies = proxies.get(country, [])
+    if country is not None:
+        available_proxies = proxies.get(country.upper(), [])
     else:
         # Get all proxies
         for country_proxies in proxies.values():
