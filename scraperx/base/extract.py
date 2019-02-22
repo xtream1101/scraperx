@@ -113,8 +113,8 @@ class BaseExtract(ABC):
                                                         template_values=tv)
                         except KeyError:
                             logger.error(f"Format `{save_as}` is not supported",
-                                     extra={'task': self.task,
-                                            'scraper_name': SCRAPER_NAME})
+                                         extra={'task': self.task,
+                                                'scraper_name': SCRAPER_NAME})
 
         logger.info('Extract finished',
                     extra={'task': self.task,

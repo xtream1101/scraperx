@@ -69,7 +69,7 @@ class WriteTo:
         output_io.seek(0)
         return SaveTo(output_io,
                       content_type='application/json',
-                      file_ext='jsonl')
+                      file_ext='json')
 
     def write_file(self, content_type='text/html'):
         """Write data to a StringIO object without any additonal formatting

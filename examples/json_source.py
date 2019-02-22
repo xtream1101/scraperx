@@ -21,6 +21,7 @@ class Extract(BaseExtract):
         return {'name': 'products',
                 'raw_source': json.loads(raw_source)['data']['children'],
                 'callback': self.extract_posts,
+                'save_as': 'json',
                 }
 
     def extract_posts(self, item, idx, **kwargs):

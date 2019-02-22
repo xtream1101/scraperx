@@ -11,12 +11,12 @@ default:
   downloader:
     save_data:
       service: local
-    file_template: "source/source.html"
+    file_template: "source/{scraper_name}.html"
 
   extractor:
     save_data:
       service: local
-    file_template: "extracted/extracted.json"
+    file_template: "extracted/{scraper_name}.json"
 
 # Custom per scraper
 minimal:
@@ -50,3 +50,17 @@ multiple_sources:
     file_template: "source/{scraper_name}/multiple_sources_{source_name}.json"
   extractor:
     file_template: "extracted/{scraper_name}/multiple_sources.json"
+
+
+page_trigger_download:
+  downloader:
+    file_template: "source/{scraper_name}/page_{page}.html"
+  extractor:
+    file_template: "extracted/{scraper_name}/page_{page}.json"
+
+
+page_dispatch:
+  downloader:
+    file_template: "source/{scraper_name}/page_{page}.html"
+  extractor:
+    file_template: "extracted/{scraper_name}/page_{page}.json"

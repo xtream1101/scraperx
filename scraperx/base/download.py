@@ -10,6 +10,7 @@ from ..save_to import SaveTo
 from ..proxies import get_proxy
 from ..user_agent import get_user_agent
 from ..trigger import run_task
+from ..utils import DownloadValueError
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +107,9 @@ class BaseDownload(ABC):
             self.manifest['source_files'].extend(source_files)
 
         except requests.exceptions.HTTPError:
+            # The status code was logged during the request, no need to repeat
+            pass
+        except DownloadValueError:
             # The status code was logged during the request, no need to repeat
             pass
         except Exception:
@@ -256,25 +260,42 @@ class BaseDownload(ABC):
                 proxy_used = kwargs['proxies'].get('http')
 
             time_of_request = datetime.datetime.utcnow()
-            r = self.session.request(http_method, url, **kwargs)
+            try:
+                r = self.session.request(http_method, url, **kwargs)
 
-            logger.info("Request finished",
-                        extra={'url': r.url,
-                               'method': http_method,
-                               'status_code': r.status_code,
-                               'headers': {'request': dict(r.request.headers),
-                                           'response': dict(r.headers)},
-                               'response_time': r.elapsed.total_seconds(),
-                               'time_of_request:': str(time_of_request),
-                               'num_tries': _try_count,
-                               'max_tries': max_tries,
-                               'task': self.task,
-                               'scraper_name': SCRAPER_NAME,
-                               'proxy': proxy_used})
+                log_extra = {'url': r.url,
+                             'method': http_method,
+                             'status_code': r.status_code,
+                             'headers': {'request': dict(r.request.headers),
+                                         'response': dict(r.headers)},
+                             'response_time': r.elapsed.total_seconds(),
+                             'time_of_request:': str(time_of_request),
+                             'num_tries': _try_count,
+                             'max_tries': max_tries,
+                             'task': self.task,
+                             'scraper_name': SCRAPER_NAME,
+                             'proxy': proxy_used}
+                logger.info("Request finished", extra=log_extra)
 
-            if r.status_code != requests.codes.ok:
-                if (_try_count < max_tries
-                   and r.status_code not in self.ignore_codes):
+                if r.status_code != requests.codes.ok:
+                    if (_try_count < max_tries
+                       and r.status_code not in self.ignore_codes):
+                        kwargs = self.new_profile(**kwargs)
+                        request_method = self._set_http_method(http_method)
+                        return request_method(url,
+                                              max_tries=max_tries,
+                                              _try_count=_try_count + 1,
+                                              **kwargs)
+                    else:
+                        logger.error("Download failed: status code",
+                                     extra=log_extra)
+                        r.raise_for_status()
+
+            except requests.exceptions.HTTPError:
+                raise
+
+            except Exception:
+                if _try_count < max_tries:
                     kwargs = self.new_profile(**kwargs)
                     request_method = self._set_http_method(http_method)
                     return request_method(url,
@@ -282,7 +303,14 @@ class BaseDownload(ABC):
                                           _try_count=_try_count + 1,
                                           **kwargs)
                 else:
-                    r.raise_for_status()
+                    logger.exception("Download failed: exception",
+                                     extra={'url': url,
+                                            'num_tries': _try_count,
+                                            'max_tries': max_tries,
+                                            'task': self.task,
+                                            'scraper_name': SCRAPER_NAME,
+                                            'proxy': proxy_used})
+                    raise DownloadValueError("Download failed: exception")
 
             return Request(self, r)
 

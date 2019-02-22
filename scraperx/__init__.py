@@ -31,7 +31,7 @@ logging.config.dictConfig({
             'class': 'logging.handlers.RotatingFileHandler',
             'level': 'INFO',
             'formatter': 'json',
-            'filename': f'./scraperx_{SCRAPER_NAME}_logs.jsonl',
+            'filename': f'./scraperx_{SCRAPER_NAME}_logs.json',
             'mode': 'a',
             'backupCount': 5,
         },

@@ -11,6 +11,10 @@ class QAValueError(ValueError):
     pass
 
 
+class DownloadValueError(ValueError):
+    pass
+
+
 def threads(num_threads, data, callback, *args, **kwargs):
     """Spin up threads to process a list of things
 
