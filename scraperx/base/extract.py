@@ -79,6 +79,8 @@ class BaseExtract(ABC):
                     offset = extraction_task.get('idx_offset', 0)
                     for idx, item in enumerate(source_items, start=offset):
                         result = extraction_task['callback'](item, idx)
+                        if not result:
+                            continue
                         # QA Result
                         # TODO: Should the QA cast to the types?
                         #       Or just make sure it is that type
@@ -98,16 +100,19 @@ class BaseExtract(ABC):
                     # Save the data if the extraction was successful
                     tv = extraction_task.get('file_name_vars', {})
                     tv['extractor_name'] = extraction_task.get('name', '')
-                    save_as = extraction_task.get('save_as', 'json')
+                    save_as = extraction_task.get('save_as')
 
-                    if save_as == 'json':
-                        WriteTo(output).write_json()\
-                                       .save(self, template_values=tv)
-                    elif save_as == 'jsonl':
-                        WriteTo(output).write_json_lines()\
-                                       .save(self, template_values=tv)
-                    else:
-                        logger.error(f"Can not save in the format `{save_as}`",
+                    if save_as:
+                        write_data = WriteTo(output)
+                        save_as_map = {
+                            'json': write_data.write_json,
+                            'json_lines': write_data.write_json_lines,
+                        }
+                        try:
+                            save_as_map[save_as]().save(self,
+                                                        template_values=tv)
+                        except KeyError:
+                            logger.error(f"Format `{save_as}` is not supported",
                                      extra={'task': self.task,
                                             'scraper_name': SCRAPER_NAME})
 

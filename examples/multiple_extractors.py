@@ -19,10 +19,12 @@ class Extract(BaseExtract):
         return [{'name': 'case1_products',
                  'selectors': ['#case1 > div:not(.ads)'],
                  'callback': self.extract_product,
+                 'save_as': 'json',
                  },
                 {'name': 'case2_products',
                  'selectors': ['#case2 > div.left > div:not(.ads)'],
                  'callback': self.extract_product,
+                 'save_as': 'json',
                  },
                 ]
 

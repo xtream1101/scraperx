@@ -51,6 +51,7 @@ class Extract(BaseExtract):
         return {'name': 'products',
                 'raw_source': json.loads(raw_source)['products'],
                 'callback': self.extract_product,
+                'save_as': 'json',
                 }
 
     def extract_product(self, item, idx, **kwargs):

@@ -20,6 +20,7 @@ class Extract(BaseExtract):
             'name': 'products',
             'selectors': ['#case1 > div:not(.ads)'],
             'callback': self.extract_product,
+            'save_as': 'json',
             # TODO: Link to docs regarding what qa can do
             'qa': {
                 'title': {

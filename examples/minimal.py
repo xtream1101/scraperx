@@ -19,6 +19,7 @@ class Extract(BaseExtract):
         return {'name': 'products',
                 'selectors': ['#case1 > div:not(.ads)'],
                 'callback': self.extract_product,
+                'save_as': 'json',
                 }
 
     def extract_product(self, element, idx, **kwargs):
