@@ -4,26 +4,27 @@
 ### Getting Started
 
 1. Create a new directory where the scraper will live and add the following files:
-    - A config file: `config.yaml` [(Example)](./exmaples/config.yaml)
-    - The scraper file: `your_scraper.py` [(Example)](./exmaples/minimal.py)
+    - A config file: `config.yaml` [(Example)](./examples/config.yaml)
+    - The scraper file: `your_scraper.py` [(Example)](./examples/minimal.py)
 1. Next install this library from pypi: `pip install scraperx`
 1. Run the full scraper by running `python your_scraper.py dispatch`
     - To see the arguments for the command: `python your_scraper.py dispatch -h`
     - See all the commands available: `python your_scraper.py -h`
 
 
-## Dispatching
+## Developing
 
-### Task data
+### Dispatching
+
+#### Task data
 This is a dict of values that is passed to each step of the process. The scraper can put anything it wants here that it may need. But here are a few build in values that are not requiored, but are used if you do supply them:
 
 - `headers`: Dict of headers to use each request
 - `proxy`: Full proxy string to be used
-- `geo_alpha2`: Used to get a proxy for this region, if this and `proxy` are not set, a random proxy will be used.
-- `platform`: Used when selecting a proxy if one was not passed in. Will keep from selecting proxies that do not work on a given site.
+- `proxy_country`: Used to get a proxy for this region, if this and `proxy` are not set, a random proxy will be used.
 - `device_type`: used when setting a user-agent if one was not set. Options are `desktop` or `mobile`
 
-## Downloading
+### Downloading
 
 Uses a requests.Session to make get and post requests.
 The __init__ of the BaseDownload class can take the following args:
@@ -43,7 +44,7 @@ The Request object also gives full access to the WriteTo class (see <here> about
 A request will retry n (3 by default) times to get a successful status code, each retry it will try and trigger a function called `new_profile()` where you have the chance to switch the headers/proxy the request is using (will only update for that request?). If that function does not exist, it will try again with the same data.
 
 
-### Setting headers/proxies
+#### Setting headers/proxies
 
 The ones set in the `self.get/post` will be combines with the ones set in the `__init__` and override if the key is the same.  
 
@@ -56,7 +57,7 @@ __init__ kwargs headers/proxy
 Any header/proxy set on the request (get/post/etc) will only be set for that single request. For those values to be set in the session they must be set from the init or be in the task data.
 
 
-## Extracting
+### Extracting
 Coming to a Readme near you...
 
 
@@ -99,7 +100,7 @@ default:
       value: 1  # Required. Can be an int or a float. When using period, value is in hours
 ```
 
-If you are using the `*_file_template` config, a python `.format()` runs on this string so you can use `{key_name}` to make it dynamic. The keys you will have direct access to are the following:
+If you are using the `file_template` config, a python `.format()` runs on this string so you can use `{key_name}` to make it dynamic. The keys you will have direct access to are the following:
   - All keys in your task that was dispatched
   - Any thing you pass into the `template_values={}` kwarg for the `.save()` fn
   - `time_downloaded`: time (utc) passed from the downloader (in both the downlaoder and extractor)
