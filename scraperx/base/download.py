@@ -203,7 +203,7 @@ class BaseDownload(ABC):
         """Set the default session proxy
 
         If no proxy is passed in to __init__ or in the task data,
-        then set one using the task `geo_alpha2` and/or `platfrom` keys.
+        then set one using the task `proxy_country` key.
         If they are not set then a random proxy will be choosen
 
         Arguments:
@@ -351,7 +351,7 @@ class BaseDownload(ABC):
         self._set_session_ua()
 
         # Set new proxy
-        proxy_str = self._get_proxy(country=self.task.get('geo_alpha2'),)
+        proxy_str = self._get_proxy(country=self.task.get('proxy_country'))
         if 'proxy' in kwargs:
             # Replace the request specific
             kwargs['proxy'] = proxy_str
