@@ -395,4 +395,5 @@ class ConfigGen:
 
         return cli_config
 
+
 config = ConfigGen()

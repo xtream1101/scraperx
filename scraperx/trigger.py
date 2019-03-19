@@ -21,7 +21,8 @@ def run_task(task, task_cls=None, **kwargs):
 
         else:
             logger.error(f"The {config['DISPATCH_SERVICE_NAME']} is not setup",
-                         extra={'task': task, 'scraper_name': config['SCRAPER_NAME']})
+                         extra={'task': task,
+                                'scraper_name': config['SCRAPER_NAME']})
 
 
 def _dispatch_locally(task, task_cls, **kwargs):

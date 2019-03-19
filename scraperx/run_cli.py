@@ -80,7 +80,7 @@ def _run_dispatch(cli_args, dispatch_cls, download_cls, extract_cls):
     if cli_args.dump_tasks:
         # Dump data to local json file
         task_file = Write(dispatcher.tasks).write_json()\
-                                             .save_local('tasks.json')
+                                           .save_local('tasks.json')
         num_tasks = len(dispatcher.tasks)
         logger.info(f"Saved {num_tasks} tasks to {task_file['path']}")
 

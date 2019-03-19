@@ -1,4 +1,3 @@
-import os
 import sys
 import logging
 import traceback
@@ -48,9 +47,9 @@ def uncaught(exctype, value, tb):
 
 sys.excepthook = uncaught
 
-from .config import config
-from .run_cli import run_cli
+from .config import config  # noqa F401
+from .run_cli import run_cli  # noqa F401
 
-from .base.dispatch import BaseDispatch
-from .base.download import BaseDownload
-from .base.extract import BaseExtract
+from .base.dispatch import BaseDispatch  # noqa F401
+from .base.download import BaseDownload  # noqa F401
+from .base.extract import BaseExtract  # noqa F401

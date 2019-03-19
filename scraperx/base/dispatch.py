@@ -61,7 +61,8 @@ class BaseDispatch(ABC):
     def dispatch(self):
         """Spin up the threads to send the tasks in
         """
-        logger.info(f"Dispatch {len(self.tasks)} tasks for {config['SCRAPER_NAME']}",
+        logger.info((f"Dispatch {len(self.tasks)} tasks for "
+                     f"{config['SCRAPER_NAME']}"),
                     extra={'qps': self.qps,
                            'scraper': config['SCRAPER_NAME'],
                            'dispatch_service': config['DISPATCH_SERVICE_NAME'],

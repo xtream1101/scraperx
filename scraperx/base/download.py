@@ -6,7 +6,6 @@ from abc import ABC, abstractmethod
 
 from .. import config
 from ..write import Write
-from ..save_to import SaveTo
 from ..proxies import get_proxy
 from ..user_agent import get_user_agent
 from ..trigger import run_task
@@ -312,7 +311,7 @@ class BaseDownload(ABC):
                                             'num_tries': _try_count,
                                             'max_tries': max_tries,
                                             'task': self.task,
-                                            'scraper_name': config['SCRAPER_NAME'],
+                                            'scraper_name': config['SCRAPER_NAME'],  # noqa E501
                                             'proxy': proxy_used})
                     raise DownloadValueError("Download failed: exception")
 

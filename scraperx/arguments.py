@@ -1,6 +1,5 @@
 import json
 import argparse
-from .config import config
 
 
 def _read_tasks(task_file):

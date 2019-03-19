@@ -94,7 +94,7 @@ class BaseExtract(ABC):
                 except Exception:
                     logger.exception("Extraction Failed",
                                      extra={'task': self.task,
-                                            'scraper_name': config['SCRAPER_NAME']})
+                                            'scraper_name': config['SCRAPER_NAME']})  # noqa E501
 
                 else:
                     # Save the data if the extraction was successful
@@ -114,7 +114,7 @@ class BaseExtract(ABC):
                         except KeyError:
                             logger.error(f"Format `{save_as}` is not supported",
                                          extra={'task': self.task,
-                                                'scraper_name': config['SCRAPER_NAME']})
+                                                'scraper_name': config['SCRAPER_NAME']})  # noqa E501
 
         logger.info('Extract finished',
                     extra={'task': self.task,
