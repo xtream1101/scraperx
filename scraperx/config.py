@@ -2,7 +2,6 @@ import os
 import sys
 import yaml
 import logging
-from .arguments import cli_args
 from . import BASE_DIR, SCRAPER_NAME
 
 logger = logging.getLogger(__name__)
@@ -174,15 +173,10 @@ class ConfigGen:
             ValueError -- If any of the config values are invalid
         """
         file_values = ConfigGen._ingest_file(config_file)
-        cli_values = ConfigGen._ingest_cli_args(cli_args)
 
         final_config = {}
         for key, struct in _CONFIG_STRUCTURE.items():
-            if key in cli_values:
-                # 1st check cli_args
-                final_config[key] = cli_values[key]
-
-            elif key in os.environ:
+            if key in os.environ:
                 # 2nd check env variables
                 final_config[key] = os.getenv(key)
 
@@ -208,7 +202,7 @@ class ConfigGen:
         validated_values = {}
 
         for key, struct in _CONFIG_STRUCTURE.items():
-            value = raw_values[key]
+            value = raw_values.get(key)
 
             ###
             # Required If
@@ -329,6 +323,17 @@ class ConfigGen:
                 items[new_key] = value
 
         return items
+
+    def add_cli_args(self, cli_args):
+        """Update the config values with values from the argparser
+
+        Only used in the arguments.py file
+
+        Arguments:
+            cli_args {Namespace} -- Argparse namespace
+        """
+        self.values.update(ConfigGen._ingest_cli_args(cli_args))
+        self.values = self._validate_config_values(self.values)
 
     @staticmethod
     def _ingest_cli_args(cli_args):

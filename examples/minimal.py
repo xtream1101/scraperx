@@ -1,4 +1,5 @@
 from scraperx import run, BaseDispatch, BaseDownload, BaseExtract
+from scraperx.write_to import WriteTo
 
 
 class Dispatch(BaseDispatch):
@@ -14,29 +15,62 @@ class Dispatch(BaseDispatch):
 
             headers {dict} --
                 Custom headers to use when downloading. If no `User-Agent` is
-                set one will be set automatically to a random browser.
+                set one will be set automatically to a random User-Agent based
+                on the `device_type` below.
 
             proxy {str} --
                 Use a specific proxy for this request. If not set, a random
-                proxy will be used from the `PROXY_FILE` if one was set
+                proxy will be used from the `PROXY_FILE` if one was set.
 
             proxy_country {str} --
                 2 letter country code. Used when selecting a proxy from
-                `PROXY_FILE` if set
+                `PROXY_FILE` if set.
 
             device_type {str} --
                 Options are `desktop` or `mobile`. Default is `desktop`.
                 If no `User-Agent` is set in the headers key, this will be
                 used when selecting the type of User-Agent to use.
-
         """
         return {'url': 'http://testing-ground.scraping.pro/blocks'}
 
 
 class Download(BaseDownload):
+    """Make all requests and save any source files needed to be extracted
+
+    BaseDownload class gives access to:
+
+    self.task {dict} --
+        A single task that was dispatched
+    self.time_downloaded {datetime.datetime} --
+        UTC timestamp
+    self.date_downloaded {datetime.date} --
+        UTC date
+    self.session {requests.sessions.Session} --
+        Requests session that will be used for all requests
+
+    self.request_get {function} --
+        Calls a requests.get using the session. It also adds the kwarg
+        `max_tries` which defaults to 3. All other args/kwargs get passed
+        to the requests.get method. Any headers passed in will be merged
+        with the session headers. This will return the requests response.
+
+    Extends:
+        BaseDownload
+    """
 
     def download(self):
-        return self.request_get(self.task['url']).write_file().save(self)
+        """Download the source files based on the task
+
+        1. Make the request(s)
+        2. Save sources to files
+        3. Return a list of saved sources
+
+        Returns:
+            list/dict -- List/dict of output(s) from the .save() fn
+        """
+        r = self.request_get(self.task['url'])
+
+        return WriteTo(r.text).write_file().save(self)
 
 
 class Extract(BaseExtract):

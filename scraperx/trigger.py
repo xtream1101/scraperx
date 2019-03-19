@@ -14,14 +14,6 @@ def run_task(task, task_cls=None, **kwargs):
 
     if not config['STANDALONE']:
         if config['DISPATCH_SERVICE_NAME'] == 'local':
-            if not task_cls:
-                # Import here and not at above to make sure they are set
-                from .run import download_cls, extract_cls
-                if len(kwargs) == 0:
-                    task_cls = download_cls
-                else:
-                    task_cls = extract_cls
-
             _dispatch_locally(task, task_cls, **kwargs)
 
         elif config['DISPATCH_SERVICE_NAME'] == 'sns':

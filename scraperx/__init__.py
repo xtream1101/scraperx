@@ -56,7 +56,7 @@ sys.excepthook = uncaught
 
 
 # Init the cli args and the config after the logging is setup
-from .arguments import cli_args  # noqa: F401, F402
+# from .arguments import cli_args  # noqa: F401, F402
 from .config import config  # noqa: F401, F402
 
 # Now figure out what action to take

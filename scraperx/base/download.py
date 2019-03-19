@@ -17,11 +17,13 @@ logger = logging.getLogger(__name__)
 
 class BaseDownload(ABC):
 
-    def __init__(self, task, headers=None, proxy=None, ignore_codes=[]):
+    def __init__(self, task, headers=None, proxy=None, ignore_codes=(),
+                 extract_cls=None):
         # General task and config setup
         self._scraper = inspect.getmodule(self)
+        self.extract_cls = extract_cls  # only needed if running locally
         self.task = task
-        self.ignore_codes = ignore_codes
+        self._ignore_codes = ignore_codes
 
         # Set timestamps
         self.time_downloaded = datetime.datetime.utcnow()
@@ -33,10 +35,10 @@ class BaseDownload(ABC):
                            'time_started': str(self.time_downloaded),
                            })
 
-        self.manifest = {'source_files': [],
-                         'time_downloaded': str(self.time_downloaded),
-                         'date_downloaded': str(self.date_downloaded),
-                         }
+        self._manifest = {'source_files': [],
+                          'time_downloaded': str(self.time_downloaded),
+                          'date_downloaded': str(self.date_downloaded),
+                          }
 
         # Set up a requests session
         self.session = requests.Session()
@@ -104,7 +106,7 @@ class BaseDownload(ABC):
             if not isinstance(source_files, (list, tuple)):
                 # Make sure source files is a list
                 source_files = [source_files]
-            self.manifest['source_files'].extend(source_files)
+            self._manifest['source_files'].extend(source_files)
 
         except requests.exceptions.HTTPError:
             # The status code was logged during the request, no need to repeat
@@ -119,14 +121,16 @@ class BaseDownload(ABC):
         else:
             if source_files:
                 self._save_metadata()
-                run_task(self.task, download_manifest=self.manifest)
+                run_task(self.task,
+                         task_cls=self.extract_cls,
+                         download_manifest=self._manifest)
                 # self._run_success(source_files, standalone)
             else:
                 # If it got here and there is not saved file then thats an issue
                 logger.error("No source file saved",
                              extra={'task': self.task,
                                     'scraper_name': SCRAPER_NAME,
-                                    'manifest': self.manifest,
+                                    'manifest': self._manifest,
                                     })
 
         logger.info('Download finished',
@@ -160,7 +164,7 @@ class BaseDownload(ABC):
         """
         metadata = {'task': self.task,
                     'scraper': SCRAPER_NAME,
-                    'download_manifest': self.manifest,
+                    'download_manifest': self._manifest,
                     }
         return metadata
 
@@ -279,7 +283,7 @@ class BaseDownload(ABC):
 
                 if r.status_code != requests.codes.ok:
                     if (_try_count < max_tries
-                       and r.status_code not in self.ignore_codes):
+                       and r.status_code not in self._ignore_codes):
                         kwargs = self.new_profile(**kwargs)
                         request_method = self._set_http_method(http_method)
                         return request_method(url,
@@ -312,13 +316,13 @@ class BaseDownload(ABC):
                                             'proxy': proxy_used})
                     raise DownloadValueError("Download failed: exception")
 
-            return Request(self, r)
+            return r
 
         return make_request
 
     def get_file(self, url, **kwargs):
         r = self.session.get(url, stream=True, **kwargs)
-        return Request(self, r, r.content)
+        return r
 
     def _set_session_ua(self):
         """Set up the session user agent
@@ -365,22 +369,3 @@ class BaseDownload(ABC):
             self.session.proxies = self._format_proxy(proxy_str)
 
         return kwargs
-
-
-class Request(WriteTo):
-
-    def __init__(self, context, request, source=None):
-        self.r = request
-        if source:
-            self.source = source
-        else:
-            self.source = self.r.text
-        super().__init__(self.source)
-
-
-class File(SaveTo):
-
-    def __init__(self, request, data):
-        self.r = request
-        self.data = data
-        super().__init__(self.data)

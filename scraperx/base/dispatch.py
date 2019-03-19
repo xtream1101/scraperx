@@ -13,9 +13,10 @@ logger = logging.getLogger(__name__)
 
 class BaseDispatch(ABC):
 
-    def __init__(self, tasks=None, download_cls=None):
+    def __init__(self, tasks=None, download_cls=None, extract_cls=None):
         self._scraper = inspect.getmodule(self)
         self.download_cls = download_cls
+        self.extract_cls = extract_cls
         if not tasks:
             tasks = self.create_tasks()
 
@@ -80,4 +81,7 @@ class BaseDispatch(ABC):
         Arguments:
             task {dict} -- Single task to send to the downloader
         """
-        run_task(task)
+        run_task(task,
+                 task_cls=self.download_cls,
+                 extract_cls=self.extract_cls,
+                 )

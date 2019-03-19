@@ -10,12 +10,8 @@ from .config import config, SCRAPER_NAME
 
 logger = logging.getLogger(__name__)
 
-dispatch_cls = None
-download_cls = None
-extract_cls = None
 
-
-def run_test():
+def run_test(extract_cls):
     # TODO: Loop over test dir for scraper and extract
     #       compare the json files using code from centrifuge
     #       delete the test file after the chekc runs
@@ -68,7 +64,7 @@ def run_test():
         os.remove(test_file)
 
 
-def run_dispatch():
+def run_dispatch(dispatch_cls, download_cls, extract_cls):
     """Kick off the dispatcher for the scraper
 
     Arguments:
@@ -78,7 +74,9 @@ def run_dispatch():
     if cli_args.tasks:
         tasks = cli_args.tasks
 
-    dispatcher = dispatch_cls(tasks=tasks, download_cls=download_cls)
+    dispatcher = dispatch_cls(tasks=tasks,
+                              download_cls=download_cls,
+                              extract_cls=extract_cls)
     if cli_args.dump_tasks:
         # Dump data to local json file
         task_file = WriteTo(dispatcher.tasks).write_json()\
@@ -90,18 +88,18 @@ def run_dispatch():
     dispatcher.dispatch()
 
 
-def run_download():
+def run_download(download_cls, extract_cls):
     """Kick off the downloader for the scraper
 
     Arguments:
         download_cls {class} -- Class of the download action from the scraper
     """
     for task in cli_args.tasks:
-        downloader = download_cls(task)
+        downloader = download_cls(task, extract_cls=extract_cls)
         downloader.run()
 
 
-def run_extract():
+def run_extract(extract_cls):
     """Kick off the extractor for the scraper
 
     Arguments:
@@ -126,26 +124,20 @@ def run_extract():
         extractor.run()
 
 
-def run(dispatch=None, download=None, extract=None):
-    global dispatch_cls, download_cls, extract_cls
-
-    dispatch_cls = dispatch
-    download_cls = download
-    extract_cls = extract
-
+def run(dispatch_cls=None, download_cls=None, extract_cls=None):
     if cli_args.action == 'validate':
         from pprint import pprint
         print("Testing the config....")
         pprint(config.values)
 
     elif cli_args.action == 'test':
-        run_test()
+        run_test(extract_cls)
 
     elif cli_args.action == 'dispatch':
-        run_dispatch()
+        run_dispatch(dispatch_cls, download_cls, extract_cls)
 
     elif cli_args.action == 'download':
-        run_download()
+        run_download(download_cls, extract_cls)
 
     elif cli_args.action == 'extract':
-        run_extract()
+        run_extract(extract_cls)
