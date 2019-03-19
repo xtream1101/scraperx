@@ -1,17 +1,17 @@
 import os
+import sys
 import json
 import logging
 from pprint import pprint
 from deepdiff import DeepDiff
 
-from .write_to import WriteTo
-from .arguments import cli_args
-from .config import config, SCRAPER_NAME
+from .write import Write
+from .config import config
 
 logger = logging.getLogger(__name__)
 
 
-def run_test(extract_cls):
+def _run_test(cli_args, extract_cls):
     # TODO: Loop over test dir for scraper and extract
     #       compare the json files using code from centrifuge
     #       delete the test file after the chekc runs
@@ -19,10 +19,10 @@ def run_test(extract_cls):
         task = {
             "device_type": "desktop",
             "id": 0,
-            "scraper_name": SCRAPER_NAME,
+            "scraper_name": config['SCRAPER_NAME'],
             "url": "http://testing-ground.scraping.pro/blocks"
         }
-        source_file = f"test_sources/{SCRAPER_NAME}/test_1.html"
+        source_file = f"test_sources/{config['SCRAPER_NAME']}/test_1.html"
         download_manifest = {
             "date_downloaded": "2019-01-21",
             "source_files": [
@@ -64,7 +64,7 @@ def run_test(extract_cls):
         os.remove(test_file)
 
 
-def run_dispatch(dispatch_cls, download_cls, extract_cls):
+def _run_dispatch(cli_args, dispatch_cls, download_cls, extract_cls):
     """Kick off the dispatcher for the scraper
 
     Arguments:
@@ -79,7 +79,7 @@ def run_dispatch(dispatch_cls, download_cls, extract_cls):
                               extract_cls=extract_cls)
     if cli_args.dump_tasks:
         # Dump data to local json file
-        task_file = WriteTo(dispatcher.tasks).write_json()\
+        task_file = Write(dispatcher.tasks).write_json()\
                                              .save_local('tasks.json')
         num_tasks = len(dispatcher.tasks)
         logger.info(f"Saved {num_tasks} tasks to {task_file['path']}")
@@ -88,7 +88,7 @@ def run_dispatch(dispatch_cls, download_cls, extract_cls):
     dispatcher.dispatch()
 
 
-def run_download(download_cls, extract_cls):
+def _run_download(cli_args, download_cls, extract_cls):
     """Kick off the downloader for the scraper
 
     Arguments:
@@ -99,7 +99,7 @@ def run_download(download_cls, extract_cls):
         downloader.run()
 
 
-def run_extract(extract_cls):
+def _run_extract(cli_args, extract_cls):
     """Kick off the extractor for the scraper
 
     Arguments:
@@ -124,20 +124,24 @@ def run_extract(extract_cls):
         extractor.run()
 
 
-def run(dispatch_cls=None, download_cls=None, extract_cls=None):
+def run_cli(dispatch_cls=None, download_cls=None, extract_cls=None):
+    from .arguments import cli_args
+    config_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])),
+                               'config.yaml')
+    config.load_config(config_file, cli_args=cli_args)
     if cli_args.action == 'validate':
         from pprint import pprint
         print("Testing the config....")
         pprint(config.values)
 
     elif cli_args.action == 'test':
-        run_test(extract_cls)
+        _run_test(cli_args, extract_cls)
 
     elif cli_args.action == 'dispatch':
-        run_dispatch(dispatch_cls, download_cls, extract_cls)
+        _run_dispatch(cli_args, dispatch_cls, download_cls, extract_cls)
 
     elif cli_args.action == 'download':
-        run_download(download_cls, extract_cls)
+        _run_download(cli_args, download_cls, extract_cls)
 
     elif cli_args.action == 'extract':
-        run_extract(extract_cls)
+        _run_extract(cli_args, extract_cls)

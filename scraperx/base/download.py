@@ -4,8 +4,8 @@ import datetime
 import requests
 from abc import ABC, abstractmethod
 
-from .. import SCRAPER_NAME
-from ..write_to import WriteTo
+from .. import config
+from ..write import Write
 from ..save_to import SaveTo
 from ..proxies import get_proxy
 from ..user_agent import get_user_agent
@@ -31,7 +31,7 @@ class BaseDownload(ABC):
 
         logger.info("Start Download",
                     extra={'task': self.task,
-                           'scraper_name': SCRAPER_NAME,
+                           'scraper_name': config['SCRAPER_NAME'],
                            'time_started': str(self.time_downloaded),
                            })
 
@@ -117,7 +117,7 @@ class BaseDownload(ABC):
         except Exception:
             logger.exception("Download Exception",
                              extra={'task': self.task,
-                                    'scraper_name': SCRAPER_NAME})
+                                    'scraper_name': config['SCRAPER_NAME']})
         else:
             if source_files:
                 self._save_metadata()
@@ -129,13 +129,13 @@ class BaseDownload(ABC):
                 # If it got here and there is not saved file then thats an issue
                 logger.error("No source file saved",
                              extra={'task': self.task,
-                                    'scraper_name': SCRAPER_NAME,
+                                    'scraper_name': config['SCRAPER_NAME'],
                                     'manifest': self._manifest,
                                     })
 
         logger.info('Download finished',
                     extra={'task': self.task,
-                           'scraper_name': SCRAPER_NAME,
+                           'scraper_name': config['SCRAPER_NAME'],
                            'time_finished': str(datetime.datetime.utcnow()),
                            })
 
@@ -146,11 +146,11 @@ class BaseDownload(ABC):
         appended to the name
         """
         metadata = self._get_metadata()
-        metadata_file = WriteTo(metadata).write_json()
+        metadata_file = Write(metadata).write_json()
         filename = metadata['download_manifest']['source_files'][0]['path']
         logger.info("Saving metadata file",
                     extra={'task': self.task,
-                           'scraper_name': SCRAPER_NAME})
+                           'scraper_name': config['SCRAPER_NAME']})
         metadata_file.save(self, filename=filename + '.metadata.json')
 
     def _get_metadata(self):
@@ -163,7 +163,7 @@ class BaseDownload(ABC):
             {dict} -- metadata
         """
         metadata = {'task': self.task,
-                    'scraper': SCRAPER_NAME,
+                    'scraper': config['SCRAPER_NAME'],
                     'download_manifest': self._manifest,
                     }
         return metadata
@@ -179,7 +179,7 @@ class BaseDownload(ABC):
         """
         logger.debug(f"Setting proxy {proxy}",
                      extra={'task': self.task,
-                            'scraper_name': SCRAPER_NAME})
+                            'scraper_name': config['SCRAPER_NAME']})
         if isinstance(proxy, dict) and 'http' in proxy and 'https' in proxy:
             # Nothing more to do
             return proxy
@@ -277,7 +277,7 @@ class BaseDownload(ABC):
                              'num_tries': _try_count,
                              'max_tries': max_tries,
                              'task': self.task,
-                             'scraper_name': SCRAPER_NAME,
+                             'scraper_name': config['SCRAPER_NAME'],
                              'proxy': proxy_used}
                 logger.info("Request finished", extra=log_extra)
 
@@ -312,7 +312,7 @@ class BaseDownload(ABC):
                                             'num_tries': _try_count,
                                             'max_tries': max_tries,
                                             'task': self.task,
-                                            'scraper_name': SCRAPER_NAME,
+                                            'scraper_name': config['SCRAPER_NAME'],
                                             'proxy': proxy_used})
                     raise DownloadValueError("Download failed: exception")
 
@@ -336,7 +336,7 @@ class BaseDownload(ABC):
         except ValueError:
             logger.error("Invalid device type {device_type} for UA",
                          extra={'task': self.task,
-                                'scraper_name': SCRAPER_NAME})
+                                'scraper_name': config['SCRAPER_NAME']})
 
     def new_profile(self, **kwargs):
         """Set a new user agent and proxy to be used for the request

@@ -2,7 +2,7 @@ import os
 import pathlib
 import logging
 
-from . import config, SCRAPER_NAME
+from . import config
 from .utils import get_s3_resource, get_context_type
 
 logger = logging.getLogger(__name__)
@@ -31,7 +31,7 @@ class SaveTo:
             str -- The filename with the template values filled in
         """
         context_type = get_context_type(context)
-        additional_args = {'scraper_name': SCRAPER_NAME}
+        additional_args = {'scraper_name': config['SCRAPER_NAME']}
         if context_type == 'extractor':
             time_downloaded = context.download_manifest['time_downloaded']
             date_downloaded = context.download_manifest['date_downloaded']
@@ -98,7 +98,7 @@ class SaveTo:
 
         logger.info(f"Saved file: {saved_file}",
                     extra={'task': context.task,
-                           'scraper_name': SCRAPER_NAME,
+                           'scraper_name': config['SCRAPER_NAME'],
                            'file': saved_file})
         return saved_file
 

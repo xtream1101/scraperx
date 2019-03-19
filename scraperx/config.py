@@ -2,7 +2,6 @@ import os
 import sys
 import yaml
 import logging
-from . import BASE_DIR, SCRAPER_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +60,9 @@ _CONFIG_STRUCTURE = {
     'STANDALONE': {
         'default': False,
         'type': bool,
+    },
+    'SCRAPER_NAME': {
+        'type': str,
     },
     ###
     # Dispatch
@@ -132,13 +134,27 @@ _CONFIG_STRUCTURE = {
 class ConfigGen:
 
     def __init__(self):
-        config_file = os.path.join(BASE_DIR, 'config.yaml')
+        self.values = {}
+        self._scraper_name = os.path.basename(sys.argv[0]).rsplit('.', 1)[0]
 
-        raw_values = self._join_values(config_file)
+    def load_config(self, config_file, cli_args=None, scraper_name=None):
+
+        if scraper_name is not None:
+            self._scraper_name = scraper_name
+
+        file_values = self._ingest_file(config_file)
+
+        cli_values = {}
+        if cli_args is not None:
+            cli_values = self._ingest_cli_args(cli_args)
+
+        raw_values = self._join_values(file_values=file_values,
+                                       cli_values=cli_values)
+        raw_values.update({'SCRAPER_NAME': self._scraper_name})
         self.values = self._validate_config_values(raw_values)
 
     def __getitem__(self, key):
-        """Method to get the config value from the class via config['KEYNAME']
+        """Get the config value from the class via config['KEYNAME']
 
         Arguments:
             key {str} -- The key to get from the config values
@@ -160,11 +176,12 @@ class ConfigGen:
         """
         self.values[key.upper()] = value
 
-    def _join_values(self, config_file):
+    def _join_values(self, file_values, cli_values):
         """Join the values from the config file, cli args, and env vars
 
         Arguments:
-            config_file {str} -- Config yaml path for the scraper
+            file_values {dict} -- Values from the config file
+            cli_values {dict} -- Values from the command line
 
         Returns:
             dict -- A single value for each config key
@@ -172,11 +189,13 @@ class ConfigGen:
         Raises:
             ValueError -- If any of the config values are invalid
         """
-        file_values = ConfigGen._ingest_file(config_file)
-
         final_config = {}
         for key, struct in _CONFIG_STRUCTURE.items():
-            if key in os.environ:
+            if key in cli_values:
+                # 1st check cli_args
+                final_config[key] = cli_values[key]
+
+            elif key in os.environ:
                 # 2nd check env variables
                 final_config[key] = os.getenv(key)
 
@@ -254,7 +273,7 @@ class ConfigGen:
             if 'must_be' in struct:
                 if value not in struct['must_be']:
                     err = (f"Config value for {key} can only be these values:"
-                           f" {struct['must_be']}")
+                           f" {struct['must_be']}. Current: {value}")
                     logger.critical(err)
                     sys.exit(1)
 
@@ -274,8 +293,7 @@ class ConfigGen:
 
         return validated_values
 
-    @staticmethod
-    def _ingest_file(config_file):
+    def _ingest_file(self, config_file):
         """Read in config yaml
 
         Only get the values for the scraper that is running
@@ -292,7 +310,7 @@ class ConfigGen:
             default_config_raw = all_config_values.get('default', {})
             current_config.update(ConfigGen.flatten(default_config_raw))
             # Get scraper values
-            scraper_config_raw = all_config_values.get(SCRAPER_NAME, {})
+            scraper_config_raw = all_config_values.get(self._scraper_name, {})
             current_config.update(ConfigGen.flatten(scraper_config_raw))
 
         return current_config
@@ -324,19 +342,7 @@ class ConfigGen:
 
         return items
 
-    def add_cli_args(self, cli_args):
-        """Update the config values with values from the argparser
-
-        Only used in the arguments.py file
-
-        Arguments:
-            cli_args {Namespace} -- Argparse namespace
-        """
-        self.values.update(ConfigGen._ingest_cli_args(cli_args))
-        self.values = self._validate_config_values(self.values)
-
-    @staticmethod
-    def _ingest_cli_args(cli_args):
+    def _ingest_cli_args(self, cli_args):
         """Map the cli arguments to the correct flattened key
 
         Only return the keys that have values.
@@ -388,6 +394,5 @@ class ConfigGen:
             pass
 
         return cli_config
-
 
 config = ConfigGen()

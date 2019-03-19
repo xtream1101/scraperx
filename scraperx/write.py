@@ -6,7 +6,7 @@ from .save_to import SaveTo
 logger = logging.getLogger(__name__)
 
 
-class WriteTo:
+class Write:
 
     def __init__(self, data):
         self.data = data

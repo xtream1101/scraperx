@@ -1,6 +1,6 @@
 import json
 import logging
-from . import SCRAPER_NAME, config
+from . import config
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,7 @@ def run_task(task, task_cls=None, **kwargs):
     logger.info(msg,
                 extra={'dispatch_service': config['DISPATCH_SERVICE_NAME'],
                        'task': task,
-                       'scraper_name': SCRAPER_NAME})
+                       'scraper_name': config['SCRAPER_NAME']})
 
     if not config['STANDALONE']:
         if config['DISPATCH_SERVICE_NAME'] == 'local':
@@ -21,7 +21,7 @@ def run_task(task, task_cls=None, **kwargs):
 
         else:
             logger.error(f"The {config['DISPATCH_SERVICE_NAME']} is not setup",
-                         extra={'task': task, 'scraper_name': SCRAPER_NAME})
+                         extra={'task': task, 'scraper_name': config['SCRAPER_NAME']})
 
 
 def _dispatch_locally(task, task_cls, **kwargs):
@@ -38,7 +38,7 @@ def _dispatch_locally(task, task_cls, **kwargs):
     except Exception:
         logger.critical("Local task failed",
                         extra={'task': task,
-                               'scraper_name': SCRAPER_NAME},
+                               'scraper_name': config['SCRAPER_NAME']},
                         exc_info=True)
 
 
@@ -58,7 +58,7 @@ def _dispatch_sns(task, arn=None, **kwargs):
         client = boto3.client('sns')
         target_arn = arn if arn else config['DISPATCH_SERVICE_SNS_ARN']
         message = {'task': task,
-                   'scraper_name': SCRAPER_NAME,
+                   'scraper_name': config['SCRAPER_NAME'],
                    **kwargs,
                    }
         if target_arn is not None:
@@ -69,13 +69,13 @@ def _dispatch_sns(task, arn=None, **kwargs):
                                       )
             logger.debug(f"SNS Response: {response}",
                          extra={'task': task,
-                                'scraper_name': SCRAPER_NAME})
+                                'scraper_name': config['SCRAPER_NAME']})
         else:
             logger.error("Must configure sns_arn if using sns",
                          extra={'task': task,
-                                'scraper_name': SCRAPER_NAME})
+                                'scraper_name': config['SCRAPER_NAME']})
     except Exception:
         logger.critical("Failed to dispatch sns downloader",
                         extra={'task': task,
-                               'scraper_name': SCRAPER_NAME},
+                               'scraper_name': config['SCRAPER_NAME']},
                         exc_info=True)

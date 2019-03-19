@@ -4,12 +4,6 @@ import logging
 import traceback
 import logging.config
 
-# TODO: Does the base_dir need to be in $PATH for the
-#       scraper to import local files to it?
-# Test by running the scraper from an outside dir with local imports
-BASE_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
-SCRAPER_NAME = os.path.basename(sys.argv[0]).rsplit('.', 1)[0]
-
 logging.getLogger('botocore.credentials').setLevel(logging.WARNING)
 logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
 
@@ -31,7 +25,7 @@ logging.config.dictConfig({
             'class': 'logging.handlers.RotatingFileHandler',
             'level': 'INFO',
             'formatter': 'json',
-            'filename': f'./scraperx_{SCRAPER_NAME}_logs.json',
+            'filename': f'./scraperx_logs.json',
             'mode': 'a',
             'backupCount': 5,
         },
@@ -54,14 +48,9 @@ def uncaught(exctype, value, tb):
 
 sys.excepthook = uncaught
 
+from .config import config
+from .run_cli import run_cli
 
-# Init the cli args and the config after the logging is setup
-# from .arguments import cli_args  # noqa: F401, F402
-from .config import config  # noqa: F401, F402
-
-# Now figure out what action to take
-from .run import run  # noqa: F401, F402
-
-from .base.dispatch import BaseDispatch  # noqa: F401
-from .base.download import BaseDownload  # noqa: F401
-from .base.extract import BaseExtract  # noqa: F401
+from .base.dispatch import BaseDispatch
+from .base.download import BaseDownload
+from .base.extract import BaseExtract

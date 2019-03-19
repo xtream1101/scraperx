@@ -97,5 +97,3 @@ parser_extract.add_argument('source',
 
 
 cli_args = parser.parse_args()
-
-config.add_cli_args(cli_args)

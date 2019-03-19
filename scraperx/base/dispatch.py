@@ -3,7 +3,7 @@ import inspect
 import logging
 from abc import ABC, abstractmethod
 
-from .. import config, SCRAPER_NAME
+from .. import config
 from ..utils import (rate_limited, threads,
                      rate_limit_from_period)
 from ..trigger import run_task
@@ -61,9 +61,9 @@ class BaseDispatch(ABC):
     def dispatch(self):
         """Spin up the threads to send the tasks in
         """
-        logger.info(f'Dispatch {len(self.tasks)} tasks for {SCRAPER_NAME}',
+        logger.info(f"Dispatch {len(self.tasks)} tasks for {config['SCRAPER_NAME']}",
                     extra={'qps': self.qps,
-                           'scraper': SCRAPER_NAME,
+                           'scraper': config['SCRAPER_NAME'],
                            'dispatch_service': config['DISPATCH_SERVICE_NAME'],
                            'num_tasks': len(self.tasks)})
         # Have 3 times the numbers of threads so a task will not bottleneck

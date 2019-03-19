@@ -1,5 +1,5 @@
-from scraperx import run, BaseDispatch, BaseDownload, BaseExtract
-from scraperx.write_to import WriteTo
+from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
+from scraperx.write import Write
 
 
 class Dispatch(BaseDispatch):
@@ -70,7 +70,7 @@ class Download(BaseDownload):
         """
         r = self.request_get(self.task['url'])
 
-        return WriteTo(r.text).write_file().save(self)
+        return Write(r.text).write_file().save(self)
 
 
 class Extract(BaseExtract):
@@ -131,4 +131,4 @@ class Extract(BaseExtract):
 
 
 if __name__ == '__main__':
-    run(Dispatch, Download, Extract)
+    run_cli(Dispatch, Download, Extract)
