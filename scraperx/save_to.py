@@ -188,5 +188,5 @@ class SaveS3:
 
         return {'location': 's3',
                 'bucket': bucket,
-                'key': self.filename,
+                'path': self.filename,
                 }

@@ -212,7 +212,7 @@ class BaseExtract(ABC):
                 # Need to get the file from s3.
                 source_files.append(get_file_from_s3(s3,
                                                      source['bucket'],
-                                                     source['key']))
+                                                     source['path']))
             elif source['location'] == 'local':
                 source_files.append(source['path'])
 

@@ -20,20 +20,22 @@ logging.config.dictConfig({
             'formatter': 'json',
             'stream': sys.stdout,
         },
-        'file': {
-            'class': 'logging.handlers.RotatingFileHandler',
-            'level': 'INFO',
-            'formatter': 'json',
-            'filename': f'./scraperx_logs.json',
-            'mode': 'a',
-            'backupCount': 5,
-        },
+        # 'file': {
+        #     'class': 'logging.handlers.RotatingFileHandler',
+        #     'level': 'INFO',
+        #     'formatter': 'json',
+        #     'filename': f'./scraperx_logs.json',
+        #     'mode': 'a',
+        #     'backupCount': 5,
+        # },
     },
     'loggers': {
         '': {
-            'handlers': ['default', 'file'],
+            'handlers': ['default',
+                         # 'file',
+                         ],
             'level': 'INFO',
-            'propagate': True,
+            # 'propagate': True,
         },
     },
 })
