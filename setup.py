@@ -18,7 +18,6 @@ setup(name='scraperx',
                         'parsel',
                         'requests',
                         'boto3',
-                        'python-json-logger',
                         'deepdiff',
                         ],
       )
