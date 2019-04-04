@@ -82,7 +82,10 @@ class BaseDispatch(ABC):
         Arguments:
             task {dict} -- Single task to send to the downloader
         """
-        run_task(task,
-                 task_cls=self.download_cls,
-                 extract_cls=self.extract_cls,
-                 )
+        if config['DISPATCH_SERVICE_NAME'] == 'local':
+            run_task(task,
+                     task_cls=self.download_cls,
+                     extract_cls=self.extract_cls,
+                     )
+        else:
+            run_task(task)

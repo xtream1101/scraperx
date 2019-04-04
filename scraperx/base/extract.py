@@ -97,30 +97,30 @@ class BaseExtract(ABC):
                                             'scraper_name': config['SCRAPER_NAME']})  # noqa E501
 
                 else:
-                    # Save the data if the extraction was successful
-                    tv = extraction_task.get('file_name_vars', {})
-                    tv['extractor_name'] = extraction_task.get('name', '')
-                    save_as = extraction_task.get('save_as')
-
-                    if save_as:
-                        write_data = Write(output)
-                        save_as_map = {
-                            'json': write_data.write_json,
-                            'json_lines': write_data.write_json_lines,
-                        }
-                        try:
-                            save_as_map[save_as]().save(self,
-                                                        template_values=tv)
-                        except KeyError:
-                            logger.error(f"Format `{save_as}` is not supported",
-                                         extra={'task': self.task,
-                                                'scraper_name': config['SCRAPER_NAME']})  # noqa E501
+                    post_extract = extraction_task.get('post_extract',
+                                                       lambda *args, **kwargs: None)  # noqa E501
+                    post_extract_kwargs = extraction_task.get('post_extract_kwargs', {})  # noqa E501
+                    post_extract(output, **post_extract_kwargs)
 
         logger.info('Extract finished',
                     extra={'task': self.task,
                            'scraper_name': config['SCRAPER_NAME'],
                            'time_finished': str(datetime.datetime.utcnow()),
                            })
+
+    def save_as(self, data, file_format='json', template_values={}):
+        write_data = Write(data)
+        save_as_map = {
+            'json': write_data.write_json,
+            'json_lines': write_data.write_json_lines,
+        }
+        try:
+            save_as_map[file_format]().save(self,
+                                            template_values=template_values)
+        except KeyError:
+            logger.error(f"Format `{file_format}` is not supported",
+                         extra={'task': self.task,
+                                'scraper_name': config['SCRAPER_NAME']})
 
     def _qa_result(self, idx, qa_rules, result):
         if not qa_rules:

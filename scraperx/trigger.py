@@ -20,7 +20,7 @@ def run_task(task, task_cls=None, **kwargs):
             _dispatch_sns(task, **kwargs)
 
         else:
-            logger.error(f"The {config['DISPATCH_SERVICE_NAME']} is not setup",
+            logger.error(f"{config['DISPATCH_SERVICE_NAME']} is not setup",
                          extra={'task': task,
                                 'scraper_name': config['SCRAPER_NAME']})
 
@@ -76,7 +76,7 @@ def _dispatch_sns(task, arn=None, **kwargs):
                          extra={'task': task,
                                 'scraper_name': config['SCRAPER_NAME']})
     except Exception:
-        logger.critical("Failed to dispatch sns downloader",
+        logger.critical("Failed to dispatch lambda",
                         extra={'task': task,
                                'scraper_name': config['SCRAPER_NAME']},
                         exc_info=True)

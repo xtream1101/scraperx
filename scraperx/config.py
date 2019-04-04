@@ -101,10 +101,10 @@ _CONFIG_STRUCTURE = {
     'DOWNLOADER_SAVE_DATA_ENDPOINT_URL': {
         'default': None,
         'type': str,
-        # 'required_if': {'DOWNLOADER_SAVE_DATA_SERVICE': 's3'},
+        'required_if': {'DOWNLOADER_SAVE_DATA_SERVICE': 's3'},
     },
     'DOWNLOADER_FILE_TEMPLATE': {
-        'default': "output/{id}_source.html",
+        'default': "output/source.html",
         'type': str,
     },
     ###
@@ -122,10 +122,10 @@ _CONFIG_STRUCTURE = {
     'EXTRACTOR_SAVE_DATA_ENDPOINT_URL': {
         'default': None,
         'type': str,
-        # 'required_if': {'EXTRACTOR_SAVE_DATA_SERVICE': 's3'},
+        'required_if': {'EXTRACTOR_SAVE_DATA_SERVICE': 's3'},
     },
     'EXTRACTOR_FILE_TEMPLATE': {
-        'default': "output/{id}_extracted.json",
+        'default': "output/extracted.json",
         'type': str,
     },
 }

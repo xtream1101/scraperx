@@ -30,6 +30,7 @@ class Dispatch(BaseDispatch):
                 Options are `desktop` or `mobile`. Default is `desktop`.
                 If no `User-Agent` is set in the headers key, this will be
                 used when selecting the type of User-Agent to use.
+
         """
         return {'url': 'http://testing-ground.scraping.pro/blocks'}
 
@@ -41,10 +42,13 @@ class Download(BaseDownload):
 
     self.task {dict} --
         A single task that was dispatched
+
     self.time_downloaded {datetime.datetime} --
         UTC timestamp
+
     self.date_downloaded {datetime.date} --
         UTC date
+
     self.session {requests.sessions.Session} --
         Requests session that will be used for all requests
 
@@ -54,8 +58,6 @@ class Download(BaseDownload):
         to the requests.get method. Any headers passed in will be merged
         with the session headers. This will return the requests response.
 
-    Extends:
-        BaseDownload
     """
 
     def download(self):
@@ -82,8 +84,7 @@ class Extract(BaseExtract):
 
         Required:
             name {str} --
-                Used to define the extractor. Will be available as
-                `extractor_name` for use in the `file_template`
+                Used to define the extractor.
 
             selectors {list of str} --
                 List of css selectors to use to select the content to pass to
@@ -95,10 +96,6 @@ class Extract(BaseExtract):
                 that the selectors find.
 
         Optional:
-            save_as {str} --
-                Format to save the extracted data as.
-                Current options are: `json`, `json_lines`.
-
             raw_source {str} --
                 If source is `html`:
                     Used if you need to modify the source before the selectors
@@ -111,19 +108,26 @@ class Extract(BaseExtract):
                 The index of the item that the `callback` is currently
                 processing. If not set, it will start at 0.
 
-            file_name_vars {dict} --
-                Additional variables that can be used in the `file_template`
+            post_extract {function} --
+                Function to call after that extractor is finished. Will pass
+                the list of data as the first argument.
+
+            post_extract_kwargs {dict} --
+                Keyword arguments to send to the `post_extract` function
 
             qa {dict} -- TODO: link to qa docs.
 
         Arguments:
             raw_source {str} -- Content from the source file.
             source_idx {int} -- Index of the source file that was downloaded.
+
         """
         return {'name': 'products',
                 'selectors': ['#case1 > div:not(.ads)'],
                 'callback': self.extract_product,
-                'save_as': 'json',
+                'post_extract': self.save_as,  # TODO: add docs about what builtin's there are
+                'post_extract_kwargs': {'file_format': 'json',
+                                        },
                 }
 
     def extract_product(self, element, idx, **kwargs):
@@ -131,4 +135,17 @@ class Extract(BaseExtract):
 
 
 if __name__ == '__main__':
+    import logging
+    from pythonjsonlogger import jsonlogger
+
+    logging.getLogger('botocore.credentials').setLevel(logging.WARNING)
+    logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    logHandler = logging.StreamHandler()
+    logHandler.setFormatter(jsonlogger.JsonFormatter('%(asctime)s %(name)s %(levelname)s %(message)s'))
+    root_logger.addHandler(logHandler)
+
     run_cli(Dispatch, Download, Extract)

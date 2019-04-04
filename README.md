@@ -41,7 +41,7 @@ When using BaseDownloader's get & post functions, it will use the requests sessi
 The Request object also gives full access to the WriteTo class (see <here> about what that has)  
 
 
-A request will retry n (3 by default) times to get a successful status code, each retry it will try and trigger a function called `new_profile()` where you have the chance to switch the headers/proxy the request is using (will only update for that request?). If that function does not exist, it will try again with the same data.
+A request will retry _n_ times (3 by default) to get a successful status code, each retry it will try and trigger a function called `new_profile()` where you have the chance to switch the headers/proxy the request is using (will only update for that request?). If that function does not exist, it will try again with the same data.
 
 
 #### Setting headers/proxies
@@ -80,21 +80,21 @@ default:
   extractor:
     save_data:
       service: local  # (local, s3) Default: local
-      bucket_name: my-extracted-data  # Required if service is s3, if local this is not needed
-    file_template: test_output/{scraper_name}/{id}_extracted.json  # Optional, if not set then a file name must be passed in when saving
+      bucket_name: my-extracted-data  # Required if `service` is s3, if local this is not needed
+    file_template: test_output/{scraper_name}/{id}_extracted.json  # Optional, Default is "output/source.html"
 
   downloader:
     save_data:
       service: local  # (local, s3) Default: local
-      bucket_name: my-downloaded-data  # Required if service is s3, if local this is not needed
-    file_template: test_output/{scraper_name}/{id}_source.html  # Optional, if not set then a file name must be passed in when saving
+      bucket_name: my-downloaded-data  # Required if `service` is s3, if local this is not needed
+    file_template: test_output/{scraper_name}/{id}_source.html  # Optional, Default is "output/extracted.json"
 
   dispatch:
     limit: 5  # Default None. Max number of tasks to dispatch. If not set, all tasks will run
     service:
       # This is where both the download and extractor services will run
       name: local  # (local, sns) Default: local
-      sns_arn: sns:arn:of:service:to:trigger  # Required if type is sns, if local this is not needed
+      sns_arn: sns:arn:of:service:to:trigger  # Required if `name` is sns, if local this is not needed
     ratelimit:
       type: qps  # (qps, period) Required. `qps`: Queries per second to dispatch the tasks at. `period`: The time in hours to dispatch all of the tasks in.
       value: 1  # Required. Can be an int or a float. When using period, value is in hours
@@ -117,6 +117,8 @@ search:
       type: period
       value: 5
 ```
+
+To override the `value` in the above snippet using an environment variable, set `DISPATCH_RATELIMIT_VALUE=1`. This will overide all dispatch ratelimit values in default and custom.
 
 
 
