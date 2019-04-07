@@ -63,7 +63,7 @@ def _run_test(cli_args, extract_cls):
         else:
             logger.info("All test qa'd files passed the extraction test",
                         extra={'task': task,
-                                'scraper_name': config['SCRAPER_NAME']})
+                               'scraper_name': config['SCRAPER_NAME']})
 
         os.remove(test_file)
 

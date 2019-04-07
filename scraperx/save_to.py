@@ -94,8 +94,8 @@ class SaveTo:
 
         else:
             logger.error(f"Not configured to save to {save_service}",
-                          extra={'task': context.task,
-                                 'scraper_name': config['SCRAPER_NAME']})
+                         extra={'task': context.task,
+                                'scraper_name': config['SCRAPER_NAME']})
             saved_file = None
 
         logger.info(f"Saved file: {saved_file}",
