@@ -114,13 +114,12 @@ class BaseExtract(ABC):
             'json': write_data.write_json,
             'json_lines': write_data.write_json_lines,
         }
-        try:
-            save_as_map[file_format]().save(self,
-                                            template_values=template_values)
-        except KeyError:
+        if file_format not in save_as_map:
             logger.error(f"Format `{file_format}` is not supported",
                          extra={'task': self.task,
                                 'scraper_name': config['SCRAPER_NAME']})
+
+        save_as_map[file_format]().save(self, template_values=template_values)
 
     def _qa_result(self, idx, qa_rules, result):
         if not qa_rules:

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 def _run_test(cli_args, extract_cls):
     # TODO: Loop over test dir for scraper and extract
     #       compare the json files using code from centrifuge
-    #       delete the test file after the chekc runs
+    #       delete the test file after the check runs
     for _ in ['file']:  # TODO: thread for all files
         task = {
             "device_type": "desktop",
@@ -56,10 +56,14 @@ def _run_test(cli_args, extract_cls):
 
         diff = DeepDiff(data['qa'], data['new'])
         if diff != {}:
-            logger.error(f"Errors found in the file {qa_file}")
+            logger.error(f"Errors found in the file {qa_file}",
+                         extra={'task': task,
+                                'scraper_name': config['SCRAPER_NAME']})
             pprint(diff)
         else:
-            logger.info("All test qa'd files passed the extraction test")
+            logger.info("All test qa'd files passed the extraction test",
+                        extra={'task': task,
+                                'scraper_name': config['SCRAPER_NAME']})
 
         os.remove(test_file)
 
@@ -82,7 +86,9 @@ def _run_dispatch(cli_args, dispatch_cls, download_cls, extract_cls):
         task_file = Write(dispatcher.tasks).write_json()\
                                            .save_local('tasks.json')
         num_tasks = len(dispatcher.tasks)
-        logger.info(f"Saved {num_tasks} tasks to {task_file['path']}")
+        logger.info(f"Saved {num_tasks} tasks to {task_file['path']}",
+                    extra={'task': None,
+                           'scraper_name': config['SCRAPER_NAME']})
 
     # Run the dispatcher...
     dispatcher.dispatch()
@@ -131,7 +137,9 @@ def run_cli(dispatch_cls=None, download_cls=None, extract_cls=None):
     config.load_config(config_file, cli_args=cli_args)
     if cli_args.action == 'validate':
         from pprint import pprint
-        print("Testing the config....")
+        logger.info("Testing the config....",
+                    extra={'task': None,
+                           'scraper_name': config['SCRAPER_NAME']})
         pprint(config.values)
 
     elif cli_args.action == 'test':

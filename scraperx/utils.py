@@ -41,7 +41,8 @@ def threads(num_threads, data, callback, *args, **kwargs):
                 item_list.append(callback(item, *args, **kwargs))
             except Exception:
                 logger.critical("Dispatch failed",
-                                extra={'task': item},
+                                extra={'task': item,
+                                       'scraper_name': config['SCRAPER_NAME']},
                                 exc_info=True)
             q.task_done()
 

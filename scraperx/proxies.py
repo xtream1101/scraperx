@@ -4,6 +4,7 @@ import random
 import logging
 from collections import defaultdict
 
+from .config import config
 
 logger = logging.getLogger(__name__)
 
@@ -14,17 +15,23 @@ def _load_proxies():
     proxy_file = os.getenv('PROXY_FILE')
     if proxy_file and os.path.isfile(proxy_file):
         try:
-            logger.info(f"Reading proxy file {proxy_file}")
+            logger.info(f"Reading proxy file {proxy_file}",
+                        extra={'task': None,
+                               'scraper_name': config['SCRAPER_NAME']})
             with open(proxy_file, 'r') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     country = row['country'].strip().upper()
                     proxies[country].append(row['proxy'].strip())
         except Exception:
-            logger.exception("Failed to read proxy file")
+            logger.exception("Failed to read proxy file",
+                             extra={'task': None,
+                                    'scraper_name': config['SCRAPER_NAME']})
 
     if not proxies:
-        logger.warning("No proxy list to choose from")
+        logger.info("No proxy list to choose from",
+                    extra={'task': None,
+                           'scraper_name': config['SCRAPER_NAME']})
 
 
 def get_proxy(country=None):

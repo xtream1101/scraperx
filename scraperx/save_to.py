@@ -93,7 +93,9 @@ class SaveTo:
             saved_file = self.save_local(filename)
 
         else:
-            logger.error(f"Not configured to save to {save_service}")
+            logger.error(f"Not configured to save to {save_service}",
+                          extra={'task': context.task,
+                                 'scraper_name': config['SCRAPER_NAME']})
             saved_file = None
 
         logger.info(f"Saved file: {saved_file}",
@@ -182,9 +184,13 @@ class SaveS3:
                                Metadata=self.metadata)
 
         if response['ResponseMetadata']['HTTPStatusCode'] != 200:
-            logger.info(f"S3 upload response: {response}")
+            logger.info(f"S3 upload response: {response}",
+                        extra={'task': self.context.task,
+                               'scraper_name': config['SCRAPER_NAME']})
         else:
-            logger.debug(f"S3 upload response: {response}")
+            logger.debug(f"S3 upload response: {response}",
+                         extra={'task': self.context.task,
+                                'scraper_name': config['SCRAPER_NAME']})
 
         return {'location': 's3',
                 'bucket': bucket,

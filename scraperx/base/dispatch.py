@@ -61,10 +61,10 @@ class BaseDispatch(ABC):
     def dispatch(self):
         """Spin up the threads to send the tasks in
         """
-        logger.info((f"Dispatch {len(self.tasks)} tasks for "
-                     f"{config['SCRAPER_NAME']}"),
-                    extra={'qps': self.qps,
-                           'scraper': config['SCRAPER_NAME'],
+        logger.info(f"Dispatch {len(self.tasks)}",
+                    extra={'scraper_name': config['SCRAPER_NAME'],
+                           'task': None,  # No task yet
+                           'qps': self.qps,
                            'dispatch_service': config['DISPATCH_SERVICE_NAME'],
                            'num_tasks': len(self.tasks)})
         # Have 3 times the numbers of threads so a task will not bottleneck

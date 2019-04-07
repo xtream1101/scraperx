@@ -274,7 +274,9 @@ class ConfigGen:
                 if value not in struct['must_be']:
                     err = (f"Config value for {key} can only be these values:"
                            f" {struct['must_be']}. Current: {value}")
-                    logger.critical(err)
+                    logger.critical(err,
+                                    extra={'task': None,
+                                           'scraper_name': None})
                     sys.exit(1)
 
             ###
@@ -286,7 +288,9 @@ class ConfigGen:
             except ValueError:
                 err = (f"Config value for {key} must be the type"
                        f" {struct['type'].__name__}")
-                logger.critical(err)
+                logger.critical(err,
+                                extra={'task': None,
+                                       'scraper_name': None})
                 sys.exit(1)
 
             validated_values[key] = value

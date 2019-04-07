@@ -27,28 +27,26 @@ This is a dict of values that is passed to each step of the process. The scraper
 ### Downloading
 
 Uses a requests.Session to make get and post requests.
-The __init__ of the BaseDownload class can take the following args:
+The `__init__` of the `BaseDownload` class can take the following args:
 - task: needed no matter what
-- headers: dict to set headers for the whole session. default: random User-Agent for the device type, will use desktop if no device type is set)
-- proxy: the proxy string to use for the requests
+- headers: (Named arg) dict to set headers for the whole session. default: random User-Agent for the device type, will use desktop if no device type is set)
+- proxy: (Named arg) Proxy string to use for the requests
+- ignore_codes: (Named arg) List of HTTP Status codes to not retry on
 
 
 When using BaseDownloader, a requests session is created under `self.session`, so every get/post you make will use the same session per task.
-you can also set headers per call to by pasing the keyword args to self.get() and self.post(). Any kwargs you pass to self.get/post will be pased to the sessions get/post methods.  
+Headers can also be set per call by pasing the keyword args to self.request_get() and self.request_post(). Any kwargs you pass to self.get/post will be pased to the sessions get/post methods.  
 
-When using BaseDownloader's get & post functions, it will use the requests session created in __init__ and return you a Request object. From that, you can acess the raw requests request from `self.r` and the raw source at `self.source` (`r.text`)  
-
-The Request object also gives full access to the WriteTo class (see <here> about what that has)  
-
+When using BaseDownloader's get & post functions, it will use the requests session created in __init__ and a python `requests` response object.
 
 A request will retry _n_ times (3 by default) to get a successful status code, each retry it will try and trigger a function called `new_profile()` where you have the chance to switch the headers/proxy the request is using (will only update for that request?). If that function does not exist, it will try again with the same data.
 
 
 #### Setting headers/proxies
 
-The ones set in the `self.get/post` will be combines with the ones set in the `__init__` and override if the key is the same.  
+The ones set in the `self.request_get/request_post` will be combined with the ones set in the `__init__` and override if the key is the same.  
 
-self.get/post kwargs headers/proxy
+self.request_get/request_post kwargs headers/proxy
 will override
 self.task[headers/proxy]
 will override
