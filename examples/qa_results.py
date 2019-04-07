@@ -1,4 +1,5 @@
-from scraperx import run, BaseDispatch, BaseDownload, BaseExtract
+from scraperx.write import Write
+from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 
 
 class Dispatch(BaseDispatch):
@@ -10,27 +11,29 @@ class Dispatch(BaseDispatch):
 class Download(BaseDownload):
 
     def download(self):
-        return self.request_get(self.task['url']).write_file().save(self)
+        r = self.request_get(self.task['url'])
+        return Write(r.text).write_file().save(self)
 
 
 class Extract(BaseExtract):
 
     def extract(self, raw_source, source_idx):
-        return {
-            'name': 'products',
-            'selectors': ['#case1 > div:not(.ads)'],
-            'callback': self.extract_product,
-            'save_as': 'json',
-            # TODO: Link to docs regarding what qa can do
-            'qa': {
-                'title': {
-                    'required': True,
-                    'max_length': 128,
-                },
-                'price': {
-                    'type': float,
+        return {'name': 'products',
+                'selectors': ['#case1 > div:not(.ads)'],
+                'callback': self.extract_product,
+                'post_extract': self.save_as,  # TODO: add docs about what builtin's there are
+                'post_extract_kwargs': {'file_format': 'json',
+                                        },
+                # TODO: Link to docs regarding what qa can do
+                'qa': {
+                    'title': {
+                        'required': True,
+                        'max_length': 128,
+                    },
+                    'price': {
+                        'type': float,
+                    }
                 }
-            }
         }
 
     def extract_product(self, element, idx, **kwargs):
@@ -40,4 +43,8 @@ class Extract(BaseExtract):
 
 
 if __name__ == '__main__':
-    run(Dispatch, Download, Extract)
+    import logging
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(name)s - [%(scraper_name)s] %(message)s')
+
+    run_cli(Dispatch, Download, Extract)

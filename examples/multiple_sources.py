@@ -1,6 +1,7 @@
 import json
-from scraperx import run, BaseDispatch, BaseDownload, BaseExtract
+from scraperx.write import Write
 from scraperx.trigger import run_task
+from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 
 
 class Dispatch(BaseDispatch):
@@ -26,23 +27,23 @@ class Download(BaseDownload):
 
     def download(self):
         # This first request will get the products in the search
-        search_results = self.request_post(self.task['url'])
+        r1 = self.request_post(self.task['url'])
 
         # Saving this file will help with debugging
-        search_results.write_file().save(self,
+        Write(r1.text).write_file().save(self,
                                          template_values={'source_name': 'upc_list'})
 
         # This is the data kroger needs to be sent
-        data = {'upcs': search_results.r.json()['upcs'],
+        data = {'upcs': r1.json()['upcs'],
                 'filterBadProducts': True,
                 'clicklistProductsOnly': False,
                 }
 
         # This second request get the details from the products in the first request
         details_url = 'https://www.kroger.com/products/api/products/details'
-        return self.request_post(details_url, json=data)\
-                   .write_file().save(self,
-                                      template_values={'source_name': 'details'})
+        r2 = self.request_post(details_url, json=data)
+        return Write(r2.text).write_file().save(self,
+                                                template_values={'source_name': 'details'})
 
 
 class Extract(BaseExtract):
@@ -51,7 +52,9 @@ class Extract(BaseExtract):
         return {'name': 'products',
                 'raw_source': json.loads(raw_source)['products'],
                 'callback': self.extract_product,
-                'save_as': 'json',
+                'post_extract': self.save_as,
+                'post_extract_kwargs': {'file_format': 'json',
+                                        },
                 }
 
     def extract_product(self, item, idx, **kwargs):
@@ -62,4 +65,8 @@ class Extract(BaseExtract):
 
 
 if __name__ == '__main__':
-    run(Dispatch, Download, Extract)
+    import logging
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(name)s - [%(scraper_name)s] %(message)s')
+
+    run_cli(Dispatch, Download, Extract)

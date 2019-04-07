@@ -1,5 +1,5 @@
-from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 from scraperx.write import Write
+from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 
 
 class Dispatch(BaseDispatch):
@@ -70,8 +70,11 @@ class Download(BaseDownload):
         Returns:
             list/dict -- List/dict of output(s) from the .save() fn
         """
+        # `r` is a python requests response
         r = self.request_get(self.task['url'])
 
+        # Save the response contents to a file as set in
+        # the config `DOWNLOADER_FILE_TEMPLATE`
         return Write(r.text).write_file().save(self)
 
 
@@ -136,16 +139,7 @@ class Extract(BaseExtract):
 
 if __name__ == '__main__':
     import logging
-    from pythonjsonlogger import jsonlogger
-
-    logging.getLogger('botocore.credentials').setLevel(logging.WARNING)
-    logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
-
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
-
-    logHandler = logging.StreamHandler()
-    logHandler.setFormatter(jsonlogger.JsonFormatter('%(asctime)s %(name)s %(levelname)s %(message)s'))
-    root_logger.addHandler(logHandler)
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(name)s - [%(scraper_name)s] %(message)s')
 
     run_cli(Dispatch, Download, Extract)

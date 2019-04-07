@@ -1,4 +1,5 @@
-from scraperx import run, BaseDispatch, BaseDownload, BaseExtract
+from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
+from scraperx.write import Write
 
 
 class Dispatch(BaseDispatch):
@@ -10,7 +11,13 @@ class Dispatch(BaseDispatch):
 class Download(BaseDownload):
 
     def download(self):
-        return self.request_get(self.task['url']).write_json().save(self)
+        r = self.request_get(self.task['url'])
+
+        # Save as formatted json. Easy to read, larger file size.
+        # return Write(r.json()).write_json().save(self)
+
+        # Save as json string unformatted (all on one line). Makes the file smaller.
+        return Write(r.text).write_file().save(self)
 
 
 class Extract(BaseExtract):
@@ -21,7 +28,9 @@ class Extract(BaseExtract):
         return {'name': 'products',
                 'raw_source': json.loads(raw_source)['data']['children'],
                 'callback': self.extract_posts,
-                'save_as': 'json',
+                'post_extract': self.save_as,
+                'post_extract_kwargs': {'file_format': 'json',
+                                        },
                 }
 
     def extract_posts(self, item, idx, **kwargs):
@@ -29,4 +38,8 @@ class Extract(BaseExtract):
 
 
 if __name__ == '__main__':
-    run(Dispatch, Download, Extract)
+    import logging
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(name)s - [%(scraper_name)s] %(message)s')
+
+    run_cli(Dispatch, Download, Extract)

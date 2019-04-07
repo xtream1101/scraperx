@@ -1,5 +1,6 @@
-from scraperx import run, BaseDispatch, BaseDownload, BaseExtract
 from parsel import Selector
+from scraperx.write import Write
+from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 
 
 class Dispatch(BaseDispatch):
@@ -25,13 +26,16 @@ class Dispatch(BaseDispatch):
 class DispatchDownloadHelper(BaseDownload):
 
     def download(self):
-        return self.request_get(self.task['url']).source
+        r = self.request_get(self.task['url'])
+        return r.text
 
 
 class Download(BaseDownload):
 
     def download(self):
-        return self.request_get(self.task['url']).write_file().save(self)
+        r = self.request_get(self.task['url'])
+
+        return Write(r.text).write_file().save(self)
 
 
 class Extract(BaseExtract):
@@ -41,7 +45,9 @@ class Extract(BaseExtract):
                 'selectors': ['h1 + div.row > div'],
                 'idx_offset': 1,
                 'callback': self.extract_products,
-                'save_as': 'json',
+                'post_extract': self.save_as,
+                'post_extract_kwargs': {'file_format': 'json',
+                                        },
                 }
 
     def extract_products(self, element, idx, **kwargs):
@@ -52,4 +58,8 @@ class Extract(BaseExtract):
 
 
 if __name__ == '__main__':
-    run(Dispatch, Download, Extract)
+    import logging
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(name)s - [%(scraper_name)s] %(message)s')
+
+    run_cli(Dispatch, Download, Extract)

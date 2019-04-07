@@ -1,4 +1,5 @@
-from scraperx import run, BaseDispatch, BaseDownload, BaseExtract
+from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
+from scraperx.write import Write
 
 
 class Dispatch(BaseDispatch):
@@ -10,7 +11,9 @@ class Dispatch(BaseDispatch):
 class Download(BaseDownload):
 
     def download(self):
-        return self.request_get(self.task['url']).write_file().save(self)
+        r = self.request_get(self.task['url'])
+
+        return Write(r.text).write_file().save(self)
 
 
 class Extract(BaseExtract):
@@ -19,12 +22,18 @@ class Extract(BaseExtract):
         return [{'name': 'case1_products',
                  'selectors': ['#case1 > div:not(.ads)'],
                  'callback': self.extract_product,
-                 'save_as': 'json',
+                 'post_extract': self.save_as,
+                 'post_extract_kwargs': {'file_format': 'json',
+                                         'template_values': {'extractor_name': 'case1_products'},
+                                         },
                  },
                 {'name': 'case2_products',
                  'selectors': ['#case2 > div.left > div:not(.ads)'],
                  'callback': self.extract_product,
-                 'save_as': 'json',
+                 'post_extract': self.save_as,
+                 'post_extract_kwargs': {'file_format': 'json',
+                                         'template_values': {'extractor_name': 'case2_products'},
+                                         },
                  },
                 ]
 
@@ -33,4 +42,8 @@ class Extract(BaseExtract):
 
 
 if __name__ == '__main__':
-    run(Dispatch, Download, Extract)
+    import logging
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(name)s - [%(scraper_name)s] %(message)s')
+
+    run_cli(Dispatch, Download, Extract)

@@ -2,13 +2,6 @@
 
 These are example scrapers from the most minimal to the very complex.
 
-
-#### TODO's
-  - Order these below to simplist to complex
-  - Add doc strings to all fn's in examples
-  - Add descriptions to the readme for each example scraper
-
-
 ### Minimal
 `minimal.py`  
 This scraper demos the least amount of code to have a working scraper
@@ -63,13 +56,3 @@ Cons:
 1. If you hardcode a max page to get and there are not that many pages on the site you will get a lot of 404's
 2. To be dynamic, you need to first get how many pages the site has, and if that fails then nothing may dispatch
 
-
---------------------------------------------------------------------------------
-
-
-### Example
-Make a post request then a get request right after. This is useful to set cookies or some other data needed to make the 2nd request. Saving only the last request.
-
-
-### Example
-save extracted data as parquet
