@@ -310,7 +310,7 @@ class ConfigGen:
         """
         current_config = {}
         with open(config_file, 'r') as stream:
-            all_config_values = yaml.load(stream)
+            all_config_values = yaml.load(stream, Loader=yaml.FullLoader)
             default_config_raw = all_config_values.get('default', {})
             current_config.update(ConfigGen.flatten(default_config_raw))
             # Get scraper values
