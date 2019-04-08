@@ -121,7 +121,6 @@ _CONFIG_STRUCTURE = {
     'EXTRACTOR_SAVE_DATA_ENDPOINT_URL': {
         'default': None,
         'type': str,
-        'required_if': {'EXTRACTOR_SAVE_DATA_SERVICE': 's3'},
     },
     'EXTRACTOR_FILE_TEMPLATE': {
         'default': "output/extracted.json",
