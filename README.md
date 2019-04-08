@@ -46,11 +46,11 @@ A request will retry _n_ times (3 by default) to get a successful status code, e
 
 The ones set in the `self.request_get/request_post` will be combined with the ones set in the `__init__` and override if the key is the same.  
 
-self.request_get/request_post kwargs headers/proxy
-will override
-self.task[headers/proxy]
-will override
-__init__ kwargs headers/proxy
+self.request_get/request_post kwargs headers/proxy  
+will override  
+self.task[headers/proxy]  
+will override  
+__init__ kwargs headers/proxy  
 
 Any header/proxy set on the request (get/post/etc) will only be set for that single request. For those values to be set in the session they must be set from the init or be in the task data.
 

@@ -101,7 +101,6 @@ _CONFIG_STRUCTURE = {
     'DOWNLOADER_SAVE_DATA_ENDPOINT_URL': {
         'default': None,
         'type': str,
-        'required_if': {'DOWNLOADER_SAVE_DATA_SERVICE': 's3'},
     },
     'DOWNLOADER_FILE_TEMPLATE': {
         'default': "output/source.html",
@@ -253,7 +252,9 @@ class ConfigGen:
                         if required_value in possiable_values and value is None:
                             err = (f"Config key {key} is required if"
                                    f" {required_key} is {required_value}")
-                            logger.critical(err)
+                            logger.critical(err,
+                                            extra={'task': None,
+                                                   'scraper_name': self._scraper_name})  # noqa E501
                             sys.exit(1)
 
                 if value is None:
@@ -276,7 +277,7 @@ class ConfigGen:
                            f" {struct['must_be']}. Current: {value}")
                     logger.critical(err,
                                     extra={'task': None,
-                                           'scraper_name': None})
+                                           'scraper_name': self._scraper_name})
                     sys.exit(1)
 
             ###
@@ -290,7 +291,7 @@ class ConfigGen:
                        f" {struct['type'].__name__}")
                 logger.critical(err,
                                 extra={'task': None,
-                                       'scraper_name': None})
+                                       'scraper_name': self._scraper_name})
                 sys.exit(1)
 
             validated_values[key] = value
