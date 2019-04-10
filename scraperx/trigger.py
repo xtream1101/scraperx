@@ -7,10 +7,10 @@ logger = logging.getLogger(__name__)
 
 def run_task(task, task_cls=None, **kwargs):
     msg = "Dummy Trigger" if config['STANDALONE'] else "Trigger"
-    logger.info(msg,
-                extra={'dispatch_service': config['DISPATCH_SERVICE_NAME'],
-                       'task': task,
-                       'scraper_name': config['SCRAPER_NAME']})
+    logger.debug(msg,
+                 extra={'dispatch_service': config['DISPATCH_SERVICE_NAME'],
+                        'task': task,
+                        'scraper_name': config['SCRAPER_NAME']})
 
     if not config['STANDALONE']:
         if config['DISPATCH_SERVICE_NAME'] == 'local':
