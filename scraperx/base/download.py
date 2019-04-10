@@ -308,7 +308,7 @@ class BaseDownload(ABC):
                 else:
                     logger.exception(f"Download failed: {str(e)}",
                                      extra={'url': url,
-                                            'session_headers': self.session.headers,
+                                            'session_headers': self.session.headers,  # noqa E501
                                             'request_kwargs': kwargs,
                                             'num_tries': _try_count,
                                             'max_tries': max_tries,
