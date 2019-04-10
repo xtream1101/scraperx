@@ -297,7 +297,7 @@ class BaseDownload(ABC):
             except requests.exceptions.HTTPError:
                 raise
 
-            except Exception:
+            except Exception as e:
                 if _try_count < max_tries:
                     kwargs = self.new_profile(**kwargs)
                     request_method = self._set_http_method(http_method)
@@ -306,14 +306,16 @@ class BaseDownload(ABC):
                                           _try_count=_try_count + 1,
                                           **kwargs)
                 else:
-                    logger.exception("Download failed: exception",
+                    logger.exception(f"Download failed: {str(e)}",
                                      extra={'url': url,
+                                            'session_headers': self.session.headers,
+                                            'request_kwargs': kwargs,
                                             'num_tries': _try_count,
                                             'max_tries': max_tries,
                                             'task': self.task,
                                             'scraper_name': config['SCRAPER_NAME'],  # noqa E501
                                             'proxy': proxy_used})
-                    raise DownloadValueError("Download failed: exception")
+                    raise DownloadValueError(f"Download failed: {str(e)}")
 
             return r
 
