@@ -6,7 +6,7 @@ import traceback
 def uncaught(exctype, value, tb):
     logger = logging.getLogger('uncaught')
     message = ''.join(traceback.format_exception(exctype, value, tb))
-    logger.critical(message)
+    logger.critical(message, extra={'scraper_name': None, 'task': None})
 
 
 sys.excepthook = uncaught
