@@ -310,7 +310,11 @@ class ConfigGen:
         """
         current_config = {}
         with open(config_file, 'r') as stream:
-            all_config_values = yaml.load(stream, Loader=yaml.FullLoader)
+            try:
+                all_config_values = yaml.load(stream, Loader=yaml.FullLoader)
+            except AttributeError:
+                # Version of pyyaml that does not have yaml.FullLoader
+                all_config_values = yaml.load(stream)
             default_config_raw = all_config_values.get('default', {})
             current_config.update(ConfigGen.flatten(default_config_raw))
             # Get scraper values
