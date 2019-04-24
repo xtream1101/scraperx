@@ -123,7 +123,6 @@ class BaseDownload(ABC):
                 run_task(self.task,
                          task_cls=self.extract_cls,
                          download_manifest=self._manifest)
-                # self._run_success(source_files, standalone)
             else:
                 # If it got here and there is not saved file then thats an issue
                 logger.error("No source file saved",
