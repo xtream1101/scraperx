@@ -4,7 +4,7 @@ from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 
 class Dispatch(BaseDispatch):
 
-    def create_tasks(self):
+    def submit_tasks(self):
         """Returns a single or a list of tasks to be downloaded
 
         The keys in the task can be anything that you want to be passed along

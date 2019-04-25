@@ -6,7 +6,7 @@ from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 class Dispatch(BaseDispatch):
     base_url = 'http://webscraperio.us-east-1.elasticbeanstalk.com/test-sites/e-commerce/static/computers/tablets'
 
-    def create_tasks(self):
+    def submit_tasks(self):
         max_page = self._get_max_page()
         tasks = []
         for page in range(1, max_page + 1):

@@ -4,7 +4,7 @@ from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 
 class Dispatch(BaseDispatch):
 
-    def create_tasks(self):
+    def submit_tasks(self):
         return {'url': 'http://testing-ground.scraping.pro/blocks'}
 
 

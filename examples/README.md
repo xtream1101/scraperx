@@ -33,6 +33,11 @@ Set rules around each field and during extraction the check will make sure the e
 Make a request to first generate a cookie that will be used to build a new url to get the data. This is for when the cookie can be generated using pythons `requests` library and does not need `selenium`. This will be a new cookie for each request that is made.
 
 
+### Generate cookies using `selenium`
+`dispatch_cookie_selenium.py`  
+Generate cookies using selenium (full web browser) in the dispatcher to reuse for a few requests and generate new cookies as more things get dispatched.
+
+
 ### Scraper multiple pages of data
 
 #### Example 1 - Trigger the download for the next page on extract

@@ -4,7 +4,7 @@ from scraperx.write import Write
 
 class Dispatch(BaseDispatch):
 
-    def create_tasks(self):
+    def submit_tasks(self):
         return {'url': 'http://testing-ground.scraping.pro/blocks'}
 
 

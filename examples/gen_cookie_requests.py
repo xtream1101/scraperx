@@ -6,7 +6,7 @@ from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 
 class Dispatch(BaseDispatch):
 
-    def create_tasks(self):
+    def submit_tasks(self):
         return {'keyword': 'cookies',
                 'store_id': '3249',
                 'device_type': 'desktop',

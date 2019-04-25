@@ -66,3 +66,9 @@ gen_cookie_requests:
     file_template: "source/{scraper_name}/gen_cookie_requests.json"
   extractor:
     file_template: "extracted/{scraper_name}/gen_cookie_requests_data.json"
+
+dispatch_cookie_selenium:
+  downloader:
+    file_template: "source/{scraper_name}/dispatch_cookie_selenium_{ref_id}.json"
+  extractor:
+    file_template: "extracted/{scraper_name}/dispatch_cookie_selenium_{ref_id}.json"

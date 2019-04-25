@@ -6,7 +6,7 @@ from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 
 class Dispatch(BaseDispatch):
 
-    def create_tasks(self):
+    def submit_tasks(self):
         keyword = 'cookies'
         return {'url': f'https://www.kroger.com/search/api/searchAll?start=0&count=24&query={keyword}&tab=0&monet=true',
                 'headers': {'origin': 'https://www.kroger.com',

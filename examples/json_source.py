@@ -4,7 +4,7 @@ from scraperx.write import Write
 
 class Dispatch(BaseDispatch):
 
-    def create_tasks(self):
+    def submit_tasks(self):
         return {'url': 'https://www.reddit.com/r/funny.json'}
 
 

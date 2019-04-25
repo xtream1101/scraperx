@@ -5,7 +5,7 @@ from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 
 class Dispatch(BaseDispatch):
 
-    def create_tasks(self):
+    def submit_tasks(self):
         return {'url': 'https://www.webscraper.io/test-sites/e-commerce/static/computers/laptops',
                 'page': 1,  # Always starts on page 1
                 }
