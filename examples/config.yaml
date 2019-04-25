@@ -31,7 +31,6 @@ multiple_extractors:
   extractor:
     file_template: "extracted/{scraper_name}/multi_test_{extractor_name}.json"
 
-
 json_source:
   downloader:
     file_template: "source/{scraper_name}/json_source.json"
@@ -44,13 +43,11 @@ qa_results:
   extractor:
     file_template: "extracted/{scraper_name}/qa_data.json"
 
-
 multiple_sources:
   downloader:
     file_template: "source/{scraper_name}/multiple_sources_{source_name}.json"
   extractor:
     file_template: "extracted/{scraper_name}/multiple_sources.json"
-
 
 page_trigger_download:
   downloader:
@@ -58,9 +55,14 @@ page_trigger_download:
   extractor:
     file_template: "extracted/{scraper_name}/page_{page}.json"
 
-
 page_dispatch:
   downloader:
     file_template: "source/{scraper_name}/page_{page}.html"
   extractor:
     file_template: "extracted/{scraper_name}/page_{page}.json"
+
+gen_cookie_requests:
+  downloader:
+    file_template: "source/{scraper_name}/gen_cookie_requests.json"
+  extractor:
+    file_template: "extracted/{scraper_name}/gen_cookie_requests_data.json"

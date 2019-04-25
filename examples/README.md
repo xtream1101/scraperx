@@ -28,6 +28,11 @@ Downlaod and parse a json file
 Set rules around each field and during extraction the check will make sure the extracted data complies with the rules. If not then the extraction fails and no data is saved. The reason is logged as an error.
 
 
+### Generate cookies for each request using `requests`
+`gen_cookie_requests.py`  
+Make a request to first generate a cookie that will be used to build a new url to get the data. This is for when the cookie can be generated using pythons `requests` library and does not need `selenium`. This will be a new cookie for each request that is made.
+
+
 ### Scraper multiple pages of data
 
 #### Example 1 - Trigger the download for the next page on extract
