@@ -21,7 +21,7 @@ class Dispatch(BaseDispatch):
 
         *Preferred way*
         If your code is BEFORE the threading.Timer, then the fn will run
-        10 seconds AFTER you got the cookie. This is the safest way since you
+        5 seconds AFTER you got the cookie. This is the safest way since you
         can never have multiple cookies being generated at once
 
         *Avoid if possible*
