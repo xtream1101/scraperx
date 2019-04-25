@@ -24,7 +24,7 @@ class Dispatch(BaseDispatch):
         10 seconds AFTER you got the cookie. This is the safest way since you
         can never have multiple cookies being generated at once
 
-        *Avoid if posiable*
+        *Avoid if possible*
         If you code is AFTER the threading.Timer and your code takes longer
         then 10 seconds to run it will spawn a new thread even if yours is not
         complete. This can cause an issue if the threads stack up and use all
