@@ -78,20 +78,32 @@ def _run_dispatch(cli_args, dispatch_cls, download_cls, extract_cls):
     if cli_args.tasks:
         tasks = cli_args.tasks
 
-    dispatcher = dispatch_cls(tasks=tasks,
-                              download_cls=download_cls,
-                              extract_cls=extract_cls)
-    if cli_args.dump_tasks:
-        # Dump data to local json file
-        task_file = Write(dispatcher.tasks).write_json()\
-                                           .save_local('tasks.json')
-        num_tasks = len(dispatcher.tasks)
+    def dump_tasks(tasks):
+        # Dump all tasks to local json file
+        task_file = Write(tasks).write_json().save_local('tasks.json')
+        num_tasks = len(tasks)
         logger.info(f"Saved {num_tasks} tasks to {task_file['path']}",
                     extra={'task': None,
                            'scraper_name': config['SCRAPER_NAME']})
 
+    dispatcher = dispatch_cls(tasks=tasks,
+                              download_cls=download_cls,
+                              extract_cls=extract_cls)
+    try_dump_after = False
+    if cli_args.dump_tasks:
+        if dispatcher.tasks:
+            dump_tasks(dispatcher.tasks)
+        else:
+            # there are either no tasks or the scraper returned a generator
+            # in which case the tasks are not known until after they have all
+            # been dispatched
+            try_dump_after = True
+
     # Run the dispatcher...
     dispatcher.dispatch()
+
+    if cli_args.dump_tasks and try_dump_after is True:
+        dump_tasks(dispatcher.tasks)
 
 
 def _run_download(cli_args, download_cls, extract_cls):

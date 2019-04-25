@@ -8,9 +8,8 @@ import threading
 from abc import ABC, abstractmethod
 
 from .. import config
-from ..utils import (rate_limited, threads,
-                     rate_limit_from_period)
 from ..trigger import run_task
+from ..utils import rate_limited, rate_limit_from_period
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +20,7 @@ class BaseDispatch(ABC):
         self._scraper = inspect.getmodule(self)
         self.download_cls = download_cls
         self.extract_cls = extract_cls
+        self.tasks = []  # Used to be able to dump tasks to a file
 
         try:
             # This try/except allows the user to call super() before or after
@@ -33,15 +33,16 @@ class BaseDispatch(ABC):
             tasks = self.submit_tasks()
 
         if isinstance(tasks, types.GeneratorType):
-            self.tasks = tasks
+            self.tasks_generator = tasks
         else:
             if not isinstance(tasks, (list, tuple)):
                 # Make sure tasks is a list and not just a single task
                 tasks = [tasks]
 
+            self.tasks = tasks
             self.num_tasks = len(tasks)
             # Create generator
-            self.tasks = iter(tasks)
+            self.tasks_generator = iter(tasks)
 
     @abstractmethod
     def submit_tasks(self):
@@ -105,7 +106,7 @@ class BaseDispatch(ABC):
                 except Exception:
                     logger.critical("Dispatch failed",
                                     extra={'task': item,
-                                           'scraper_name': config['SCRAPER_NAME']},
+                                           'scraper_name': config['SCRAPER_NAME']},  # noqa E501
                                     exc_info=True)
                 q.task_done()
 
@@ -116,7 +117,9 @@ class BaseDispatch(ABC):
 
         @rate_limited(num_calls=qps)
         def rate_limit_tasks():
-            q.put(next(self.tasks))
+            task = next(self.tasks_generator)
+            self.tasks.append(task)
+            q.put(task)
 
         # Fill the Queue with the data to process
         for _ in range(self.num_tasks):

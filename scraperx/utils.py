@@ -1,5 +1,4 @@
 import time
-import queue
 import logging
 import tempfile
 import threading
@@ -15,50 +14,6 @@ class QAValueError(ValueError):
 
 class DownloadValueError(ValueError):
     pass
-
-
-def threads(num_threads, data, callback, *args, **kwargs):
-    """Spin up threads to process a list of things
-
-    Arguments:
-        num_threads {int} -- The number of threads to create
-        data {list} -- the data to interate over
-        callback {function} -- The function to call
-        *args {args} -- Will be passed to the callback after the data
-        **kwargs {kwargs} -- Will be passed to the callback
-
-    Returns:
-        list -- List of the return values
-                Order may not be the same as the input
-    """
-    q = queue.Queue()
-    item_list = []
-
-    def _thread_run():
-        while True:
-            item = q.get()
-            try:
-                item_list.append(callback(item, *args, **kwargs))
-            except Exception:
-                logger.critical("Dispatch failed",
-                                extra={'task': item,
-                                       'scraper_name': config['SCRAPER_NAME']},
-                                exc_info=True)
-            q.task_done()
-
-    for i in range(num_threads):
-        t = threading.Thread(target=_thread_run)
-        t.daemon = True
-        t.start()
-
-    # Fill the Queue with the data to process
-    for item in data:
-        q.put(item)
-
-    # Start processing the data
-    q.join()
-
-    return item_list
 
 
 def get_file_from_s3(s3, bucket, key):
