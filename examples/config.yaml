@@ -68,6 +68,10 @@ gen_cookie_requests:
     file_template: "extracted/{scraper_name}/gen_cookie_requests_data.json"
 
 dispatch_cookie_selenium:
+  dispatch:
+    ratelimit:
+      type: period
+      value: 0.017  # ~1 min
   downloader:
     file_template: "source/{scraper_name}/dispatch_cookie_selenium_{ref_id}.json"
   extractor:
