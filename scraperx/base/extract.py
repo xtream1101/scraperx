@@ -217,6 +217,15 @@ class BaseExtract(ABC):
 
         return source_files
 
+    def find_css_elements(self, source, css_selectors):
+        # TODO: Add options on which selector is used (first/last/most)
+        # Loop through each selector to see which ones return results, Stop after the first one
+        for selector in css_selectors:
+            results = source.css(selector)
+            if len(results) > 0:
+                # Found results, save selector
+                return source.css(selector)
+
     @abstractmethod
     def extract(self):
         """User created function to extract the source data
