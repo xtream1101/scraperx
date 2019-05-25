@@ -3,7 +3,6 @@ image: python:3.6
 stages:
   - test
   - release
-  - deploy_service
 
 flake8:
   stage: test
@@ -20,10 +19,3 @@ release-package:
     - rm -f dist/*
     - python setup.py sdist
     - twine upload -u ${PYPI_USER} -p ${PYPI_PASS} dist/*
-
-trigger_build:
-  stage: deploy_service
-  only:
-    - master
-  script:
-    - "curl -X POST -F token=${DEPLOY_SERVICE_TOKEN} -F ref=master https://gitlab.serverx.co/api/v4/projects/37/trigger/pipeline"
