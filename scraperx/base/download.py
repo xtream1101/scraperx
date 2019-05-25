@@ -149,7 +149,7 @@ class BaseDownload(ABC):
         logger.info("Saving metadata file",
                     extra={'task': self.task,
                            'scraper_name': config['SCRAPER_NAME']})
-        metadata_file.save(self, filename=filename + '.metadata.json')
+        metadata_file.save(self, filename=filename + '_metadata.json')
 
     def _get_metadata(self):
         """Create the metadata dict
