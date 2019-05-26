@@ -35,7 +35,7 @@ The `__init__` of the `BaseDownload` class can take the following args:
 
 
 When using BaseDownloader, a requests session is created under `self.session`, so every get/post you make will use the same session per task.
-Headers can also be set per call by pasing the keyword args to self.request_get() and self.request_post(). Any kwargs you pass to self.get/post will be pased to the sessions get/post methods.  
+Headers can also be set per call by pasing the keyword args to self.request_get() and self.request_post(). Any kwargs you pass to self.get/post will be pased to the sessions get/post methods.
 
 When using BaseDownloader's get & post functions, it will use the requests session created in __init__ and a python `requests` response object.
 
@@ -44,13 +44,13 @@ A request will retry _n_ times (3 by default) to get a successful status code, e
 
 #### Setting headers/proxies
 
-The ones set in the `self.request_get/request_post` will be combined with the ones set in the `__init__` and override if the key is the same.  
+The ones set in the `self.request_get/request_post` will be combined with the ones set in the `__init__` and override if the key is the same.
 
-self.request_get/request_post kwargs headers/proxy  
-will override  
-self.task[headers/proxy]  
-will override  
-__init__ kwargs headers/proxy  
+self.request_get/request_post kwargs headers/proxy
+will override
+self.task[headers/proxy]
+will override
+__init__ kwargs headers/proxy
 
 Any header/proxy set on the request (get/post/etc) will only be set for that single request. For those values to be set in the session they must be set from the init or be in the task data.
 
@@ -59,13 +59,44 @@ Any header/proxy set on the request (get/post/etc) will only be set for that sin
 Coming to a Readme near you...
 
 
+### Testing
+When updating the extractors there is a chance that it will not work with the previous source files. So having a source and its QA'd data file is useful to test against to verify that data is still extracting correctly.
+
+#### Creating test files
+1. Run `python your_scraper.py create-test path_to/metadata_source_file`
+  - The input file is the `*_metadata.json` file that gets created when you run the scraper and it downloads the source files.
+2. This will copy the metadata file and the sources into the directory `tests/sample_data/your_scraper/` using the time the source was downloaded (from the metadata) as the file name.
+  - It also creates extracted qa files for each of the sources based on your extractors.
+3. The QA files it created will have `_extracted_(qa)_` in the file name. What you have to do it confirm that all values are correct in that file. If everything looks good then fix the file name from having `_extracted_(qa)_` to `_extracted_qa_`. Tjis will let the system know that the file has been checked ans that is the data it will use to compare when testing.
+4. Next is to create the code that will run the tests. Create the file `tests/tests.py` with the contents below
+```python
+import unittest  # The testing frame work to use
+from scraperx.test import ExtractorBaseTest  # Does all the heavy lifting for the test
+from your_scraper import Extract as YourScraperExtract  # Your scrapers extract class
+# If you have multiple scrapers, then import their extract classes here as well
+
+
+# This test will loop through all the test files for the scraper
+class YourScraper(ExtractorBaseTest.TestCase):
+
+    def __init__(self, *args, **kwargs):
+        # The directory that the test files for your scraper are in
+        data_dir = 'tests/sample_data/your_scraper'
+        super().__init__(data_dir, YourScraperExtract)
+
+# If you have multiple scrapers, then create a class for each
+
+# Feel free to include any other unit tests you may want to run as well
+```
+5. Running the tests `python -m unittest discover -vv`
+
+
 ## Config
 
 3 Ways of setting config values:
 - CLI Argument: Will override any other type of config value. Use `-h` to see available options
 - Environment variable: Will override a config value in the yaml
 - Yaml file: Will use these values if no other way is set for a key
-
 
 ### Config values
 
