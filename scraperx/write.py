@@ -53,7 +53,7 @@ class Write:
                          'ensure_ascii': False,
                          }
 
-        if isinstance(self.data, str):
+        if not isinstance(self.data, (list, tuple)):
             # Convert raw string into a list to be saved as json
             json_data = [self.data]
         else:
