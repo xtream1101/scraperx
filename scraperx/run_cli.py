@@ -2,8 +2,7 @@ import os
 import sys
 import json
 import logging
-from pprint import pprint
-from deepdiff import DeepDiff
+from shutil import copyfile
 
 from .write import Write
 from .config import config
@@ -11,61 +10,76 @@ from .config import config
 logger = logging.getLogger(__name__)
 
 
-def _run_test(cli_args, extract_cls):
-    # TODO: Loop over test dir for scraper and extract
-    #       compare the json files using code from centrifuge
-    #       delete the test file after the check runs
-    for _ in ['file']:  # TODO: thread for all files
-        task = {
-            "device_type": "desktop",
-            "id": 0,
-            "scraper_name": config['SCRAPER_NAME'],
-            "url": "http://testing-ground.scraping.pro/blocks"
-        }
-        source_file = f"test_sources/{config['SCRAPER_NAME']}/test_1.html"
-        download_manifest = {
-            "date_downloaded": "2019-01-21",
-            "source_files": [
-                {
-                    "location": "local",
-                    "path": source_file
-                }
-            ],
-            "time_downloaded": "2019-01-21 21:27:36.485610",
-        }
-        # TODO: Forcing this will fail for scrapers that extract
-        #       to multiple files. Need to fix
-        config._set_value('EXTRACTOR_FILE_TEMPLATE',
-                          f"{source_file}_test.json")
+def _create_test(cli_args, extract_cls):
+    # TODO: Support pulling files from s3
+    # Move the metadata file and all sources into the test sample data dir
+    # Update the metadata file to include the new source paths
+    #
 
-        extractor = extract_cls(task, download_manifest)
-        test_files = extractor.run()
-
-        # TODO: Make work for multiple extracted files
-        # for test_file in test_files:
-
-        # Compare the qa files for each output
-        data = {}
-        test_file = test_files[0]['path']
-        with open(test_file) as test_data:
-            data['new'] = json.load(test_data)
-
-        qa_file = f"{source_file}_qa.json"
-        with open(qa_file) as qa_data:
-            data['qa'] = json.load(qa_data)
-
-        diff = DeepDiff(data['qa'], data['new'])
-        if diff != {}:
-            logger.error(f"Errors found in the file {qa_file}",
-                         extra={'task': task,
-                                'scraper_name': config['SCRAPER_NAME']})
-            pprint(diff)
-        else:
-            logger.info("All test qa'd files passed the extraction test",
-                        extra={'task': task,
+    metadata_file = cli_args.metadata
+    if not metadata_file.endswith('_metadata.json'):
+        logger.critical("Input file must be the source metadata file",
+                        extra={'task': None,
                                'scraper_name': config['SCRAPER_NAME']})
+        sys.exit(1)
 
-        os.remove(test_file)
+    with open(metadata_file, 'r') as f:
+        metadata = json.load(f)
+
+    dst_base = os.path.join('tests',
+                            'sample_data',
+                            config['SCRAPER_NAME'],
+                            metadata['download_manifest']['time_downloaded']
+                            .replace(' ', '_'),
+                            )
+
+    # make sure dir esists
+    try:
+        os.makedirs(os.path.dirname(dst_base))
+    except OSError:
+        pass
+
+    current_sources = metadata['download_manifest']['source_files'].copy()
+    metadata_sources = []
+    for idx, source in enumerate(current_sources):
+        new_source = f"{dst_base}_source_{idx}.{source['path'].split('.')[-1]}"
+        copyfile(source['path'], new_source)
+        metadata_sources.append({'location': 'local',
+                                 'path': new_source})
+
+    metadata['download_manifest']['source_files'] = metadata_sources
+
+    # Save metadata
+    with open(f'{dst_base}_metadata.json', 'w') as f:
+        json.dump(metadata, f,
+                  sort_keys=True,
+                  indent=4,
+                  ensure_ascii=False)
+
+    # Run the extractor
+    def save_extracted(data, source_idx, name):
+        data_name = f'{dst_base}_extracted_(qa)_{name}_{source_idx}.json'
+        Write(data).write_json().save_local(data_name)
+
+    extractor = extract_cls(metadata['task'],
+                            metadata['download_manifest'])
+    for source_idx, source in enumerate(metadata_sources):
+        raw_source = None
+        with open(source['path'], 'r') as f:
+            raw_source = f.read()
+        e_tasks = extractor._get_extraction_tasks(raw_source, source_idx)
+        for e_task in e_tasks:
+            # Override what happens with the extracted data
+            e_task['post_extract'] = save_extracted
+            e_task['post_extract_kwargs'] = {'source_idx': source_idx,
+                                             'name': e_task['name'],
+                                             }
+            extractor._extraction_task(e_task, raw_source)
+
+    logger.info((f"Test files created under {dst_base}*."
+                 f" Please QA the extracted files"),
+                extra={'task': metadata['task'],
+                       'scraper_name': config['SCRAPER_NAME']})
 
 
 def _run_dispatch(cli_args, dispatch_cls, download_cls, extract_cls):
@@ -127,10 +141,10 @@ def _run_extract(cli_args, extract_cls):
         metadata_files = []
         for file in os.listdir(os.fsencode(cli_args.source)):
             filename = os.fsdecode(file)
-            if filename.endswith('.metadata.json'):
+            if filename.endswith('_metadata.json'):
                 metadata_files.append(os.path.join(cli_args.source, filename))
     else:
-        metadata_files = [f"{cli_args.source}.metadata.json"]
+        metadata_files = [f"{cli_args.source}_metadata.json"]
 
     for metadata_file in metadata_files:
         metadata = {}
@@ -154,8 +168,8 @@ def run_cli(dispatch_cls=None, download_cls=None, extract_cls=None):
                            'scraper_name': config['SCRAPER_NAME']})
         pprint(config.values)
 
-    elif cli_args.action == 'test':
-        _run_test(cli_args, extract_cls)
+    elif cli_args.action == 'create-test':
+        _create_test(cli_args, extract_cls)
 
     elif cli_args.action == 'dispatch':
         _run_dispatch(cli_args, dispatch_cls, download_cls, extract_cls)

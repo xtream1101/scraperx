@@ -58,8 +58,12 @@ parser_validate = subparsers.add_parser('validate',
 ###
 # Test Source files
 ###
-parser_test = subparsers.add_parser('test',
-                                    help="Run tests on source files")
+parser_test = subparsers.add_parser('create-test',
+                                    help=("Move files into test directory and "
+                                          "generate an extracted qa file"))
+parser_test.add_argument('metadata',
+                         help=("Path to a sources metadata file "
+                               "to create a test for"))
 
 ###
 # Dispatch Arguments

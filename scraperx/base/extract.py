@@ -1,3 +1,4 @@
+import sys
 import logging
 import datetime
 from parsel import Selector
@@ -20,12 +21,6 @@ class BaseExtract(ABC):
         self.time_extracted = datetime.datetime.utcnow()
         self.date_extracted = self.time_extracted.date()
 
-        logger.info("Start Extract",
-                    extra={'task': self.task,
-                           'scraper_name': config['SCRAPER_NAME'],
-                           'time_started': str(self.time_extracted),
-                           })
-
     def run(self):
         """Run the extraction
 
@@ -40,73 +35,91 @@ class BaseExtract(ABC):
         Returns:
             list -- Files generated in the extraction process
         """
+        logger.info("Start Extract",
+                    extra={'task': self.task,
+                           'scraper_name': config['SCRAPER_NAME'],
+                           'time_started': str(self.time_extracted),
+                           })
+
         for source_idx, source_file in enumerate(self._get_sources()):
             raw_source = None
             with open(source_file, 'r') as f:
                 raw_source = f.read()
 
-            extraction_tasks = self.extract(raw_source, source_idx)
-            if not isinstance(extraction_tasks, (list, tuple)):
-                extraction_tasks = [extraction_tasks]
-
+            extraction_tasks = self._get_extraction_tasks(raw_source,
+                                                          source_idx)
             for extraction_task in extraction_tasks:
-                if not self._validate_extraction_task(extraction_task):
-                    continue
-
-                extract_source = extraction_task.get('raw_source', raw_source)
-
-                if not isinstance(extract_source, (list, tuple)):
-
-                    if 'selectors' in extraction_task:
-                        # It is html, so parse it out
-                        parsel_source = Selector(text=extract_source)
-                        # TODO: May want to only use what gets the most results?
-                        #       or the first? last? Currently it will use all
-                        #       selectors and get all the results
-                        all_selectors = ', '.join(extraction_task['selectors'])
-                        source_items = parsel_source.css(all_selectors)
-                    else:
-                        # Not sure what to do with the content so send it all
-                        # as a single item
-                        source_items = [extract_source]
-                else:
-                    # source is already a list
-                    source_items = extract_source
-
-                try:
-                    output = []
-                    # Used when you want to start at a different number
-                    offset = extraction_task.get('idx_offset', 0)
-                    for idx, item in enumerate(source_items, start=offset):
-                        result = extraction_task['callback'](item, idx)
-                        if not result:
-                            continue
-                        # QA Result
-                        # TODO: Should the QA cast to the types?
-                        #       Or just make sure it is that type
-                        self._qa_result(idx, extraction_task.get('qa'), result)
-                        output.append(result)
-
-                except QAValueError as e:
-                    logger.error(f"Extraction Failed: {e}",
-                                 extra={'task': self.task,
-                                        'scraper_name': config['SCRAPER_NAME']})
-                except Exception:
-                    logger.exception("Extraction Failed",
-                                     extra={'task': self.task,
-                                            'scraper_name': config['SCRAPER_NAME']})  # noqa E501
-
-                else:
-                    post_extract = extraction_task.get('post_extract',
-                                                       lambda *args, **kwargs: None)  # noqa E501
-                    post_extract_kwargs = extraction_task.get('post_extract_kwargs', {})  # noqa E501
-                    post_extract(output, **post_extract_kwargs)
+                self._extraction_task(extraction_task, raw_source)
 
         logger.info('Extract finished',
                     extra={'task': self.task,
                            'scraper_name': config['SCRAPER_NAME'],
                            'time_finished': str(datetime.datetime.utcnow()),
                            })
+
+    def _get_extraction_tasks(self, raw_source, source_idx):
+        extraction_tasks = self.extract(raw_source, source_idx)
+        if not isinstance(extraction_tasks, (list, tuple)):
+            extraction_tasks = [extraction_tasks]
+
+        for extraction_task in extraction_tasks:
+            if not self._validate_extraction_task(extraction_task):
+                logger.critical('Invalid extraction task',
+                                extra={'task': self.task,
+                                       'scraper_name': config['SCRAPER_NAME']})
+                sys.exit(1)
+
+        return extraction_tasks
+
+    def _extraction_task(self, extraction_task, raw_source):
+        extract_source = extraction_task.get('raw_source', raw_source)
+
+        if not isinstance(extract_source, (list, tuple)):
+
+            if 'selectors' in extraction_task:
+                # It is html, so parse it out
+                parsel_source = Selector(text=extract_source)
+                # TODO: May want to only use what gets the most results?
+                #       or the first? last? Currently it will use all
+                #       selectors and get all the results
+                all_selectors = ', '.join(extraction_task['selectors'])
+                source_items = parsel_source.css(all_selectors)
+            else:
+                # Not sure what to do with the content so send it all
+                # as a single item
+                source_items = [extract_source]
+        else:
+            # source is already a list
+            source_items = extract_source
+
+        try:
+            output = []
+            # Used when you want to start at a different number
+            offset = extraction_task.get('idx_offset', 0)
+            for idx, item in enumerate(source_items, start=offset):
+                result = extraction_task['callback'](item, idx)
+                if not result:
+                    continue
+                # QA Result
+                # TODO: Should the QA cast to the types?
+                #       Or just make sure it is that type
+                self._qa_result(idx, extraction_task.get('qa'), result)
+                output.append(result)
+
+        except QAValueError as e:
+            logger.error(f"Extraction Failed: {e}",
+                         extra={'task': self.task,
+                                'scraper_name': config['SCRAPER_NAME']})
+        except Exception:
+            logger.exception("Extraction Failed",
+                             extra={'task': self.task,
+                                    'scraper_name': config['SCRAPER_NAME']})  # noqa E501
+
+        else:
+            post_extract = extraction_task.get('post_extract',
+                                               lambda *args, **kwargs: None)  # noqa E501
+            post_extract_kwargs = extraction_task.get('post_extract_kwargs', {})  # noqa E501
+            post_extract(output, **post_extract_kwargs)
 
     def save_as(self, data, file_format='json', template_values={}):
         write_data = Write(data)
@@ -219,7 +232,8 @@ class BaseExtract(ABC):
 
     def find_css_elements(self, source, css_selectors):
         # TODO: Add options on which selector is used (first/last/most)
-        # Loop through each selector to see which ones return results, Stop after the first one
+        # Loop through each selector to see which ones return results,
+        # Stop after the first one
         for selector in css_selectors:
             results = source.css(selector)
             if len(results) > 0:
