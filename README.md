@@ -64,9 +64,9 @@ When updating the extractors there is a chance that it will not work with the pr
 
 #### Creating test files
 1. Run `python your_scraper.py create-test path_to/metadata_source_file`
-  - The input file is the `*_metadata.json` file that gets created when you run the scraper and it downloads the source files.
+    - The input file is the `*_metadata.json` file that gets created when you run the scraper and it downloads the source files.
 2. This will copy the metadata file and the sources into the directory `tests/sample_data/your_scraper/` using the time the source was downloaded (from the metadata) as the file name.
-  - It also creates extracted qa files for each of the sources based on your extractors.
+    - It also creates extracted qa files for each of the sources based on your extractors.
 3. The QA files it created will have `_extracted_(qa)_` in the file name. What you have to do it confirm that all values are correct in that file. If everything looks good then fix the file name from having `_extracted_(qa)_` to `_extracted_qa_`. Tjis will let the system know that the file has been checked ans that is the data it will use to compare when testing.
 4. Next is to create the code that will run the tests. Create the file `tests/tests.py` with the contents below
 ```python
