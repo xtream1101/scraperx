@@ -144,7 +144,7 @@ class BaseDownload(ABC):
         appended to the name
         """
         metadata = self._get_metadata()
-        metadata_file = Write(metadata).write_json()
+        metadata_file = Write(metadata).write_json_lines()
         filename = metadata['download_manifest']['source_files'][0]['path']
         logger.info("Saving metadata file",
                     extra={'task': self.task,
