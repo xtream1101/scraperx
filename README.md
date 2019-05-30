@@ -14,6 +14,12 @@
 
 ## Developing
 
+Any time the scraper needs to override the bases `__init__`, always pass in `*args` & `**kwargs` like so:  
+```python
+def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+```
+
 ### Dispatching
 
 #### Task data
@@ -26,12 +32,12 @@ This is a dict of values that is passed to each step of the process. The scraper
 
 ### Downloading
 
-Uses a requests.Session to make get and post requests.
+Uses a `requests.Session` to make get and post requests.
 The `__init__` of the `BaseDownload` class can take the following args:
-- task: needed no matter what
-- headers: (Named arg) dict to set headers for the whole session. default: random User-Agent for the device type, will use desktop if no device type is set)
+- task: Required. The task from the dispatcher
+- headers: (Named arg) dict to set headers for the whole session. default: random User-Agent for the device type, will use desktop if no device type is set
 - proxy: (Named arg) Proxy string to use for the requests
-- ignore_codes: (Named arg) List of HTTP Status codes to not retry on
+- ignore_codes: (Named arg) List of HTTP Status codes to not retry on. If these codes are seen, it will treat the request as any other success. 
 
 
 When using BaseDownloader, a requests session is created under `self.session`, so every get/post you make will use the same session per task.
@@ -46,13 +52,36 @@ A request will retry _n_ times (3 by default) to get a successful status code, e
 
 The ones set in the `self.request_get/request_post` will be combined with the ones set in the `__init__` and override if the key is the same.
 
-self.request_get/request_post kwargs headers/proxy
-will override
-self.task[headers/proxy]
-will override
-__init__ kwargs headers/proxy
+self.request_get/request_post kwargs headers/proxy  
+will override  
+self.task[headers/proxy]  
+will override  
+__init__ kwargs headers/proxy  
 
 Any header/proxy set on the request (get/post/etc) will only be set for that single request. For those values to be set in the session they must be set from the init or be in the task data.
+
+#### Proxies
+If you have a list of proxies that the downloader should auto rotate between they can be saved in a csv in the following format:
+```csv
+proxy,country
+http://user:pass@some-server.com:5500,US
+http://user:pass@some-server.com:5501,US
+http://user:pass@some-server.com:6501,DE
+```
+Set the env var `PROXY_FILE` to the path of the above csv for the scraper to load it in.  
+If you have not passed in a proxy directly in the task and this proxy csv exists, then it will pull a random proxy from this file. It will use the `proxy_country` if set in the task data to select the correct country to proxy to.
+
+#### User-Agent
+If you have `device_type` set in the task data, then a random user-agent for that device type will be used. If `device_type` is not set, it will default to use a desktop user-agent.
+To set your own list of user-agents to choose from, create a csv in the following format:  
+```csv
+device_type,agent
+desktop,"Some User Agent for desktop"
+desktop,"Another User Agent for desktop"
+mobile,"Now one for mobile"
+```
+Set the env var `UA_FILE` to the path of the above csv for the scraper to load it in.  
+If you have not directly set a user-agent, a ramdon one will be pulled from the csv based on the `device_type` in the task data.
 
 
 ### Extracting
@@ -70,7 +99,7 @@ When updating the extractors there is a chance that it will not work with the pr
 3. The QA files it created will have `_extracted_(qa)_` in the file name. What you have to do it confirm that all values are correct in that file. If everything looks good then fix the file name from having `_extracted_(qa)_` to `_extracted_qa_`. Tjis will let the system know that the file has been checked ans that is the data it will use to compare when testing.
 4. Next is to create the code that will run the tests. Create the file `tests/tests.py` with the contents below
 ```python
-import unittest  # The testing frame work to use
+import unittest  # The testingframe work to use
 from scraperx.test import ExtractorBaseTest  # Does all the heavy lifting for the test
 from your_scraper import Extract as YourScraperExtract  # Your scrapers extract class
 # If you have multiple scrapers, then import their extract classes here as well
@@ -82,7 +111,7 @@ class YourScraper(ExtractorBaseTest.TestCase):
     def __init__(self, *args, **kwargs):
         # The directory that the test files for your scraper are in
         data_dir = 'tests/sample_data/your_scraper'
-        super().__init__(data_dir, YourScraperExtract)
+        super().__init__(data_dir, YourScraperExtract, *args, **kwargs)
 
 # If you have multiple scrapers, then create a class for each
 
