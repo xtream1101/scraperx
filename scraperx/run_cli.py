@@ -144,7 +144,10 @@ def _run_extract(cli_args, extract_cls):
             if filename.endswith('_metadata.json'):
                 metadata_files.append(os.path.join(cli_args.source, filename))
     else:
-        metadata_files = [f"{cli_args.source}_metadata.json"]
+        if cli_args.source.endswith('_metadata.json'):
+            metadata_files = [cli_args.source]
+        else:
+            metadata_files = [f"{cli_args.source}_metadata.json"]
 
     for metadata_file in metadata_files:
         metadata = {}
