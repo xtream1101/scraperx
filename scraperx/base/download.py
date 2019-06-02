@@ -345,13 +345,8 @@ class BaseDownload(ABC):
         Try and set a default user agent for the session
         """
         device_type = self.task.get('device_type', 'desktop')
-        try:
-            ua = self._get_user_agent(device_type)
-            self.session.headers.update({'user-agent': ua})
-        except ValueError:
-            logger.error("Invalid device type {device_type} for UA",
-                         extra={'task': self.task,
-                                'scraper_name': config['SCRAPER_NAME']})
+        ua = self._get_user_agent(device_type)
+        self.session.headers.update({'user-agent': ua})
 
     def new_profile(self, **kwargs):
         """Set a new user agent and proxy to be used for the request

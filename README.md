@@ -79,7 +79,8 @@ Set the env var `PROXY_FILE` to the path of the above csv for the scraper to loa
 If you have not passed in a proxy directly in the task and this proxy csv exists, then it will pull a random proxy from this file. It will use the `proxy_country` if set in the task data to select the correct country to proxy to.
 
 #### User-Agent
-If you have `device_type` set in the task data, then a random user-agent for that device type will be used. If `device_type` is not set, it will default to use a desktop user-agent.
+If you have not directly set a user-agent, a random one will be pulled based on the `device_type` in the task data.  
+If `device_type` is not set, it will default to use a desktop user-agent.
 To set your own list of user-agents to choose from, create a csv in the following format:  
 ```csv
 device_type,user_agent
@@ -88,7 +89,6 @@ desktop,"Another User Agent for desktop"
 mobile,"Now one for mobile"
 ```
 Set the env var `UA_FILE` to the path of the above csv for the scraper to load it in.  
-If you have not directly set a user-agent, a ramdon one will be pulled from the csv based on the `device_type` in the task data.
 
 
 ### Extracting
