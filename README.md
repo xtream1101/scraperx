@@ -94,6 +94,44 @@ Set the env var `UA_FILE` to the path of the above csv for the scraper to load i
 ### Extracting
 Coming to a Readme near you...
 
+#### Built in parsers
+There are a few built in parsers that can assist with extracting some data.  
+```python
+from scraperx import parsers
+
+###
+# Price
+###
+# This will parse the price out of a string and return the low and high values as floats
+raw_p1_str = '15,48€'
+p1 = parsers.price(raw_p1_str)
+# p1 = {'low': 15.48, 'high': None}
+
+raw_p2_str = '1,999'
+p2 = parsers.price(raw_p2_str)
+# p2 = {'low': 1999.0, 'high': None}
+
+raw_p3_str = '$49.95 - $99.99'
+p3 = parsers.price(raw_p3_str)
+# p3 = {'low': 49.95, 'high': 99.99}
+
+
+###
+# Rating
+###
+# Parse the rating from astring
+# Examples: https://regex101.com/r/ChmgmF/3
+raw_r1_str = '4.4 out of 5 stars'
+r1 = parsers.rating(raw_r1_str)
+# r1 = 4.4
+
+raw_r2_str = 'An average of 4.1 star'
+r2 = parsers.rating(raw_r2_str)
+# r2 = 4.1
+```
+
+If there are more cases you would like these parsers to catch please open up an issue with the use case you are trying to parse.
+
 
 ### Testing
 When updating the extractors there is a chance that it will not work with the previous source files. So having a source and its QA'd data file is useful to test against to verify that data is still extracting correctly.
