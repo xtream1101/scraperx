@@ -41,11 +41,18 @@ The `__init__` of the `BaseDownload` class can take the following args:
 
 
 When using BaseDownloader, a requests session is created under `self.session`, so every get/post you make will use the same session per task.
-Headers can also be set per call by pasing the keyword args to self.request_get() and self.request_post(). Any kwargs you pass to self.get/post will be pased to the sessions get/post methods.
+Headers can also be set per call by pasing the keyword args to `self.request_get()` and `self.request_post()`. Any kwargs you pass to self.request_get/post will be pased to the sessions get/post methods.
 
 When using BaseDownloader's get & post functions, it will use the requests session created in __init__ and a python `requests` response object.
 
 A request will retry _n_ times (3 by default) to get a successful status code, each retry it will try and trigger a function called `new_profile()` where you have the chance to switch the headers/proxy the request is using (will only update for that request?). If that function does not exist, it will try again with the same data.
+
+There are a few custom arguments that can be passed into the `self.request_*` functions that this sdk will use. All others will be passed to the `requests` methods call.  
+Named arguments:
+- **max_tries**: Default=3. Type int. The number of tries a request will be tried, each try it will try and get a new proxy and User-Agent
+- **custom_source_checks**: Default=None. Type list of lists. Used to set the request to a set status code based on a regex that runs on the page source.
+    - This will look to see if the words _captcha_ are in the source page and set that response status code to a 403, with the status message being _Capacha Found_. The status message is there so you know if it is a real 403 or your custom status.
+        -  `[(re.compile(r'captcha', re.I), 403, 'Capacha Found')]`
 
 
 #### Setting headers/proxies
@@ -75,7 +82,7 @@ If you have not passed in a proxy directly in the task and this proxy csv exists
 If you have `device_type` set in the task data, then a random user-agent for that device type will be used. If `device_type` is not set, it will default to use a desktop user-agent.
 To set your own list of user-agents to choose from, create a csv in the following format:  
 ```csv
-device_type,agent
+device_type,user_agent
 desktop,"Some User Agent for desktop"
 desktop,"Another User Agent for desktop"
 mobile,"Now one for mobile"

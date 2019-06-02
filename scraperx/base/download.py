@@ -1,3 +1,4 @@
+import re
 import inspect
 import logging
 import datetime
@@ -245,7 +246,8 @@ class BaseDownload(ABC):
         Raises:
             ValueError -- If the max number of attempts have been met
         """
-        def make_request(url, max_tries=3, _try_count=1, **kwargs):
+        def make_request(url, max_tries=3, _try_count=1, custom_source_checks=(),
+                         **kwargs):
             if max_tries < 1:
                 # TODO: Find a better error to raise
                 raise ValueError("max_tries must be >= 1")
@@ -265,9 +267,22 @@ class BaseDownload(ABC):
             try:
                 r = self.session.request(http_method, url, **kwargs)
 
+                custom_status_message = None
+                if custom_source_checks:
+                    for re_text, status_code, message in custom_source_checks:
+                        if re.search(re_text, r.text):
+                            r.status_code = status_code
+                            custom_status_message = message
+
+                if custom_status_message:
+                    status_message = custom_status_message
+                else:
+                    status_message = requests.status_codes._codes[r.status_code][0]
+
                 log_extra = {'url': r.url,
                              'method': http_method,
                              'status_code': r.status_code,
+                             'status_message': status_message,
                              'headers': {'request': dict(r.request.headers),
                                          'response': dict(r.headers)},
                              'response_time': r.elapsed.total_seconds(),
@@ -287,10 +302,10 @@ class BaseDownload(ABC):
                         return request_method(url,
                                               max_tries=max_tries,
                                               _try_count=_try_count + 1,
+                                              custom_source_checks=custom_source_checks,
                                               **kwargs)
                     else:
-                        logger.error("Download failed: status code",
-                                     extra=log_extra)
+                        logger.error("Download failed", extra=log_extra)
                         r.raise_for_status()
 
             except requests.exceptions.HTTPError:
@@ -307,12 +322,12 @@ class BaseDownload(ABC):
                 else:
                     logger.exception(f"Download failed: {str(e)}",
                                      extra={'url': url,
-                                            'session_headers': self.session.headers,  # noqa E501
+                                            'session_headers': self.session.headers,
                                             'request_kwargs': kwargs,
                                             'num_tries': _try_count,
                                             'max_tries': max_tries,
                                             'task': self.task,
-                                            'scraper_name': config['SCRAPER_NAME'],  # noqa E501
+                                            'scraper_name': config['SCRAPER_NAME'],
                                             'proxy': proxy_used})
                     raise DownloadValueError(f"Download failed: {str(e)}")
 
