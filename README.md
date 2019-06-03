@@ -11,6 +11,9 @@
     - To see the arguments for the command: `python your_scraper.py dispatch -h`
     - See all the commands available: `python your_scraper.py -h`
 
+#### Sample scrapers
+Sample scrapers can be found in the [examples](./examples) folder of this repo
+
 
 ## Developing
 
@@ -92,10 +95,26 @@ Set the env var `UA_FILE` to the path of the above csv for the scraper to load i
 
 
 ### Extracting
-Coming to a Readme near you...
 
-#### Built in parsers
-There are a few built in parsers that can assist with extracting some data.  
+[Parsel documentation](https://parsel.readthedocs.io/en/latest/)  
+
+#### Data extraction helpers
+`find_css_elements(source, css_selectors)`  
+  - `source` - Parsel object to run the css selectors on
+  - `css_selectors` - A list of css selectors to try and extract the data
+
+Returns a Parsel element from the first css selector that returns data.  
+
+This snippet would be in the scrapers `Extract(BaseExtract)` class, used in the method that is extracting the data.
+```python
+title_selectors = ['h3',
+                   'span.title',
+                   ]
+result['title'] = self.find_css_elements(element, title_selectors)\
+                      .xpath('string()').extract_first().strip()
+```
+
+There are a few built in parsers that can assist with extracting some types of data 
 ```python
 from scraperx import parsers
 
@@ -222,8 +241,3 @@ search:
 ```
 
 To override the `value` in the above snippet using an environment variable, set `DISPATCH_RATELIMIT_VALUE=1`. This will overide all dispatch ratelimit values in default and custom.
-
-
-
-### Sample scrapers
-Samle scrapers can be found in the [examples](./examples) folder of this repo
