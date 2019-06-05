@@ -241,3 +241,8 @@ search:
 ```
 
 To override the `value` in the above snippet using an environment variable, set `DISPATCH_RATELIMIT_VALUE=1`. This will overide all dispatch ratelimit values in default and custom.
+
+
+## Issues
+If you run into the error `may have been in progress in another thread when fork() was called.` when running the scraper locally on a mac. Then set the env var `export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES`  
+This is because of a security setting on macs when spawning threads from threads https://github.com/ansible/ansible/issues/32499#issuecomment-341578864
