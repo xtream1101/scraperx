@@ -139,10 +139,10 @@ def _run_extract(cli_args, extract_cls):
     """
     if os.path.isdir(cli_args.source):
         metadata_files = []
-        for file in os.listdir(os.fsencode(cli_args.source)):
-            filename = os.fsdecode(file)
-            if filename.endswith('_metadata.json'):
-                metadata_files.append(os.path.join(cli_args.source, filename))
+        for root, dirs, files in os.walk(cli_args.source):
+            for filename in files:
+                if filename.endswith('_metadata.json'):
+                    metadata_files.append(os.path.join(root, filename))
     else:
         if cli_args.source.endswith('_metadata.json'):
             metadata_files = [cli_args.source]
