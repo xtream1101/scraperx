@@ -57,6 +57,12 @@ Named arguments:
     - This will look to see if the words _captcha_ are in the source page and set that response status code to a 403, with the status message being _Capacha Found_. The status message is there so you know if it is a real 403 or your custom status.
         -  `[(re.compile(r'captcha', re.I), 403, 'Capacha Found')]`
 
+#### Download Exceptions
+These exceptions will be raised when calling `self.request_*`. They will be caught saftly so the scraper does not need to catch them. But if the scraper wanted to do something based on the exception, there can be a `try/except` around the scrapers `self.request_*`.  
+
+ - `scraperx.exceptions.DownloadValueError`: If there is an exception that is not caught by the others
+ - `scraperx.exceptions.HTTPIgnoreCodeError`: When the status code of the request is found in the `ignore_codes` argument of BaseDownload
+ - `requests.exceptions.HTTPError`: When the requests returns a non successful status code and was not found in `ignore_codes` 
 
 #### Setting headers/proxies
 

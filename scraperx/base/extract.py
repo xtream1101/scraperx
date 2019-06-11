@@ -6,7 +6,9 @@ from abc import ABC, abstractmethod
 
 from .. import config
 from ..write import Write
-from ..utils import get_file_from_s3, get_s3_resource, QAValueError
+from ..exceptions import QAValueError
+from ..utils import get_file_from_s3, get_s3_resource
+
 
 logger = logging.getLogger(__name__)
 

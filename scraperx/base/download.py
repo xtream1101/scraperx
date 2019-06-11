@@ -10,7 +10,7 @@ from ..write import Write
 from ..proxies import get_proxy
 from ..user_agent import get_user_agent
 from ..trigger import run_task
-from ..utils import DownloadValueError
+from ..exceptions import DownloadValueError, HTTPIgnoreCodeError
 
 logger = logging.getLogger(__name__)
 
@@ -103,12 +103,13 @@ class BaseDownload(ABC):
         """
         try:
             source_files = self.download()
-            if not isinstance(source_files, (list, tuple)):
-                # Make sure source files is a list
-                source_files = [source_files]
-            self._manifest['source_files'].extend(source_files)
+            if source_files:
+                if not isinstance(source_files, (list, tuple)):
+                    # Make sure source files is a list
+                    source_files = [source_files]
+                self._manifest['source_files'].extend(source_files)
 
-        except requests.exceptions.HTTPError:
+        except (requests.exceptions.HTTPError, HTTPIgnoreCodeError):
             # The status code was logged during the request, no need to repeat
             pass
         except DownloadValueError:
@@ -145,12 +146,13 @@ class BaseDownload(ABC):
         appended to the name
         """
         metadata = self._get_metadata()
-        metadata_file = Write(metadata).write_json_lines()
-        filename = metadata['download_manifest']['source_files'][0]['path']
-        logger.info("Saving metadata file",
-                    extra={'task': self.task,
-                           'scraper_name': config['SCRAPER_NAME']})
-        metadata_file.save(self, filename=filename + '_metadata.json')
+        if metadata['download_manifest']['source_files']:
+            metadata_file = Write(metadata).write_json_lines()
+            filename = metadata['download_manifest']['source_files'][0]['path']
+            logger.info("Saving metadata file",
+                        extra={'task': self.task,
+                               'scraper_name': config['SCRAPER_NAME']})
+            metadata_file.save(self, filename=filename + '_metadata.json')
 
     def _get_metadata(self):
         """Create the metadata dict
@@ -305,10 +307,15 @@ class BaseDownload(ABC):
                                               custom_source_checks=custom_source_checks,
                                               **kwargs)
                     else:
-                        logger.error("Download failed", extra=log_extra)
-                        r.raise_for_status()
+                        if r.status_code in self._ignore_codes:
+                            raise HTTPIgnoreCodeError(f"Got Ignore Code {r.status_code}",
+                                                      response=r)
+                        else:
+                            # Log here so we can log `log_extra` data
+                            logger.error("Download failed", extra=log_extra)
+                            r.raise_for_status()
 
-            except requests.exceptions.HTTPError:
+            except (requests.exceptions.HTTPError, HTTPIgnoreCodeError):
                 raise
 
             except Exception as e:

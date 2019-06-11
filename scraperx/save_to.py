@@ -48,7 +48,8 @@ class SaveTo:
         if not name_template:
             name_template = config[f'{context_type}_FILE_TEMPLATE']
 
-        filename = name_template.format(**context.task,
+        task_safe = {k: str(v) for k, v in context.task.items()}
+        filename = name_template.format(**task_safe,
                                         **template_values,
                                         **additional_args)
 

@@ -2,18 +2,9 @@ import time
 import logging
 import tempfile
 import threading
-
 from .config import config
 
 logger = logging.getLogger(__name__)
-
-
-class QAValueError(ValueError):
-    pass
-
-
-class DownloadValueError(ValueError):
-    pass
 
 
 def get_file_from_s3(s3, bucket, key):
