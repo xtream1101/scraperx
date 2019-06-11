@@ -36,7 +36,7 @@ def _load_user_agents():
             logger.info(f"Reading user agent file {ua_file}",
                         extra={'task': None,
                                'scraper_name': config['SCRAPER_NAME']})
-            with open(ua_file, 'r') as f:
+            with open(ua_file, 'r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
                     device_type = row['device_type'].strip().lower()

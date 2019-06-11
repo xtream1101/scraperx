@@ -18,9 +18,10 @@ def _load_proxies():
             logger.info(f"Reading proxy file {proxy_file}",
                         extra={'task': None,
                                'scraper_name': config['SCRAPER_NAME']})
-            with open(proxy_file, 'r') as f:
+            with open(proxy_file, 'r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
+                    print(row)
                     country = row['country'].strip().upper()
                     proxies[country].append(row['proxy'].strip())
         except Exception:
