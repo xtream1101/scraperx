@@ -60,7 +60,7 @@ class ExtractorBaseTest:
                 'sample_data',
                 config['SCRAPER_NAME'],
                 metadata['download_manifest']['time_downloaded']
-                .replace(' ', '_'),
+                .replace('-', '').replace(':', ''),
             )
 
             e_tasks = extractor._get_extraction_tasks(raw_source, s_idx)

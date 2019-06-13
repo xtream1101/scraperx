@@ -26,18 +26,18 @@ class BaseDownload(ABC):
         self._ignore_codes = ignore_codes
 
         # Set timestamps
-        self.time_downloaded = datetime.datetime.utcnow()
-        self.date_downloaded = datetime.datetime.utcnow().date()
+        self.time_downloaded = datetime.datetime.utcnow().isoformat() + 'Z'
+        self.date_downloaded = str(datetime.datetime.utcnow().date())
 
         logger.info("Start Download",
                     extra={'task': self.task,
                            'scraper_name': config['SCRAPER_NAME'],
-                           'time_started': str(self.time_downloaded),
+                           'time_started': self.time_downloaded,
                            })
 
         self._manifest = {'source_files': [],
-                          'time_downloaded': str(self.time_downloaded),
-                          'date_downloaded': str(self.date_downloaded),
+                          'time_downloaded': self.time_downloaded,
+                          'date_downloaded': self.date_downloaded,
                           }
 
         # Set up a requests session
@@ -136,7 +136,7 @@ class BaseDownload(ABC):
         logger.info('Download finished',
                     extra={'task': self.task,
                            'scraper_name': config['SCRAPER_NAME'],
-                           'time_finished': str(datetime.datetime.utcnow()),
+                           'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
                            })
 
     def _save_metadata(self):
@@ -265,7 +265,7 @@ class BaseDownload(ABC):
                 kwargs['proxies'] = self._format_proxy(kwargs['proxies'])
                 proxy_used = kwargs['proxies'].get('http')
 
-            time_of_request = datetime.datetime.utcnow()
+            time_of_request = datetime.datetime.utcnow().isoformat() + 'Z'
             try:
                 r = self.session.request(http_method, url, **kwargs)
 
@@ -288,7 +288,7 @@ class BaseDownload(ABC):
                              'headers': {'request': dict(r.request.headers),
                                          'response': dict(r.headers)},
                              'response_time': r.elapsed.total_seconds(),
-                             'time_of_request:': str(time_of_request),
+                             'time_of_request': time_of_request,
                              'num_tries': _try_count,
                              'max_tries': max_tries,
                              'task': self.task,

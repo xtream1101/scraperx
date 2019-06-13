@@ -20,8 +20,8 @@ class BaseExtract(ABC):
 
         self.download_manifest = download_manifest
 
-        self.time_extracted = datetime.datetime.utcnow()
-        self.date_extracted = self.time_extracted.date()
+        self.time_extracted = datetime.datetime.utcnow().isoformat() + 'Z'
+        self.date_extracted = str(datetime.datetime.utcnow().date())
 
     def run(self):
         """Run the extraction
@@ -40,7 +40,7 @@ class BaseExtract(ABC):
         logger.info("Start Extract",
                     extra={'task': self.task,
                            'scraper_name': config['SCRAPER_NAME'],
-                           'time_started': str(self.time_extracted),
+                           'time_started': self.time_extracted,
                            })
 
         for source_idx, source_file in enumerate(self._get_sources()):
@@ -56,7 +56,7 @@ class BaseExtract(ABC):
         logger.info('Extract finished',
                     extra={'task': self.task,
                            'scraper_name': config['SCRAPER_NAME'],
-                           'time_finished': str(datetime.datetime.utcnow()),
+                           'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
                            })
 
     def _get_extraction_tasks(self, raw_source, source_idx):

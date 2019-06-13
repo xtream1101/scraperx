@@ -30,7 +30,7 @@ def _create_test(cli_args, extract_cls):
                             'sample_data',
                             config['SCRAPER_NAME'],
                             metadata['download_manifest']['time_downloaded']
-                            .replace(' ', '_'),
+                            .replace('-', '').replace(':', ''),
                             )
 
     # make sure dir esists
