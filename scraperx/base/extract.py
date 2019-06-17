@@ -58,7 +58,7 @@ class BaseExtract(ABC):
 
             except Exception:
                 logger.exception("Extraction Failed",
-                                extra={'task': self.task,
+                                 extra={'task': self.task,
                                         'scraper_name': config['SCRAPER_NAME']})
 
         logger.info('Extract finished',
@@ -231,7 +231,7 @@ class BaseExtract(ABC):
                                'file': source_file})
             if source_file.startswith('s3://'):
                 s3 = get_s3_resource(self)
-                buckey, key = source_file.replace('s3://', '').split('/', 1)
+                bucket, key = source_file.replace('s3://', '').split('/', 1)
                 # Need to get the file from s3.
                 source_files.append(get_file_from_s3(s3, bucket, key))
             else:
