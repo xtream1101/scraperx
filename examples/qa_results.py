@@ -12,7 +12,7 @@ class Download(BaseDownload):
 
     def download(self):
         r = self.request_get(self.task['url'])
-        return Write(r.text).write_file().save(self)
+        self.save_request(r)
 
 
 class Extract(BaseExtract):

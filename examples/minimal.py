@@ -1,4 +1,3 @@
-from scraperx.write import Write
 from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 
 
@@ -75,7 +74,7 @@ class Download(BaseDownload):
 
         # Save the response contents to a file as set in
         # the config `DOWNLOADER_FILE_TEMPLATE`
-        return Write(r.text).write_file().save(self)
+        self.save_request(r)
 
 
 class Extract(BaseExtract):

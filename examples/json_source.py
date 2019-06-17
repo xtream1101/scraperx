@@ -1,5 +1,4 @@
 from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
-from scraperx.write import Write
 
 
 class Dispatch(BaseDispatch):
@@ -13,11 +12,7 @@ class Download(BaseDownload):
     def download(self):
         r = self.request_get(self.task['url'])
 
-        # Save as formatted json. Easy to read, larger file size.
-        # return Write(r.json()).write_json().save(self)
-
-        # Save as json string unformatted (all on one line). Makes the file smaller.
-        return Write(r.text).write_file().save(self)
+        self.save_request(r)
 
 
 class Extract(BaseExtract):

@@ -128,9 +128,7 @@ class SaveLocal:
             with open(self.filename, 'wb') as outfile:
                 outfile.write(self.data.read())
 
-        return {'location': 'local',
-                'path': self.filename,
-                }
+        return self.filename
 
 
 class SaveS3:
@@ -193,7 +191,4 @@ class SaveS3:
                          extra={'task': self.context.task,
                                 'scraper_name': config['SCRAPER_NAME']})
 
-        return {'location': 's3',
-                'bucket': bucket,
-                'path': self.filename,
-                }
+        return f"s3://{bucket}/{self.filename}"

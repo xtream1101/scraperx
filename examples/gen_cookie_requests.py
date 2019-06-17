@@ -1,5 +1,4 @@
 import urllib.parse
-from scraperx.write import Write
 from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 
 
@@ -19,7 +18,7 @@ class Download(BaseDownload):
         url = self.gen_url()
         r = self.request_get(url)
 
-        return Write(r.json()).write_json().save(self)
+        self.save_request(r)
 
     def get_visitor_id(self):
         # First make a request to generate the cookie `visitorId` to be used in the finial url

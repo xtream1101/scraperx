@@ -3,7 +3,6 @@ import random
 import logging
 import threading
 import urllib.parse
-from scraperx.write import Write
 from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract, config
 
 logger = logging.getLogger(__name__)
@@ -115,7 +114,7 @@ class Download(BaseDownload):
     def download(self):
         r = self.request_get(self.gen_url())
 
-        return Write(r.json()).write_json().save(self)
+        self.save_request(r)
 
     def gen_url(self):
         base_url = 'https://redsky.target.com/v2/plp/search/'

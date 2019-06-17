@@ -48,10 +48,18 @@ class BaseExtract(ABC):
             with open(source_file, 'r') as f:
                 raw_source = f.read()
 
-            extraction_tasks = self._get_extraction_tasks(raw_source,
-                                                          source_idx)
-            for extraction_task in extraction_tasks:
-                self._extraction_task(extraction_task, raw_source)
+            try:
+                extraction_tasks = self._get_extraction_tasks(raw_source, source_idx)
+                if not extraction_tasks:
+                    continue
+
+                for extraction_task in extraction_tasks:
+                    self._extraction_task(extraction_task, raw_source)
+
+            except Exception:
+                logger.exception("Extraction Failed",
+                                extra={'task': self.task,
+                                        'scraper_name': config['SCRAPER_NAME']})
 
         logger.info('Extract finished',
                     extra={'task': self.task,
@@ -61,6 +69,9 @@ class BaseExtract(ABC):
 
     def _get_extraction_tasks(self, raw_source, source_idx):
         extraction_tasks = self.extract(raw_source, source_idx)
+        if not extraction_tasks:
+            return
+
         if not isinstance(extraction_tasks, (list, tuple)):
             extraction_tasks = [extraction_tasks]
 
@@ -112,10 +123,6 @@ class BaseExtract(ABC):
             logger.error(f"Extraction Failed: {e}",
                          extra={'task': self.task,
                                 'scraper_name': config['SCRAPER_NAME']})
-        except Exception:
-            logger.exception("Extraction Failed",
-                             extra={'task': self.task,
-                                    'scraper_name': config['SCRAPER_NAME']})  # noqa E501
 
         else:
             post_extract = extraction_task.get('post_extract',
@@ -217,18 +224,18 @@ class BaseExtract(ABC):
         """
         source_files = []
         for source in self.download_manifest['source_files']:
-            logger.info(f"Getting source file: {source}",
+            source_file = source['file']
+            logger.info(f"Getting source file: {source_file}",
                         extra={'task': self.task,
                                'scraper_name': config['SCRAPER_NAME'],
-                               'file': source})
-            if source['location'] == 's3':
+                               'file': source_file})
+            if source_file.startswith('s3://'):
                 s3 = get_s3_resource(self)
+                buckey, key = source_file.replace('s3://', '').split('/', 1)
                 # Need to get the file from s3.
-                source_files.append(get_file_from_s3(s3,
-                                                     source['bucket'],
-                                                     source['path']))
-            elif source['location'] == 'local':
-                source_files.append(source['path'])
+                source_files.append(get_file_from_s3(s3, bucket, key))
+            else:
+                source_files.append(source_file)
 
         return source_files
 

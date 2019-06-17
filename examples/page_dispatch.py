@@ -1,5 +1,4 @@
 from parsel import Selector
-from scraperx.write import Write
 from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
 
 
@@ -35,7 +34,7 @@ class Download(BaseDownload):
     def download(self):
         r = self.request_get(self.task['url'])
 
-        return Write(r.text).write_file().save(self)
+        self.save_request(r)
 
 
 class Extract(BaseExtract):

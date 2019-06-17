@@ -102,13 +102,7 @@ class BaseDownload(ABC):
                                  (default: {False})
         """
         try:
-            source_files = self.download()
-            if source_files:
-                if not isinstance(source_files, (list, tuple)):
-                    # Make sure source files is a list
-                    source_files = [source_files]
-                self._manifest['source_files'].extend(source_files)
-
+            self.download()
         except (requests.exceptions.HTTPError, HTTPIgnoreCodeError):
             # The status code was logged during the request, no need to repeat
             pass
@@ -120,7 +114,7 @@ class BaseDownload(ABC):
                              extra={'task': self.task,
                                     'scraper_name': config['SCRAPER_NAME']})
         else:
-            if source_files:
+            if self._manifest['source_files']:
                 self._save_metadata()
                 run_task(self.task,
                          task_cls=self.extract_cls,
@@ -139,6 +133,21 @@ class BaseDownload(ABC):
                            'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
                            })
 
+    def save_request(self, r, **save_kwargs):
+        source_file = Write(r.text).write_file().save(self, **save_kwargs)
+        self._manifest['source_files'].append(
+            {
+                'file': source_file,
+                'request': {
+                    'url': r.url,
+                    'headers': {
+                        'request': dict(r.request.headers),
+                        'response': dict(r.headers),
+                    },
+                },
+            }
+        )
+
     def _save_metadata(self):
         """Save the metadata with the download source
 
@@ -148,7 +157,7 @@ class BaseDownload(ABC):
         metadata = self._get_metadata()
         if metadata['download_manifest']['source_files']:
             metadata_file = Write(metadata).write_json_lines()
-            filename = metadata['download_manifest']['source_files'][0]['path']
+            filename = metadata['download_manifest']['source_files'][0]['file']
             logger.info("Saving metadata file",
                         extra={'task': self.task,
                                'scraper_name': config['SCRAPER_NAME']})

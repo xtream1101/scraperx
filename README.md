@@ -57,6 +57,12 @@ Named arguments:
     - This will look to see if the words _captcha_ are in the source page and set that response status code to a 403, with the status message being _Capacha Found_. The status message is there so you know if it is a real 403 or your custom status.
         -  `[(re.compile(r'captcha', re.I), 403, 'Capacha Found')]`
 
+#### Saving the source
+This is required for the extractor to run on the downloaded data. Inside of `self.download()` just call `self.save_request(r)` on the request that was made. This will add the source file to a list of saved sources that will be passed to the extractor for parsing.  
+Some keyword arguments that can be passed into `self.save_request`  
+- **template_values** _{dict}_ - Additonal keys to use in the template
+- **filename** _{str}_ - Overide the filename from the template_name in the config
+
 #### Download Exceptions
 These exceptions will be raised when calling `self.request_*`. They will be caught saftly so the scraper does not need to catch them. But if the scraper wanted to do something based on the exception, there can be a `try/except` around the scrapers `self.request_*`.  
 
