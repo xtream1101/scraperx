@@ -98,6 +98,9 @@ class Extract(BaseExtract):
                 that the selectors find.
 
         Optional:
+            callback_kwargs {dict} --
+                Named arguments to send to the extractor function
+
             raw_source {str} --
                 If source is `html`:
                     Used if you need to modify the source before the selectors

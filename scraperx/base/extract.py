@@ -109,8 +109,9 @@ class BaseExtract(ABC):
             output = []
             # Used when you want to start at a different number
             offset = extraction_task.get('idx_offset', 0)
+            callback_kwargs = extraction_task.get('callback_kwargs', {})
             for idx, item in enumerate(source_items, start=offset):
-                result = extraction_task['callback'](item, idx)
+                result = extraction_task['callback'](item, idx, **callback_kwargs)
                 if not result:
                     continue
                 # QA Result
