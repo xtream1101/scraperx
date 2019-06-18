@@ -127,11 +127,11 @@ class BaseDownload(ABC):
                                     'manifest': self._manifest,
                                     })
 
-        logger.info('Download finished',
-                    extra={'task': self.task,
-                           'scraper_name': config['SCRAPER_NAME'],
-                           'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
-                           })
+        logger.debug('Download finished',
+                     extra={'task': self.task,
+                            'scraper_name': config['SCRAPER_NAME'],
+                            'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
+                            })
 
     def save_request(self, r, **save_kwargs):
         source_file = Write(r.text).write_file().save(self, **save_kwargs)
@@ -158,9 +158,9 @@ class BaseDownload(ABC):
         if metadata['download_manifest']['source_files']:
             metadata_file = Write(metadata).write_json_lines()
             filename = metadata['download_manifest']['source_files'][0]['file']
-            logger.info("Saving metadata file",
-                        extra={'task': self.task,
-                               'scraper_name': config['SCRAPER_NAME']})
+            logger.debug("Saving metadata file",
+                         extra={'task': self.task,
+                                'scraper_name': config['SCRAPER_NAME']})
             metadata_file.save(self, filename=filename + '_metadata.json')
 
     def _get_metadata(self):

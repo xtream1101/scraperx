@@ -99,10 +99,10 @@ class SaveTo:
                                 'scraper_name': config['SCRAPER_NAME']})
             saved_file = None
 
-        logger.info(f"Saved file: {saved_file}",
-                    extra={'task': context.task,
-                           'scraper_name': config['SCRAPER_NAME'],
-                           'file': saved_file})
+        logger.debug(f"Saved file",
+                     extra={'task': context.task,
+                            'scraper_name': config['SCRAPER_NAME'],
+                            'file': saved_file})
         return saved_file
 
     def save_local(self, filename):
@@ -183,9 +183,9 @@ class SaveS3:
                                Metadata=self.metadata)
 
         if response['ResponseMetadata']['HTTPStatusCode'] != 200:
-            logger.info(f"S3 upload response: {response}",
-                        extra={'task': self.context.task,
-                               'scraper_name': config['SCRAPER_NAME']})
+            logger.error(f"S3 upload response: {response}",
+                         extra={'task': self.context.task,
+                                'scraper_name': config['SCRAPER_NAME']})
         else:
             logger.debug(f"S3 upload response: {response}",
                          extra={'task': self.context.task,

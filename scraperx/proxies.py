@@ -29,9 +29,9 @@ def _load_proxies():
                                     'scraper_name': config['SCRAPER_NAME']})
 
     if not proxies:
-        logger.info("No proxy list to choose from",
-                    extra={'task': None,
-                           'scraper_name': config['SCRAPER_NAME']})
+        logger.debug("No proxy list to choose from",
+                     extra={'task': None,
+                            'scraper_name': config['SCRAPER_NAME']})
 
 
 def get_proxy(country=None):

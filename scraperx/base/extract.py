@@ -61,11 +61,11 @@ class BaseExtract(ABC):
                                  extra={'task': self.task,
                                         'scraper_name': config['SCRAPER_NAME']})
 
-        logger.info('Extract finished',
-                    extra={'task': self.task,
-                           'scraper_name': config['SCRAPER_NAME'],
-                           'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
-                           })
+        logger.debug('Extract finished',
+                     extra={'task': self.task,
+                            'scraper_name': config['SCRAPER_NAME'],
+                            'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
+                            })
 
     def _get_extraction_tasks(self, raw_source, source_idx):
         extraction_tasks = self.extract(raw_source, source_idx)
@@ -226,10 +226,10 @@ class BaseExtract(ABC):
         source_files = []
         for source in self.download_manifest['source_files']:
             source_file = source['file']
-            logger.info(f"Getting source file: {source_file}",
-                        extra={'task': self.task,
-                               'scraper_name': config['SCRAPER_NAME'],
-                               'file': source_file})
+            logger.debug(f"Getting source file: {source_file}",
+                         extra={'task': self.task,
+                                'scraper_name': config['SCRAPER_NAME'],
+                                'file': source_file})
             if source_file.startswith('s3://'):
                 s3 = get_s3_resource(self)
                 bucket, key = source_file.replace('s3://', '').split('/', 1)
