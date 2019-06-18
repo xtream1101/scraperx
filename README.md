@@ -187,7 +187,8 @@ class YourScraper(ExtractorBaseTest.TestCase):
     def __init__(self, *args, **kwargs):
         # The directory that the test files for your scraper are in
         data_dir = 'tests/sample_data/your_scraper'
-        super().__init__(data_dir, YourScraperExtract, *args, **kwargs)
+        # ignore_keys will not test the qa values to the current extracted test value. This is most useful when dealing with timestamps or other values that will change on each time the data is extracted
+        super().__init__(data_dir, YourScraperExtract, , ignore_keys=['time_extracted'], *args, **kwargs)
 
 # If you have multiple scrapers, then create a class for each
 

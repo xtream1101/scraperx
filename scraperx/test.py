@@ -10,6 +10,20 @@ from .config import config
 logger = logging.getLogger(__name__)
 
 
+def _clean_keys(i_keys, prev_dict):
+    if not isinstance(i_keys, (tuple, list)):
+        i_keys = [i_keys]
+
+    for i_key in i_keys:
+        if isinstance(i_key, str):
+            prev_dict.update({i_key: None})
+        else:
+            for key, more_i_keys in i_key.items():
+                prev_dict.update({key: _clean_keys(more_i_keys, {})})
+
+    return prev_dict
+
+
 class ExtractorBaseTest:
     # Wrap actual test case in a blank class so it's not run on its own
     #   (only when called through derived class)
@@ -17,12 +31,14 @@ class ExtractorBaseTest:
 
     class TestCase(unittest.TestCase):
 
-        def __init__(self, sample_data_dir, extract_cls, *args, **kwargs):
+        def __init__(self, sample_data_dir, extract_cls, ignore_keys=None, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.directory = os.fsencode(sample_data_dir)
-            config._set_value('SCRAPER_NAME',
-                              sample_data_dir.split(os.path.sep)[2])
+            config._set_value('SCRAPER_NAME', sample_data_dir.split(os.path.sep)[2])
             self.extract_cls = extract_cls
+            if ignore_keys is None:
+                ignore_keys = []
+            self._ignore_keys = _clean_keys(ignore_keys, {})
             self.metadata_files = []
 
         def setUp(self):
@@ -40,6 +56,10 @@ class ExtractorBaseTest:
             with open(qa_file, 'r') as f:
                 qa_data = json.load(f)
 
+            for row in qa_data:
+                row.update(self._ignore_keys)
+            for row in test_data:
+                row.update(self._ignore_keys)
             diff = DeepDiff(qa_data, test_data)
             if diff:
                 pprint(diff)
@@ -89,5 +109,5 @@ class ExtractorBaseTest:
                 for source_idx, source in enumerate(metadata_sources):
                     self._test_source_file(extractor,
                                            source_idx,
-                                           source['path'],
+                                           source['file'],
                                            metadata)

@@ -42,10 +42,10 @@ def _create_test(cli_args, extract_cls):
     current_sources = metadata['download_manifest']['source_files'].copy()
     metadata_sources = []
     for idx, source in enumerate(current_sources):
-        new_source = f"{dst_base}_source_{idx}.{source['path'].split('.')[-1]}"
-        copyfile(source['path'], new_source)
-        metadata_sources.append({'location': 'local',
-                                 'path': new_source})
+        new_file = f"{dst_base}_source_{idx}.{source['file'].split('.')[-1]}"
+        copyfile(source['file'], new_file)
+        source['file'] = new_file
+        metadata_sources.append(source)
 
     metadata['download_manifest']['source_files'] = metadata_sources
 
@@ -65,7 +65,7 @@ def _create_test(cli_args, extract_cls):
                             metadata['download_manifest'])
     for source_idx, source in enumerate(metadata_sources):
         raw_source = None
-        with open(source['path'], 'r') as f:
+        with open(source['file'], 'r') as f:
             raw_source = f.read()
         e_tasks = extractor._get_extraction_tasks(raw_source, source_idx)
         for e_task in e_tasks:
