@@ -149,6 +149,10 @@ class BaseExtract(ABC):
             return
 
         for qa_field, qa_rule in qa_rules.items():
+            # Make sure key exists
+            if qa_field not in result:
+                raise QAValueError((f"Field {qa_field} is missing from data"
+                                    f" at result {idx}"))
             # Check required
             if result[qa_field] is None:
                 if qa_rule.get('required', False) is True:
