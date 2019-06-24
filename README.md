@@ -1,5 +1,8 @@
 # ScraperX  SDK
 
+[![PyPI](https://img.shields.io/pypi/v/scraperx.svg)](https://pypi.org/project/scraperx/)  
+[![PyPI](https://img.shields.io/pypi/l/scraperx.svg)](https://pypi.org/project/scraperx/)  
+
 
 ### Getting Started
 
