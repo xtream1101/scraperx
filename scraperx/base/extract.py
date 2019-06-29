@@ -126,10 +126,15 @@ class BaseExtract(ABC):
                                 'scraper_name': config['SCRAPER_NAME']})
 
         else:
-            post_extract = extraction_task.get('post_extract',
-                                               lambda *args, **kwargs: None)  # noqa E501
-            post_extract_kwargs = extraction_task.get('post_extract_kwargs', {})  # noqa E501
-            post_extract(output, **post_extract_kwargs)
+            try:
+                post_extract = extraction_task.get('post_extract',
+                                                   lambda *args, **kwargs: None)
+                post_extract_kwargs = extraction_task.get('post_extract_kwargs', {})
+                post_extract(output, **post_extract_kwargs)
+            except Exception:
+                logger.exception("Post extract Failed",
+                                 extra={'task': self.task,
+                                        'scraper_name': config['SCRAPER_NAME']})
 
     def save_as(self, data, file_format='json', template_values={}):
         write_data = Write(data)
