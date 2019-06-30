@@ -6,6 +6,9 @@ logger = logging.getLogger(__name__)
 
 
 def run_task(task, task_cls=None, **kwargs):
+    if task_cls is None:
+        return
+
     msg = "Dummy Trigger" if config['STANDALONE'] else "Trigger"
     logger.debug(msg,
                  extra={'dispatch_service': config['DISPATCH_SERVICE_NAME'],

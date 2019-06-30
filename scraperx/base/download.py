@@ -133,8 +133,10 @@ class BaseDownload(ABC):
                             'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
                             })
 
-    def save_request(self, r, **save_kwargs):
-        source_file = Write(r.text).write_file().save(self, **save_kwargs)
+    def save_request(self, r, source_file=None, **save_kwargs):
+        if source_file is None:
+            source_file = Write(r.text).write_file().save(self, **save_kwargs)
+
         self._manifest['source_files'].append(
             {
                 'file': source_file,
