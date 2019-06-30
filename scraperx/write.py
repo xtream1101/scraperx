@@ -72,7 +72,7 @@ class Write:
                       file_ext='json')
 
     def write_file(self, content_type='text/html'):
-        """Write data to a StringIO object without any additonal formatting
+        """Write data to a StringIO object without any additional formatting
 
         Keyword Arguments:
             content_type {str} -- Used when saving the file
@@ -88,7 +88,7 @@ class Write:
                       content_type=content_type)
 
     def write_zip(self, content_type='application/zip'):
-        """Write data to a StringIO object without any additonal formatting
+        """Write data to a StringIO object without any additional formatting
 
         Keyword Arguments:
             content_type {str} -- Used when saving the file

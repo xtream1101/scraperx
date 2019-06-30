@@ -134,6 +134,18 @@ class BaseDownload(ABC):
                             })
 
     def save_request(self, r, source_file=None, **save_kwargs):
+        """Save the request and the source file
+
+        Arguments:
+            r {requests.request} -- The request that was made
+
+        Keyword Arguments:
+            source_file {str} -- The name of a file that has already been saved
+            **saved_kwargs {named args} -- Named args that will be passed into `SaveTo.save` fn
+
+        Returns:
+            {None}
+        """
         if source_file is None:
             source_file = Write(r.text).write_file().save(self, **save_kwargs)
 

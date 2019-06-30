@@ -62,7 +62,7 @@ class SaveTo:
             context {class} -- Either the BaseDownload or BaseExtractor class.
 
         Keyword Arguments:
-            template_values {dict} -- Additonal keys to use in the template
+            template_values {dict} -- Additional keys to use in the template
                                       (default: {{}})
             filename {str} -- Filename to use rather then the template
                               (default: {None})

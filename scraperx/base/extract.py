@@ -137,6 +137,17 @@ class BaseExtract(ABC):
                                         'scraper_name': config['SCRAPER_NAME']})
 
     def save_as(self, data, file_format='json', template_values={}):
+        """Save data to a file
+
+        Arguments:
+            data {list or dict} -- Extracted data to be saved
+
+        Keyword Arguments:
+            file_format {str} -- The file format to save the data in.
+                                 Options are `json` & `json_lines` (Default: json)
+            template_values {dict} -- Key/Values to be used in the file_template.
+                                      Gets passed along to SaveTo.save fn
+        """
         write_data = Write(data)
         save_as_map = {
             'json': write_data.write_json,
