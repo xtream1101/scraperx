@@ -96,7 +96,7 @@ def _run_dispatch(cli_args, dispatch_cls, download_cls, extract_cls):
         # Dump all tasks to local json file
         task_file = Write(tasks).write_json().save_local('tasks.json')
         num_tasks = len(tasks)
-        logger.info(f"Saved {num_tasks} tasks to {task_file['path']}",
+        logger.info(f"Saved {num_tasks} tasks to {task_file}",
                     extra={'task': None,
                            'scraper_name': config['SCRAPER_NAME']})
 

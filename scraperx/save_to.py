@@ -24,7 +24,7 @@ class SaveTo:
                                Used to get timestamps and the correct template.
 
         Keyword Arguments:
-            template_values {dict} -- Additonal keys to use in the template
+            template_values {dict} -- Additional keys to use in the template
                                       (default: {{}})
 
         Returns:
