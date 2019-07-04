@@ -18,9 +18,12 @@ logger = logging.getLogger(__name__)
 class BaseDownload(ABC):
 
     def __init__(self, task, headers=None, proxy=None, ignore_codes=(),
-                 extract_cls=None):
+                 extract_cls=None, scraper_name=None, triggered_kwargs={}, **kwargs):
+        self._triggered_kwargs = triggered_kwargs
         # General task and config setup
-        self._scraper = inspect.getmodule(self)
+        if scraper_name:
+            config.load_config(scraper_name=scraper_name)
+
         self.extract_cls = extract_cls  # only needed if running locally
         self.task = task
         self._ignore_codes = ignore_codes
@@ -118,7 +121,9 @@ class BaseDownload(ABC):
                 self._save_metadata()
                 run_task(self.task,
                          task_cls=self.extract_cls,
-                         download_manifest=self._manifest)
+                         download_manifest=self._manifest,
+                         **self._triggered_kwargs,
+                         triggered_kwargs=self._triggered_kwargs)
             else:
                 # If it got here and there is not saved file then thats an issue
                 logger.error("No source file saved",

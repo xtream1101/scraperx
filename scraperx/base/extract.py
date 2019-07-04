@@ -15,7 +15,11 @@ logger = logging.getLogger(__name__)
 
 class BaseExtract(ABC):
 
-    def __init__(self, task, download_manifest):
+    def __init__(self, task, download_manifest, scraper_name=None, **kwargs):
+        # General task and config setup
+        if scraper_name:
+            config.load_config(scraper_name=scraper_name)
+
         self.task = task
 
         self.download_manifest = download_manifest

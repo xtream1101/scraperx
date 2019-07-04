@@ -37,7 +37,9 @@ def _dispatch_locally(task, task_cls, **kwargs):
     """
     from multiprocessing import Process
     try:
-        p = Process(target=task_cls(task, **kwargs).run)
+        if 'triggered_kwargs' in kwargs:
+            del kwargs['triggered_kwargs']
+        p = Process(target=task_cls(task, **kwargs, triggered_kwargs=kwargs).run)
         p.start()
     except Exception:
         logger.critical("Local task failed",

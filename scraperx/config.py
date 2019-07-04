@@ -133,9 +133,13 @@ class ConfigGen:
 
     def __init__(self):
         self.values = {}
+        self.file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])),
+                                 'config.yaml')
         self._scraper_name = os.path.basename(sys.argv[0]).rsplit('.', 1)[0]
 
-    def load_config(self, config_file, cli_args=None, scraper_name=None):
+    def load_config(self, config_file=None, cli_args=None, scraper_name=None):
+        if config_file is None:
+            config_file = self.file
 
         if scraper_name is not None:
             self._scraper_name = scraper_name

@@ -161,9 +161,7 @@ def _run_extract(cli_args, extract_cls):
 
 def run_cli(dispatch_cls=None, download_cls=None, extract_cls=None):
     from .arguments import cli_args
-    config_file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])),
-                               'config.yaml')
-    config.load_config(config_file, cli_args=cli_args)
+    config.load_config(cli_args=cli_args)
     if cli_args.action == 'validate':
         from pprint import pprint
         logger.info("Testing the config....",
