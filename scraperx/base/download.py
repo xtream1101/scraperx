@@ -1,5 +1,4 @@
 import re
-import inspect
 import logging
 import datetime
 import requests
