@@ -2,7 +2,6 @@ import os
 import pathlib
 import logging
 
-from . import config
 from .utils import get_s3_resource, get_context_type
 
 logger = logging.getLogger(__name__)
@@ -10,8 +9,8 @@ logger = logging.getLogger(__name__)
 
 class SaveTo:
 
-    def __init__(self, raw_data, content_type='text/html',
-                 file_ext=''):
+    def __init__(self, scraper, raw_data, content_type='text/html', file_ext=''):
+        self.scraper = scraper
         self.raw_data = raw_data
         self.content_type = content_type
         self.file_ext = file_ext
@@ -31,7 +30,7 @@ class SaveTo:
             str -- The filename with the template values filled in
         """
         context_type = get_context_type(context)
-        additional_args = {'scraper_name': config['SCRAPER_NAME']}
+        additional_args = {'scraper_name': self.scraper.config['SCRAPER_NAME']}
         if context_type == 'extractor':
             time_downloaded = context.download_manifest['time_downloaded']
             date_downloaded = context.download_manifest['date_downloaded']
@@ -46,7 +45,7 @@ class SaveTo:
                                     })
 
         if not name_template:
-            name_template = config[f'{context_type}_FILE_TEMPLATE']
+            name_template = self.scraper.config[f'{context_type}_FILE_TEMPLATE']
 
         task_safe = {k: str(v) for k, v in context.task.items()}
         filename = name_template.format(**task_safe,
@@ -82,7 +81,7 @@ class SaveTo:
             filename += f'.{self.file_ext}'
 
         save_service_key = f'{context_type}_SAVE_DATA_SERVICE'
-        save_service = config[save_service_key]
+        save_service = self.scraper.config[save_service_key]
         if save_service == 's3':
             saved_file = SaveS3(self.raw_data,
                                 filename,
@@ -96,12 +95,12 @@ class SaveTo:
         else:
             logger.error(f"Not configured to save to {save_service}",
                          extra={'task': context.task,
-                                'scraper_name': config['SCRAPER_NAME']})
+                                'scraper_name': self.scraper.config['SCRAPER_NAME']})
             saved_file = None
 
         logger.debug(f"Saved file",
                      extra={'task': context.task,
-                            'scraper_name': config['SCRAPER_NAME'],
+                            'scraper_name': self.scraper.config['SCRAPER_NAME'],
                             'file': saved_file})
         return saved_file
 
@@ -146,7 +145,7 @@ class SaveS3:
     def _get_bucket_name(self):
         context_type = get_context_type(self.context)
         bucket_name_key = f'{context_type}_SAVE_DATA_BUCKET_NAME'
-        return config[bucket_name_key]
+        return self.scraper.config[bucket_name_key]
 
     def _format_body(self, data):
         try:
@@ -185,10 +184,10 @@ class SaveS3:
         if response['ResponseMetadata']['HTTPStatusCode'] != 200:
             logger.error(f"S3 upload response: {response}",
                          extra={'task': self.context.task,
-                                'scraper_name': config['SCRAPER_NAME']})
+                                'scraper_name': self.scraper.config['SCRAPER_NAME']})
         else:
             logger.debug(f"S3 upload response: {response}",
                          extra={'task': self.context.task,
-                                'scraper_name': config['SCRAPER_NAME']})
+                                'scraper_name': self.scraper.config['SCRAPER_NAME']})
 
         return f"s3://{bucket}/{self.filename}"

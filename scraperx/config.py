@@ -406,6 +406,3 @@ class ConfigGen:
             pass
 
         return cli_config
-
-
-config = ConfigGen()

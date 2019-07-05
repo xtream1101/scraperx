@@ -11,9 +11,10 @@ def uncaught(exctype, value, tb):
 
 sys.excepthook = uncaught
 
-from .config import config  # noqa F401
 from .run_cli import run_cli  # noqa F401
+from .trigger import run_task  # noqa F401
 
-from .base.dispatch import BaseDispatch  # noqa F401
-from .base.download import BaseDownload  # noqa F401
-from .base.extract import BaseExtract  # noqa F401
+from .scraper import Scraper  # noqa F401
+from .dispatch import Dispatch  # noqa F401
+from .download import Download  # noqa F401
+from .extract import Extract  # noqa F401

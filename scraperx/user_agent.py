@@ -4,7 +4,6 @@ import random
 import logging
 from collections import defaultdict
 
-from .config import config
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +26,7 @@ DEFAULT_USER_AGENTS = {
 }
 
 
-def _load_user_agents():
+def _load_user_agents(scraper):
     global user_agents
     user_agents = defaultdict(list)
     ua_file = os.getenv('UA_FILE')
@@ -35,7 +34,7 @@ def _load_user_agents():
         try:
             logger.info(f"Reading user agent file {ua_file}",
                         extra={'task': None,
-                               'scraper_name': config['SCRAPER_NAME']})
+                               'scraper_name': scraper.config['SCRAPER_NAME']})
             with open(ua_file, 'r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
@@ -44,16 +43,16 @@ def _load_user_agents():
         except Exception:
             logger.exception("Failed to read user agent file",
                              extra={'task': None,
-                                    'scraper_name': config['SCRAPER_NAME']})
+                                    'scraper_name': scraper.config['SCRAPER_NAME']})
 
     if not user_agents:
         logger.debug("No user agents to choose from. Loading defaults",
                      extra={'task': None,
-                            'scraper_name': config['SCRAPER_NAME']})
+                            'scraper_name': scraper.config['SCRAPER_NAME']})
         user_agents = DEFAULT_USER_AGENTS
 
 
-def get_user_agent(device_type='desktop'):
+def get_user_agent(scraper, device_type='desktop'):
     """Get a user-agent to use for the request
 
     Keyword Arguments:
@@ -67,7 +66,7 @@ def get_user_agent(device_type='desktop'):
         user_agents
     except NameError:
         # User-Agents have not been loaded yet
-        _load_user_agents()
+        _load_user_agents(scraper)
 
     if device_type is None:
         # This extra check is here to make sure the default is really desktop

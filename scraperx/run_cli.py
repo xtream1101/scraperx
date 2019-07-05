@@ -5,7 +5,6 @@ import logging
 from shutil import copyfile
 
 from .write import Write
-from .config import config
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +81,7 @@ def _create_test(cli_args, extract_cls):
                        'scraper_name': config['SCRAPER_NAME']})
 
 
-def _run_dispatch(cli_args, dispatch_cls, download_cls, extract_cls):
+def _run_dispatch(cli_args, scraper):
     """Kick off the dispatcher for the scraper
 
     Arguments:
@@ -98,23 +97,21 @@ def _run_dispatch(cli_args, dispatch_cls, download_cls, extract_cls):
         num_tasks = len(tasks)
         logger.info(f"Saved {num_tasks} tasks to {task_file}",
                     extra={'task': None,
-                           'scraper_name': config['SCRAPER_NAME']})
+                           'scraper_name': scraper.config['SCRAPER_NAME']})
 
-    dispatcher = dispatch_cls(tasks=tasks,
-                              download_cls=download_cls,
-                              extract_cls=extract_cls)
+    dispatcher = scraper.dispatch(tasks=tasks)
     try_dump_after = False
     if cli_args.dump_tasks:
-        if dispatcher.tasks:
+        try:
             dump_tasks(dispatcher.tasks)
-        else:
-            # there are either no tasks or the scraper returned a generator
+        except AttributeError:
+            # Scraper returned a generator
             # in which case the tasks are not known until after they have all
             # been dispatched
             try_dump_after = True
 
     # Run the dispatcher...
-    dispatcher.dispatch()
+    dispatcher.run()
 
     if cli_args.dump_tasks and try_dump_after is True:
         dump_tasks(dispatcher.tasks)
@@ -131,7 +128,7 @@ def _run_download(cli_args, download_cls, extract_cls):
         downloader.run()
 
 
-def _run_extract(cli_args, extract_cls):
+def _run_extract(cli_args, scraper):
     """Kick off the extractor for the scraper
 
     Arguments:
@@ -154,29 +151,29 @@ def _run_extract(cli_args, extract_cls):
         with open(metadata_file) as f:
             metadata = json.load(f)
 
-        extractor = extract_cls(metadata['task'],
-                                metadata['download_manifest'])
+        extractor = scraper.extract(metadata['task'],
+                                    metadata['download_manifest'])
         extractor.run()
 
 
-def run_cli(dispatch_cls=None, download_cls=None, extract_cls=None):
+def run_cli(scraper):
     from .arguments import cli_args
-    config.load_config(cli_args=cli_args)
+    scraper.config.load_config(cli_args=cli_args)
     if cli_args.action == 'validate':
         from pprint import pprint
         logger.info("Testing the config....",
                     extra={'task': None,
-                           'scraper_name': config['SCRAPER_NAME']})
-        pprint(config.values)
+                           'scraper_name': scraper.config['SCRAPER_NAME']})
+        pprint(scraper.config.values)
 
-    elif cli_args.action == 'create-test':
-        _create_test(cli_args, extract_cls)
+    # elif cli_args.action == 'create-test':
+    #     _create_test(cli_args, extract_cls)
 
     elif cli_args.action == 'dispatch':
-        _run_dispatch(cli_args, dispatch_cls, download_cls, extract_cls)
+        _run_dispatch(cli_args, scraper)
 
-    elif cli_args.action == 'download':
-        _run_download(cli_args, download_cls, extract_cls)
+    # elif cli_args.action == 'download':
+    #     _run_download(cli_args, download_cls, extract_cls)
 
     elif cli_args.action == 'extract':
-        _run_extract(cli_args, extract_cls)
+        _run_extract(cli_args, scraper)

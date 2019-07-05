@@ -127,17 +127,26 @@ class Extract(BaseExtract):
             source_idx {int} -- Index of the source file that was downloaded.
 
         """
-        return {'name': 'products',
+        return [{'name': 'products',
                 'selectors': ['#case1 > div:not(.ads)'],
                 'callback': self.extract_product,
                 'post_extract': self.save_as,  # TODO: add docs about what builtin's there are
                 'post_extract_kwargs': {'file_format': 'json',
                                         },
-                }
+                },
+                {'name': 'sidebar',
+                'selectors': ['#case1 > div:not(.ads)'],
+                'callback': self.extract_sidebar,
+                'post_extract': self.save_as,  # TODO: add docs about what builtin's there are
+                'post_extract_kwargs': {'file_format': 'json',
+                                        },
+                }]
 
     def extract_product(self, element, idx, **kwargs):
         return {'title': element.css('div.name').xpath('string()').extract_first()}
 
+
+scraper = Scraper(Dispatch, Download, Extract)
 
 if __name__ == '__main__':
     import logging

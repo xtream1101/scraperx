@@ -2,7 +2,7 @@ import time
 import logging
 import tempfile
 import threading
-from .config import config
+# from .config import config
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ def get_s3_resource(context):
 
     context_type = get_context_type(context)
     endpoint_url_key = f'{context_type}_SAVE_DATA_ENDPOINT_URL'
-    endpoint_url = config[endpoint_url_key]
+    endpoint_url = context.scraper.config[endpoint_url_key]
 
     return boto3.resource('s3', endpoint_url=endpoint_url)
 

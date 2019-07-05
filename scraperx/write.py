@@ -8,7 +8,8 @@ logger = logging.getLogger(__name__)
 
 class Write:
 
-    def __init__(self, data):
+    def __init__(self, scraper, data):
+        self.scraper = scraper
         self.data = data
 
     def write(self):
@@ -38,7 +39,8 @@ class Write:
         output_io = io.StringIO()
         json.dump(json_data, output_io, **json_args)
         output_io.seek(0)
-        return SaveTo(output_io,
+        return SaveTo(self.scraper,
+                      output_io,
                       content_type='application/json',
                       file_ext='json')
 
@@ -67,7 +69,8 @@ class Write:
             output_io.write('\n')
 
         output_io.seek(0)
-        return SaveTo(output_io,
+        return SaveTo(self.scraper,
+                      output_io,
                       content_type='application/json',
                       file_ext='json')
 
@@ -84,7 +87,8 @@ class Write:
         output_io = io.StringIO()
         output_io.write(self.data)
         output_io.seek(0)
-        return SaveTo(output_io,
+        return SaveTo(self.scraper,
+                      output_io,
                       content_type=content_type)
 
     def write_zip(self, content_type='application/zip'):
@@ -100,7 +104,8 @@ class Write:
         output_io = io.BytesIO()
         output_io.write(self.data)
         output_io.seek(0)
-        return SaveTo(output_io,
+        return SaveTo(self.scraper,
+                      output_io,
                       content_type=content_type,
                       file_ext='zip')
 
@@ -146,6 +151,7 @@ class Write:
         output_io.seek(0)
 
         # TODO: Is this the correct content type for a parquet file?
-        return SaveTo(output_io,
+        return SaveTo(self.scraper,
+                      output_io,
                       content_type='application/octet-stream',
                       file_ext='parquet')

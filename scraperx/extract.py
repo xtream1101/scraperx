@@ -4,21 +4,16 @@ import datetime
 from parsel import Selector
 from abc import ABC, abstractmethod
 
-from .. import config
-from ..write import Write
-from ..exceptions import QAValueError
-from ..utils import get_file_from_s3, get_s3_resource
-
+from .write import Write
+from .exceptions import QAValueError
+from .utils import get_file_from_s3, get_s3_resource
 
 logger = logging.getLogger(__name__)
 
 
-class BaseExtract(ABC):
-
-    def __init__(self, task, download_manifest, scraper_name=None, **kwargs):
-        # General task and config setup
-        if scraper_name:
-            config.load_config(scraper_name=scraper_name)
+class Extract(ABC):
+    def __init__(self, scraper, task, download_manifest={}, **kwargs):
+        self.scraper = scraper
 
         self.task = task
 
@@ -43,7 +38,7 @@ class BaseExtract(ABC):
         """
         logger.info("Start Extract",
                     extra={'task': self.task,
-                           'scraper_name': config['SCRAPER_NAME'],
+                           'scraper_name': self.scraper.config['SCRAPER_NAME'],
                            'time_started': self.time_extracted,
                            })
 
@@ -63,11 +58,11 @@ class BaseExtract(ABC):
             except Exception:
                 logger.exception("Extraction Failed",
                                  extra={'task': self.task,
-                                        'scraper_name': config['SCRAPER_NAME']})
+                                        'scraper_name': self.scraper.config['SCRAPER_NAME']})
 
         logger.debug('Extract finished',
                      extra={'task': self.task,
-                            'scraper_name': config['SCRAPER_NAME'],
+                            'scraper_name': self.scraper.config['SCRAPER_NAME'],
                             'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
                             })
 
@@ -83,7 +78,7 @@ class BaseExtract(ABC):
             if not self._validate_extraction_task(extraction_task):
                 logger.critical('Invalid extraction task',
                                 extra={'task': self.task,
-                                       'scraper_name': config['SCRAPER_NAME']})
+                                       'scraper_name': self.scraper.config['SCRAPER_NAME']})
                 sys.exit(1)
 
         return extraction_tasks
@@ -127,7 +122,7 @@ class BaseExtract(ABC):
         except QAValueError as e:
             logger.error(f"Extraction Failed: {e}",
                          extra={'task': self.task,
-                                'scraper_name': config['SCRAPER_NAME']})
+                                'scraper_name': self.scraper.config['SCRAPER_NAME']})
 
         else:
             try:
@@ -138,7 +133,7 @@ class BaseExtract(ABC):
             except Exception:
                 logger.exception("Post extract Failed",
                                  extra={'task': self.task,
-                                        'scraper_name': config['SCRAPER_NAME']})
+                                        'scraper_name': self.scraper.config['SCRAPER_NAME']})
 
     def save_as(self, data, file_format='json', template_values={}):
         """Save data to a file
@@ -152,7 +147,7 @@ class BaseExtract(ABC):
             template_values {dict} -- Key/Values to be used in the file_template.
                                       Gets passed along to SaveTo.save fn
         """
-        write_data = Write(data)
+        write_data = Write(self.scraper, data)
         save_as_map = {
             'json': write_data.write_json,
             'json_lines': write_data.write_json_lines,
@@ -160,7 +155,7 @@ class BaseExtract(ABC):
         if file_format not in save_as_map:
             logger.error(f"Format `{file_format}` is not supported",
                          extra={'task': self.task,
-                                'scraper_name': config['SCRAPER_NAME']})
+                                'scraper_name': self.scraper.config['SCRAPER_NAME']})
 
         save_as_map[file_format]().save(self, template_values=template_values)
 
@@ -212,7 +207,7 @@ class BaseExtract(ABC):
                                 f" {value_type_name} does not support"
                                 " the length check"),
                                extra={'task': self.task,
-                                      'scraper_name': config['SCRAPER_NAME']})
+                                      'scraper_name': self.scraper.config['SCRAPER_NAME']})
 
     def _validate_qa_rules(self, qa_rules):
         # TODO: Validate for each extraction_task in run()
@@ -235,7 +230,7 @@ class BaseExtract(ABC):
                 passed = False
                 logger.error(f"Extraction task is missing the `{field}` field",
                              extra={'task': self.task,
-                                    'scraper_name': config['SCRAPER_NAME'],
+                                    'scraper_name': self.scraper.config['SCRAPER_NAME'],
                                     'extraction_task': extraction_task,
                                     })
 
@@ -252,7 +247,7 @@ class BaseExtract(ABC):
             source_file = source['file']
             logger.debug(f"Getting source file: {source_file}",
                          extra={'task': self.task,
-                                'scraper_name': config['SCRAPER_NAME'],
+                                'scraper_name': self.scraper.config['SCRAPER_NAME'],
                                 'file': source_file})
             if source_file.startswith('s3://'):
                 s3 = get_s3_resource(self)

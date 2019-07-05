@@ -1,33 +1,21 @@
-import sys
 import math
 import types
 import queue
-import inspect
 import logging
 import threading
 from abc import ABC, abstractmethod
 
-from .. import config
-from ..trigger import run_task
-from ..utils import rate_limited, rate_limit_from_period
+from .trigger import run_task
+from .utils import rate_limited, rate_limit_from_period
 
 logger = logging.getLogger(__name__)
 
 
-class BaseDispatch(ABC):
+class Dispatch(ABC):
+    num_tasks = None
 
-    def __init__(self, tasks=None, download_cls=None, extract_cls=None):
-        self._scraper = inspect.getmodule(self)
-        self.download_cls = download_cls
-        self.extract_cls = extract_cls
-        self.tasks = []  # Used to be able to dump tasks to a file
-
-        try:
-            # This try/except allows the user to call super() before or after
-            # self.num_tasks is set and this will not override it
-            self.num_tasks
-        except AttributeError:
-            self.num_tasks = None
+    def __init__(self, scraper, tasks=None):
+        self.scraper = scraper
 
         if not tasks:
             tasks = self.submit_tasks()
@@ -65,34 +53,34 @@ class BaseDispatch(ABC):
         Returns:
             float -- The rate limit as qps
         """
-        rate_limit_type = config['DISPATCH_RATELIMIT_TYPE']
-        rate_limit_value = config['DISPATCH_RATELIMIT_VALUE']
+        rate_limit_type = self.scraper.config['DISPATCH_RATELIMIT_TYPE']
+        rate_limit_value = self.scraper.config['DISPATCH_RATELIMIT_VALUE']
         if rate_limit_type == 'period':
             return rate_limit_from_period(self.num_tasks, rate_limit_value)
         else:
             return rate_limit_value
 
-    def dispatch(self, *args, **kwargs):
+    def run(self, **download_kwargs):
         """Spin up the threads to send the tasks in
         """
         if self.num_tasks is None:
             # a generator must have been passed in
             logger.critical(("Dispatch self.num_tasks must be set if using"
                              " a generator for tasks"),
-                            extra={'scraper_name': config['SCRAPER_NAME'],
+                            extra={'scraper_name': self.scraper.config['SCRAPER_NAME'],
                                    'task': None,  # No task yet
                                    })
-            sys.exit(1)
+            raise ValueError("Dispatch.num_tasks must be set when using a generator")
 
-        if config['DISPATCH_LIMIT']:
-            self.num_tasks = min(self.num_tasks, config['DISPATCH_LIMIT'])
+        if self.scraper.config['DISPATCH_LIMIT']:
+            self.num_tasks = min(self.num_tasks, self.scraper.config['DISPATCH_LIMIT'])
 
         qps = self._get_qps()
         logger.info(f"Dispatch {self.num_tasks}",
-                    extra={'scraper_name': config['SCRAPER_NAME'],
+                    extra={'scraper_name': self.scraper.config['SCRAPER_NAME'],
                            'task': None,  # No task yet
                            'qps': qps,
-                           'dispatch_service': config['DISPATCH_SERVICE_NAME'],
+                           'dispatch_service': self.scraper.config['DISPATCH_SERVICE_NAME'],
                            'num_tasks': self.num_tasks})
         # Have 3 times the numbers of threads so a task will not bottleneck
         num_threads = math.ceil(qps * 3)
@@ -100,13 +88,15 @@ class BaseDispatch(ABC):
 
         def _thread_run():
             while True:
-                item = q.get()
+                task = q.get()
                 try:
-                    self.submit_task(item, *args, **kwargs)
+                    run_task(self.scraper, task,
+                             task_cls=self.scraper.download,
+                             **download_kwargs)
                 except Exception:
                     logger.critical("Dispatch failed",
-                                    extra={'task': item,
-                                           'scraper_name': config['SCRAPER_NAME']},  # noqa E501
+                                    extra={'task': task,
+                                           'scraper_name': self.scraper.config['SCRAPER_NAME']},
                                     exc_info=True)
                 q.task_done()
 
@@ -127,20 +117,3 @@ class BaseDispatch(ABC):
 
         # Process the data
         q.join()
-
-    def submit_task(self, task):
-        """Send a single task off to be downloaded
-
-        Call this and not run_task directly since this function has the
-        rate limit applied to it
-
-        Arguments:
-            task {dict} -- Single task to send to the downloader
-        """
-        if config['DISPATCH_SERVICE_NAME'] == 'local':
-            run_task(task,
-                     task_cls=self.download_cls,
-                     extract_cls=self.extract_cls,
-                     )
-        else:
-            run_task(task)

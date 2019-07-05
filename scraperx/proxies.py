@@ -4,12 +4,10 @@ import random
 import logging
 from collections import defaultdict
 
-from .config import config
-
 logger = logging.getLogger(__name__)
 
 
-def _load_proxies():
+def _load_proxies(scraper):
     global proxies
     proxies = defaultdict(list)
     proxy_file = os.getenv('PROXY_FILE')
@@ -17,7 +15,7 @@ def _load_proxies():
         try:
             logger.info(f"Reading proxy file {proxy_file}",
                         extra={'task': None,
-                               'scraper_name': config['SCRAPER_NAME']})
+                               'scraper_name': scraper.config['SCRAPER_NAME']})
             with open(proxy_file, 'r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 for row in reader:
@@ -26,15 +24,15 @@ def _load_proxies():
         except Exception:
             logger.exception("Failed to read proxy file",
                              extra={'task': None,
-                                    'scraper_name': config['SCRAPER_NAME']})
+                                    'scraper_name': scraper.config['SCRAPER_NAME']})
 
     if not proxies:
         logger.debug("No proxy list to choose from",
                      extra={'task': None,
-                            'scraper_name': config['SCRAPER_NAME']})
+                            'scraper_name': scraper.config['SCRAPER_NAME']})
 
 
-def get_proxy(country=None):
+def get_proxy(scraper, country=None):
     """Get a proxy string to use for the request
 
     Keyword Arguments:
@@ -48,7 +46,7 @@ def get_proxy(country=None):
         proxies
     except NameError:
         # Proxies have not been loaded yet
-        _load_proxies()
+        _load_proxies(scraper)
 
     if not proxies:
         return None
