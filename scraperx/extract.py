@@ -1,3 +1,4 @@
+import types
 import logging
 import datetime
 from parsel import Selector
@@ -52,7 +53,7 @@ class Extract(ABC):
                     continue
 
                 for extraction_task in extraction_tasks:
-                    self._extraction_task(extraction_task, raw_source)
+                    extraction_task(raw_source)
 
             except Exception:
                 logger.exception("Extraction Failed",
@@ -65,75 +66,180 @@ class Extract(ABC):
                             'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
                             })
 
-    def prep_extract_task(self, callback, callback_kwargs={}, selectors=(), raw_source=None,
-                          idx_offset=0, qa={}, post_extract=None, post_extract_kwargs={}):
-        pass
+    def extract_task(self, callback, name='', callback_kwargs={}, selectors=(),
+                     raw_source=None, idx_offset=0, qa={}, post_extract=None,
+                     post_extract_kwargs={}):
+        """Create an extraction task to run on the source file
+
+        Arguments:
+            callback {function} -- The function to call on each item
+
+        Keyword Arguments:
+            name {str} -- Name of the extract task (currently not used) (default: {''})
+            callback_kwargs {dict} -- Keyword arguments to pass into the callback function
+                                      (default: {{}})
+            selectors {tuple} -- CSS selectors used to select a list of elements that will
+                                 be passed into the callback (default: {()})
+            raw_source {str, list} -- Change the source content before its processed
+                                      (default: {None})
+            idx_offset {int} -- Starting count passed into the callback when looping over items
+                                (default: {0})
+            qa {dict} -- Extracted fields to qa and their rules (default: {{}})
+            post_extract {function} -- Function to run on the list of outputs from the callback
+                                       (default: {None})
+            post_extract_kwargs {dict} -- Keyword arguments to pass into the post_extract function
+                                         (default: {{}})
+
+        Returns:
+            function -- Function to pass the raw_source into for it to be processed
+        """
+        inputs = self._format_extract_task(locals())
+
+        def run_extract_task(raw_source):
+            if inputs.get('raw_source') is None:
+                extract_source = raw_source
+            else:
+                extract_source = inputs['raw_source']
+
+            if not isinstance(extract_source, (list, tuple)):
+                if inputs['selectors']:
+                    # It is html, so parse it out
+                    parsel_source = Selector(text=extract_source)
+                    source_items = self.find_css_elements(parsel_source,
+                                                          inputs['selectors'])
+
+                elif inputs['selectors'] == [] and inputs['raw_source'] is None:
+                    # Want to parse the entire html source as one
+                    source_items = [Selector(text=extract_source)]
+
+                else:
+                    # Not sure what to do with the content so send it all
+                    # as a single item
+                    source_items = [extract_source]
+            else:
+                # source is already a list
+                source_items = extract_source
+
+            try:
+                output = []
+                # Used when you want to start at a different number
+                for idx, item in enumerate(source_items, start=inputs['idx_offset']):
+                    result = inputs['callback'](item, idx, **inputs['callback_kwargs'])
+                    if not result:
+                        continue
+                    # QA Result
+                    # TODO: Should the QA cast to the types?
+                    #       Or just make sure it is that type
+                    self._qa_result(idx, inputs['qa'], result)
+                    output.append(result)
+
+            except QAValueError as e:
+                logger.error(f"Extraction Failed: {e}",
+                             extra={'task': self.task,
+                                    'scraper_name': self.scraper.config['SCRAPER_NAME']})
+
+            else:
+                try:
+                    inputs['post_extract'](output, **inputs['post_extract_kwargs'])
+                except Exception:
+                    logger.exception("Post extract Failed",
+                                     extra={'task': self.task,
+                                            'scraper_name': self.scraper.config['SCRAPER_NAME']})
+
+        return run_extract_task
+
+    def _format_extract_task(self, inputs):
+        if 'self' in inputs:
+            del inputs['self']
+
+        ###
+        # Callback
+        ###
+        if not inputs.get('callback'):
+            raise ValueError("Extraction Task: callback is required")
+
+        elif not callable(inputs['callback']):
+            raise ValueError("Extraction Task: callback has to be a function")
+
+        ###
+        # Callback kwargs
+        ###
+        if inputs.get('callback_kwargs') is None:
+            inputs['callback_kwargs'] = {}
+
+        elif not isinstance(inputs['callback_kwargs'], dict):
+            raise ValueError("Extraction Task: callback_kwargs must be dict")
+
+        ###
+        # Name
+        ###
+        if not isinstance(inputs['name'], (str, type(None))):
+            raise ValueError("Extraction Task: name must be a string or None")
+
+        ###
+        # Selectors
+        ###
+        if not inputs.get('selectors'):
+            inputs['selectors'] = []
+
+        if not isinstance(inputs['selectors'], (list, tuple)):
+            inputs['selectors'] = [inputs['selectors']]
+
+        for selector in inputs['selectors']:
+            if not isinstance(selector, str):
+                raise ValueError("Extraction Task: All selectors must strings")
+
+        ###
+        # Raw Source
+        ###
+
+        ###
+        # Index Offset
+        ###
+        if not inputs.get('idx_offset'):
+            inputs['idx_offset'] = 0
+
+        elif not isinstance(inputs['idx_offset'], int):
+            raise ValueError("Extraction Task: idx_offset must be an integer")
+
+        ###
+        # Qa
+        ###
+        if inputs.get('qa') is None:
+            inputs['qa'] = {}
+
+        elif not isinstance(inputs['qa'], dict):
+            raise ValueError("Extraction Task: qa must be dict")
+
+        ###
+        # Post Extract
+        ###
+        if not inputs.get('post_extract'):
+            inputs['post_extract'] = lambda *args, **kwargs: None
+
+        elif not callable(inputs['post_extract']):
+            raise ValueError("Extraction Task: post_extract has to be a function")
+
+        ###
+        # Post Extract kwargs
+        ###
+        if inputs.get('post_extract_kwargs') is None:
+            inputs['post_extract_kwargs'] = {}
+
+        elif not isinstance(inputs['post_extract_kwargs'], dict):
+            raise ValueError("Extraction Task: post_extract_kwargs must be dict")
+
+        return inputs
 
     def _get_extraction_tasks(self, raw_source, source_idx):
         extraction_tasks = self.extract(raw_source, source_idx)
         if not extraction_tasks:
             return
 
-        if not isinstance(extraction_tasks, (list, tuple)):
+        if not isinstance(extraction_tasks, (list, tuple, types.GeneratorType)):
             extraction_tasks = [extraction_tasks]
 
-        for extraction_task in extraction_tasks:
-            if not self._validate_extraction_task(extraction_task):
-                raise ValueError(f"Invalid extraction task: \n{extraction_task}")
-
         return extraction_tasks
-
-    def _extraction_task(self, extraction_task, raw_source):
-        extract_source = extraction_task.get('raw_source', raw_source)
-
-        if not isinstance(extract_source, (list, tuple)):
-
-            if 'selectors' in extraction_task:
-                # It is html, so parse it out
-                parsel_source = Selector(text=extract_source)
-                # TODO: May want to only use what gets the most results?
-                #       or the first? last? Currently it will use all
-                #       selectors and get all the results
-                all_selectors = ', '.join(extraction_task['selectors'])
-                source_items = parsel_source.css(all_selectors)
-            else:
-                # Not sure what to do with the content so send it all
-                # as a single item
-                source_items = [extract_source]
-        else:
-            # source is already a list
-            source_items = extract_source
-
-        try:
-            output = []
-            # Used when you want to start at a different number
-            offset = extraction_task.get('idx_offset', 0)
-            callback_kwargs = extraction_task.get('callback_kwargs', {})
-            for idx, item in enumerate(source_items, start=offset):
-                result = extraction_task['callback'](item, idx, **callback_kwargs)
-                if not result:
-                    continue
-                # QA Result
-                # TODO: Should the QA cast to the types?
-                #       Or just make sure it is that type
-                self._qa_result(idx, extraction_task.get('qa'), result)
-                output.append(result)
-
-        except QAValueError as e:
-            logger.error(f"Extraction Failed: {e}",
-                         extra={'task': self.task,
-                                'scraper_name': self.scraper.config['SCRAPER_NAME']})
-
-        else:
-            try:
-                post_extract = extraction_task.get('post_extract',
-                                                   lambda *args, **kwargs: None)
-                post_extract_kwargs = extraction_task.get('post_extract_kwargs', {})
-                post_extract(output, **post_extract_kwargs)
-            except Exception:
-                logger.exception("Post extract Failed",
-                                 extra={'task': self.task,
-                                        'scraper_name': self.scraper.config['SCRAPER_NAME']})
 
     def save_as(self, data, file_format='json', template_values={}):
         """Save data to a file
@@ -212,29 +318,6 @@ class Extract(ABC):
     def _validate_qa_rules(self, qa_rules):
         # TODO: Validate for each extraction_task in run()
         pass
-
-    def _validate_extraction_task(self, extraction_task):
-        """Validate the key/values in the extraction task
-
-        Arguments:
-            extraction_task {dict} -- Passed in by the scraper
-
-        Returns:
-            bool -- If the task is valid or not
-        """
-        passed = True
-
-        required_fields = ['callback', 'name']
-        for field in required_fields:
-            if field not in extraction_task:
-                passed = False
-                logger.error(f"Extraction task is missing the `{field}` field",
-                             extra={'task': self.task,
-                                    'scraper_name': self.scraper.config['SCRAPER_NAME'],
-                                    'extraction_task': extraction_task,
-                                    })
-
-        return passed
 
     def _get_sources(self):
         """Get source files and its metadata if possible
