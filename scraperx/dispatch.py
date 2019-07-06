@@ -21,6 +21,7 @@ class Dispatch():
 
         if isinstance(tasks, types.GeneratorType):
             self.tasks_generator = tasks
+            self.tasks = []
         else:
             if not isinstance(tasks, (list, tuple)):
                 # Make sure tasks is a list and not just a single task

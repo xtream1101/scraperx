@@ -3,11 +3,12 @@ import random
 import logging
 import threading
 import urllib.parse
-from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract, config
+from scraperx import Scraper, run_cli, Dispatch, Download, Extract
 
 logger = logging.getLogger(__name__)
 
-class Dispatch(BaseDispatch):
+
+class MyDispatch(Dispatch):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -31,25 +32,24 @@ class Dispatch(BaseDispatch):
         """
         logger.debug("Getting new visitorId",
                      extra={'task': None,
-                            'scraper_name': config['SCRAPER_NAME']})
+                            'scraper_name': self.scraper.config['SCRAPER_NAME']})
         visitor_id = self._get_visitor_id()
         if visitor_id:
             self.visitor_id_list.append(visitor_id)
             logger.debug(f"Created the visitorId cookie with value {visitor_id}",
                          extra={'task': None,
-                                'scraper_name': config['SCRAPER_NAME'],
+                                'scraper_name': self.scraper.config['SCRAPER_NAME'],
                                 'visitor_id': visitor_id})
         else:
             logger.warning("Failed to get the visitorId cookie",
                            extra={'task': None,
-                                  'scraper_name': config['SCRAPER_NAME'],
+                                  'scraper_name': self.scraper.config['SCRAPER_NAME'],
                                   'visitor_id': visitor_id})
 
         # Run this fn again in 5.0 seconds
         t = threading.Timer(5.0, self.generate_visitor_id)
         t.daemon = True  # This will kill the thread if the program stops
         t.start()
-
 
     def _get_visitor_id(self):
         """Use selenium to create a session and get its cookies
@@ -59,10 +59,6 @@ class Dispatch(BaseDispatch):
         are running
         """
         from selenium import webdriver
-        from selenium.webdriver.common.by import By
-        from selenium.webdriver.common.keys import Keys
-        from selenium.webdriver.support.ui import WebDriverWait
-        from selenium.webdriver.support import expected_conditions as EC
         from selenium.webdriver.firefox.options import Options as FirefoxOptions
         from webdriverdownloader import GeckoDriverDownloader
 
@@ -92,10 +88,10 @@ class Dispatch(BaseDispatch):
 
         return visitor_id
 
-
     def _load_tasks(self):
         self.keywords = ['cookies', 'chips', 'candy']
-        # When yield'ing in submit_tasks(), must set num_tasks so they can be dispatched at the correct rate
+        # When yield'ing in submit_tasks(), must set num_tasks so they
+        # can be dispatched at the correct rate
         self.num_tasks = len(self.keywords)
 
     def submit_tasks(self):
@@ -109,7 +105,7 @@ class Dispatch(BaseDispatch):
                    }
 
 
-class Download(BaseDownload):
+class MyDownload(Download):
 
     def download(self):
         r = self.request_get(self.gen_url())
@@ -124,42 +120,47 @@ class Download(BaseDownload):
                      'isDLP': 'false',
                      'default_purchasability_filter': 'true',
                      'include_sponsored_search': 'true',
-                     'ppatok': 'AOxT33a',  # seems to alwys be the same for target
+                     'ppatok': 'AOxT33a',
                      'platform': self.task['device_type'],
                      'pageId': f"/s/{self.task['keyword']}",
                      'channel': 'web',
                      'visitorId': self.task['visitor_id'],
                      'pricing_store_id': self.task['store_id'],
                      'useragent': self.session.headers.get('user-agent'),
-                     'store_ids': self.task['store_id'],  # could be a list, but seems to work fine with just the one
-                     'key': 'eb2551e4accc14f38cc42d32fbc2b2ea',  # seems to alwys be the same for target
+                     'store_ids': self.task['store_id'],
+                     'key': 'eb2551e4accc14f38cc42d32fbc2b2ea',
         }
         encoded_prams = urllib.parse.urlencode(url_prams)
         return f'{base_url}?{encoded_prams}'
 
 
-class Extract(BaseExtract):
+class MyExtract(Extract):
 
     def extract(self, raw_source, source_idx):
         import json
 
-        return {'name': 'products',
-                'raw_source': json.loads(raw_source)['search_response']['items']['Item'],
-                'idx_offset': 1,
-                'callback': self.extract_products,
-                'post_extract': self.save_as,
-                'post_extract_kwargs': {'file_format': 'json',
-                                        },
-                }
+        yield self.extract_task(
+            name='products',
+            raw_source=json.loads(raw_source)['search_response']['items']['Item'],
+            idx_offset=1,
+            callback=self.extract_product,
+            post_extract=self.save_as,
+            post_extract_kwargs={'file_format': 'json'},
+        )
 
-    def extract_products(self, item, idx, **kwargs):
+    def extract_product(self, item, idx, **kwargs):
         return {'title': item['title'],
                 'rank': idx}
 
 
+my_scraper = Scraper(dispatch_cls=MyDispatch,
+                     download_cls=MyDownload,
+                     extract_cls=MyExtract)
+
 if __name__ == '__main__':
     import logging
-    logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s - %(levelname)s - %(name)s - %(message)s')
-
-    run_cli(Dispatch, Download, Extract)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(name)s - [%(scraper_name)s] %(message)s'
+    )
+    run_cli(my_scraper)

@@ -1,13 +1,12 @@
 import json
-from scraperx.trigger import run_task
-from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
+from scraperx import Scraper, run_cli, Dispatch, Download, Extract
 
 
-class Dispatch(BaseDispatch):
+class MyDispatch(Dispatch):
 
     def submit_tasks(self):
         keyword = 'cookies'
-        return {'url': f'https://www.kroger.com/search/api/searchAll?start=0&count=24&query={keyword}&tab=0&monet=true',
+        return {'url': f'https://www.kroger.com/search/api/searchAll?start=0&count=24&query={keyword}&tab=0&monet=true',  # noqa: E501
                 'headers': {'origin': 'https://www.kroger.com',
                             'accept-language': 'en-US,en;q=0.9',
                             'content-type': 'application/json;charset=UTF-8',
@@ -22,7 +21,7 @@ class Dispatch(BaseDispatch):
                 }
 
 
-class Download(BaseDownload):
+class MyDownload(Download):
 
     def download(self):
         # This first request will get the products in the search
@@ -43,29 +42,32 @@ class Download(BaseDownload):
         self.save_request(r2, template_values={'source_name': 'details'})
 
 
-class Extract(BaseExtract):
+class MyExtract(Extract):
 
     def extract(self, raw_source, source_idx):
         if source_idx == 1:
             # Only need to extract the data of the second request
-            return {'name': 'products',
-                    'raw_source': json.loads(raw_source)['products'],
-                    'callback': self.extract_product,
-                    'post_extract': self.save_as,
-                    'post_extract_kwargs': {'file_format': 'json',
-                                            },
-                    }
+            yield self.extract_task(
+                name='products',
+                raw_source=json.loads(raw_source)['products'],
+                callback=self.extract_product,
+                post_extract=self.save_as,
+                post_extract_kwargs={'file_format': 'json'},
+            )
 
     def extract_product(self, item, idx, **kwargs):
-
-        # Trigger the downlaod
         # Return data so it is still saved
         return {'title': item.get('description', '')}
 
 
+my_scraper = Scraper(dispatch_cls=MyDispatch,
+                     download_cls=MyDownload,
+                     extract_cls=MyExtract)
+
 if __name__ == '__main__':
     import logging
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(name)s - [%(scraper_name)s] %(message)s')
-
-    run_cli(Dispatch, Download, Extract)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(name)s - [%(scraper_name)s] %(message)s'
+    )
+    run_cli(my_scraper)

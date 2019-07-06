@@ -1,7 +1,7 @@
-from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
+from scraperx import Scraper, run_cli, Dispatch, Download, Extract
 
 
-class Dispatch(BaseDispatch):
+class MyDispatch(Dispatch):
 
     def submit_tasks(self):
         """Returns a single or a list of tasks to be downloaded
@@ -34,7 +34,7 @@ class Dispatch(BaseDispatch):
         return {'url': 'http://testing-ground.scraping.pro/blocks'}
 
 
-class Download(BaseDownload):
+class MyDownload(Download):
     """Make all requests and save any source files needed to be extracted
 
     BaseDownload class gives access to:
@@ -77,80 +77,59 @@ class Download(BaseDownload):
         self.save_request(r)
 
 
-class Extract(BaseExtract):
+class MyExtract(Extract):
 
     def extract(self, raw_source, source_idx):
         """Returns a single or a list of extractors
 
-        In each extractor that is returned, the possiable fields are:
-
-        Required:
-            name {str} --
-                Used to define the extractor.
-
-            selectors {list of str} --
-                List of css selectors to use to select the content to pass to
-                the extractor. If parsing non html content and `raw_source`
-                is set, then this is NOT required.
-
-            callback {function} --
-                The extract method that will be called for each element
-                that the selectors find.
-
-        Optional:
-            callback_kwargs {dict} --
-                Named arguments to send to the extractor function
-
-            raw_source {str} --
-                If source is `html`:
-                    Used if you need to modify the source before the selectors
-                    are run on it. Normally not needed.
-                If source is not `html`, i.e. json/plain text/...:
-                    In this case do NOT pass `selectors', but set `raw_source`
-                    to a list of things to be passed to the `callback`.
-
-            idx_offset {int} --
-                The index of the item that the `callback` is currently
-                processing. If not set, it will start at 0.
-
-            post_extract {function} --
-                Function to call after that extractor is finished. Will pass
-                the list of data as the first argument.
-
-            post_extract_kwargs {dict} --
-                Keyword arguments to send to the `post_extract` function
-
-            qa {dict} -- TODO: link to qa docs.
-
         Arguments:
             raw_source {str} -- Content from the source file.
             source_idx {int} -- Index of the source file that was downloaded.
-
         """
-        return [{'name': 'products',
-                'selectors': ['#case1 > div:not(.ads)'],
-                'callback': self.extract_product,
-                'post_extract': self.save_as,  # TODO: add docs about what builtin's there are
-                'post_extract_kwargs': {'file_format': 'json',
-                                        },
-                },
-                {'name': 'sidebar',
-                'selectors': ['#case1 > div:not(.ads)'],
-                'callback': self.extract_sidebar,
-                'post_extract': self.save_as,  # TODO: add docs about what builtin's there are
-                'post_extract_kwargs': {'file_format': 'json',
-                                        },
-                }]
+
+        # For the self.extract_task fn
+        # Arguments:
+        #     callback {function} -- The function to call on each item
+
+        # Keyword Arguments:
+        #     name {str} -- Name of the extract task (currently not used) (default: {''})
+        #     callback_kwargs {dict} -- Keyword arguments to pass into the callback function
+        #                               (default: {{}})
+        #     selectors {tuple} -- CSS selectors used to select a list of elements that will
+        #                          be passed into the callback (default: {()})
+        #     raw_source {str, list} -- Change the source content before its processed
+        #                               (default: {None})
+        #     idx_offset {int} -- Starting count passed into the callback when looping over items
+        #                         (default: {0})
+        #     qa {dict} -- Extracted fields to qa and their rules (default: {{}})
+        #     post_extract {function} -- Function to run on the list of outputs from the callback
+        #                                (default: {None})
+        #     post_extract_kwargs {dict} -- Keyword arguments to pass into the post_extract function
+        #                                  (default: {{}})
+
+        # Either yield or return a list of the functions
+        yield self.extract_task(
+            name='products',
+            selectors=['#case1 > div:not(.ads)'],
+            callback=self.extract_product,
+            post_extract=self.save_as,  # TODO: add docs about what builtin's there are
+            post_extract_kwargs={'file_format': 'json'},
+        )
 
     def extract_product(self, element, idx, **kwargs):
         return {'title': element.css('div.name').xpath('string()').extract_first()}
 
 
-scraper = Scraper(Dispatch, Download, Extract)
+# `extract_cls` is the only required argument,
+# the others have defaults if there is nothing custom to add
+my_scraper = Scraper(dispatch_cls=MyDispatch,
+                     download_cls=MyDownload,
+                     extract_cls=MyExtract)
 
 if __name__ == '__main__':
     import logging
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(name)s - [%(scraper_name)s] %(message)s')
-
-    run_cli(Dispatch, Download, Extract)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(name)s - [%(scraper_name)s] %(message)s'
+    )
+    run_cli(my_scraper)

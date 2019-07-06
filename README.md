@@ -114,13 +114,13 @@ Set the env var `UA_FILE` to the path of the above csv for the scraper to load i
 [Parsel documentation](https://parsel.readthedocs.io/en/latest/)  
 
 #### Data extraction helpers
-`find_css_elements(source, css_selectors)`  
+`self.find_css_elements(source, css_selectors)`  
   - `source` - Parsel object to run the css selectors on
   - `css_selectors` - A list of css selectors to try and extract the data
 
 Returns a Parsel element from the first css selector that returns data.  
 
-This snippet would be in the scrapers `Extract(BaseExtract)` class, used in the method that is extracting the data.
+This snippet would be in the scrapers `MyScraperExtract(Extract)` class, used in the method that is extracting the data.
 ```python
 title_selectors = ['h3',
                    'span.title',
@@ -149,11 +149,10 @@ raw_p3_str = '$49.95 - $99.99'
 p3 = parsers.price(raw_p3_str)
 # p3 = {'low': 49.95, 'high': 99.99}
 
-
 ###
 # Rating
 ###
-# Parse the rating from astring
+# Parse the rating from a string
 # Examples: https://regex101.com/r/ChmgmF/3
 raw_r1_str = '4.4 out of 5 stars'
 r1 = parsers.rating(raw_r1_str)

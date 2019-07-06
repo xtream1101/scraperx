@@ -1,9 +1,8 @@
 import urllib.parse
-from scraperx import run_cli, BaseDispatch, BaseDownload, BaseExtract
+from scraperx import Scraper, run_cli, Dispatch, Download, Extract
 
 
-
-class Dispatch(BaseDispatch):
+class MyDispatch(Dispatch):
 
     def submit_tasks(self):
         return {'keyword': 'cookies',
@@ -12,7 +11,7 @@ class Dispatch(BaseDispatch):
                 }
 
 
-class Download(BaseDownload):
+class MyDownload(Download):
 
     def download(self):
         url = self.gen_url()
@@ -39,37 +38,42 @@ class Download(BaseDownload):
                      'channel': 'web',
                      'visitorId': self.get_visitor_id(),
                      'pricing_store_id': self.task['store_id'],
-                     # Use the same UA as the request is sending in case that is checked to see if its the same
+                     # Use the same UA as the request
                      'useragent': self.session.headers.get('user-agent'),
-                     'store_ids': self.task['store_id'],  # could be a list, but seems to work fine with just the one
-                     'key': 'eb2551e4accc14f38cc42d32fbc2b2ea',  # seems to alwys be the same for target
+                     'store_ids': self.task['store_id'],
+                     'key': 'eb2551e4accc14f38cc42d32fbc2b2ea',
         }
         encoded_prams = urllib.parse.urlencode(url_prams)
         return f'{base_url}?{encoded_prams}'
 
 
-class Extract(BaseExtract):
+class MyExtract(Extract):
 
     def extract(self, raw_source, source_idx):
         import json
 
-        return {'name': 'products',
-                'raw_source': json.loads(raw_source)['search_response']['items']['Item'],
-                'idx_offset': 1,
-                'callback': self.extract_products,
-                'post_extract': self.save_as,
-                'post_extract_kwargs': {'file_format': 'json',
-                                        },
-                }
+        yield self.extract_task(
+            name='products',
+            raw_source=json.loads(raw_source)['search_response']['items']['Item'],
+            idx_offset=1,
+            callback=self.extract_products,
+            post_extract=self.save_as,
+            post_extract_kwargs={'file_format': 'json'},
+        )
 
     def extract_products(self, item, idx, **kwargs):
         return {'title': item['title'],
                 'rank': idx}
 
 
+my_scraper = Scraper(dispatch_cls=MyDispatch,
+                     download_cls=MyDownload,
+                     extract_cls=MyExtract)
+
 if __name__ == '__main__':
     import logging
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(name)s - [%(scraper_name)s] %(message)s')
-
-    run_cli(Dispatch, Download, Extract)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(name)s - [%(scraper_name)s] %(message)s'
+    )
+    run_cli(my_scraper)
