@@ -1,4 +1,3 @@
-import sys
 import logging
 import datetime
 from parsel import Selector
@@ -66,6 +65,10 @@ class Extract(ABC):
                             'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
                             })
 
+    def prep_extract_task(self, callback, callback_kwargs={}, selectors=(), raw_source=None,
+                          idx_offset=0, qa={}, post_extract=None, post_extract_kwargs={}):
+        pass
+
     def _get_extraction_tasks(self, raw_source, source_idx):
         extraction_tasks = self.extract(raw_source, source_idx)
         if not extraction_tasks:
@@ -76,10 +79,7 @@ class Extract(ABC):
 
         for extraction_task in extraction_tasks:
             if not self._validate_extraction_task(extraction_task):
-                logger.critical('Invalid extraction task',
-                                extra={'task': self.task,
-                                       'scraper_name': self.scraper.config['SCRAPER_NAME']})
-                sys.exit(1)
+                raise ValueError(f"Invalid extraction task: \n{extraction_task}")
 
         return extraction_tasks
 
@@ -237,7 +237,7 @@ class Extract(ABC):
         return passed
 
     def _get_sources(self):
-        """Get source files and its metadata if possiable
+        """Get source files and its metadata if possible
 
         Returns:
             {list} - List of tmp files saved to disk

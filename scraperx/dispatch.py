@@ -3,7 +3,6 @@ import types
 import queue
 import logging
 import threading
-from abc import ABC, abstractmethod
 
 from .trigger import run_task
 from .utils import rate_limited, rate_limit_from_period
@@ -11,10 +10,10 @@ from .utils import rate_limited, rate_limit_from_period
 logger = logging.getLogger(__name__)
 
 
-class Dispatch(ABC):
+class Dispatch():
     num_tasks = None
 
-    def __init__(self, scraper, tasks=None):
+    def __init__(self, scraper, tasks=None, triggered_kwargs={}, **kwargs):
         self.scraper = scraper
 
         if not tasks:
@@ -32,7 +31,6 @@ class Dispatch(ABC):
             # Create generator
             self.tasks_generator = iter(tasks)
 
-    @abstractmethod
     def submit_tasks(self):
         """Return/yield tasks to be dispatched
 
@@ -41,11 +39,8 @@ class Dispatch(ABC):
         Returns:
             list|dict|yield -- list of tasks (dicts) or a dict of a single task
                                or a generator which yields dict's
-
-        Decorators:
-            abstractmethod
         """
-        pass
+        return []
 
     def _get_qps(self):
         """Get the rate limit from the config
