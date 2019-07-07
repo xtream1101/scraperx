@@ -34,7 +34,8 @@ class Scraper:
         self.extract_cls = extract_cls
 
     def extract(self, *args, **kwargs):
-        return self.extract_cls(self, *args, **kwargs)
+        if self.extract_cls is not None:
+            return self.extract_cls(self, *args, **kwargs)
 
     def dispatch(self, *args, **kwargs):
         return self.dispatch_cls(self, *args, **kwargs)

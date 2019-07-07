@@ -40,7 +40,11 @@ def _dispatch_locally(scraper, task, task_cls, **kwargs):
     try:
         if 'triggered_kwargs' in kwargs:
             del kwargs['triggered_kwargs']
-        p = Process(target=task_cls(task, **kwargs, triggered_kwargs=kwargs).run)
+        action = task_cls(task, **kwargs, triggered_kwargs=kwargs)
+        if action is None:
+            # Prob the scraper does not have an extract class
+            return
+        p = Process(target=action.run)
         p.start()
     except Exception:
         logger.critical("Local task failed",
