@@ -6,9 +6,6 @@ logger = logging.getLogger(__name__)
 
 
 def run_task(task, task_cls=None, **kwargs):
-    if task_cls is None:
-        return
-
     msg = "Dummy Trigger" if config['STANDALONE'] else "Trigger"
     logger.debug(msg,
                  extra={'dispatch_service': config['DISPATCH_SERVICE_NAME'],
@@ -35,6 +32,12 @@ def _dispatch_locally(task, task_cls, **kwargs):
         task {dict} -- Single task to be run
         task_cls {object} -- The class to init and run
     """
+    if task_cls is None:
+        logger.error("Cannot dispatch locally if no task class is passed in",
+                     extra={'task': task,
+                            'scraper_name': config['SCRAPER_NAME']})
+        return
+
     from multiprocessing import Process
     try:
         if 'triggered_kwargs' in kwargs:

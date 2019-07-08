@@ -88,7 +88,7 @@ class BaseDispatch(ABC):
             self.num_tasks = min(self.num_tasks, config['DISPATCH_LIMIT'])
 
         qps = self._get_qps()
-        logger.info(f"Dispatch {self.num_tasks}",
+        logger.info(f"Dispatch {self.num_tasks} at {qps} qps",
                     extra={'scraper_name': config['SCRAPER_NAME'],
                            'task': None,  # No task yet
                            'qps': qps,
@@ -118,6 +118,9 @@ class BaseDispatch(ABC):
         @rate_limited(num_calls=qps)
         def rate_limit_tasks():
             task = next(self.tasks_generator)
+            logger.debug("Adding task",
+                         extra={'task': task,
+                                'scraper_name': config['SCRAPER_NAME']}  )
             self.tasks.append(task)
             q.put(task)
 
