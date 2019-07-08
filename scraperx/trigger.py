@@ -36,6 +36,12 @@ def _dispatch_locally(scraper, task, task_cls, **kwargs):
         task {dict} -- Single task to be run
         task_cls {object} -- The class to init and run
     """
+    if task_cls is None:
+        logger.error("Cannot dispatch locally if no task class is passed in",
+                     extra={'task': task,
+                            'scraper_name': config['SCRAPER_NAME']})
+        return
+
     from multiprocessing import Process
     try:
         if 'triggered_kwargs' in kwargs:

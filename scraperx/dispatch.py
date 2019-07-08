@@ -104,6 +104,9 @@ class Dispatch():
         @rate_limited(num_calls=qps)
         def rate_limit_tasks():
             task = next(self.tasks_generator)
+            logger.debug("Adding task",
+                         extra={'task': task,
+                                'scraper_name': config['SCRAPER_NAME']}  )
             self.tasks.append(task)
             q.put(task)
 
