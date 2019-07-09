@@ -1,12 +1,13 @@
 import types
 import logging
 import datetime
+from smart_open import open
 from parsel import Selector
 from abc import ABC, abstractmethod
 
 from .write import Write
 from .exceptions import QAValueError
-from .utils import get_file_from_s3, get_s3_resource
+from .utils import _get_s3_params
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,12 @@ class Extract(ABC):
 
         for source_idx, source_file in enumerate(self._get_sources()):
             raw_source = None
-            with open(source_file, 'r') as f:
+            transport_params = {}
+            if source_file.startswith('s3://'):
+                transport_params = _get_s3_params(self.scraper,
+                                                  context_type='downloader')
+
+            with open(source_file, 'r', transport_params=transport_params) as f:
                 raw_source = f.read()
 
             try:
@@ -327,18 +333,7 @@ class Extract(ABC):
         """
         source_files = []
         for source in self.download_manifest['source_files']:
-            source_file = source['file']
-            logger.debug(f"Getting source file: {source_file}",
-                         extra={'task': self.task,
-                                'scraper_name': self.scraper.config['SCRAPER_NAME'],
-                                'file': source_file})
-            if source_file.startswith('s3://'):
-                s3 = get_s3_resource(self)
-                bucket, key = source_file.replace('s3://', '').split('/', 1)
-                # Need to get the file from s3.
-                source_files.append(get_file_from_s3(s3, bucket, key))
-            else:
-                source_files.append(source_file)
+            source_files.append(source['file'])
 
         return source_files
 

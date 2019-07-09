@@ -1,8 +1,7 @@
-import os
-import pathlib
 import logging
+from smart_open import open
 
-from .utils import get_s3_resource, get_context_type
+from .utils import _get_s3_params, get_context_type
 
 logger = logging.getLogger(__name__)
 
@@ -80,114 +79,39 @@ class SaveTo:
         if not filename.endswith(self.file_ext):
             filename += f'.{self.file_ext}'
 
-        save_service_key = f'{context_type}_SAVE_DATA_SERVICE'
-        save_service = self.scraper.config[save_service_key]
+        save_service = self.scraper.config[f'{context_type}_SAVE_DATA_SERVICE']
         if save_service == 's3':
-            saved_file = SaveS3(self.raw_data,
-                                filename,
-                                context,
-                                metadata=metadata,
-                                content_type=self.content_type).save()
+            transport_params = _get_s3_params(self.scraper, context=context)
+            if filename.startswith('s3://'):
+                target_path = filename
 
-        elif save_service == 'local':
-            saved_file = self.save_local(filename)
+            else:
+                bucket_name = self.scraper.config[f'{context_type}_SAVE_DATA_BUCKET_NAME']
+                filename = filename.replace('\\', '/')
+                if not filename.startswith('/'):
+                    filename = f"/{filename}"
+
+                if filename.startswith('s3://'):
+                    target_path = filename
+
+                target_path = f's3://{bucket_name}{filename}'
 
         else:
-            logger.error(f"Not configured to save to {save_service}",
-                         extra={'task': context.task,
-                                'scraper_name': self.scraper.config['SCRAPER_NAME']})
-            saved_file = None
+            target_path = filename
+            transport_params = {}
+
+        try:
+            with open(target_path, 'w', transport_params=transport_params) as outfile:
+                outfile.write(self.raw_data.read())
+
+        except TypeError:
+            self.data.seek(0)
+            # raw_data is BytesIO not StringIO
+            with open(target_path, 'wb', transport_params=transport_params) as outfile:
+                outfile.write(self.raw_data.read())
 
         logger.debug(f"Saved file",
                      extra={'task': context.task,
                             'scraper_name': self.scraper.config['SCRAPER_NAME'],
-                            'file': saved_file})
-        return saved_file
-
-    def save_local(self, filename):
-        return SaveLocal(self.raw_data, filename).save()
-
-
-class SaveLocal:
-
-    def __init__(self, data, filename):
-        self.data = data
-        self.filename = filename
-
-    def save(self):
-        file_path = os.path.dirname(self.filename)
-        pathlib.Path(file_path).mkdir(parents=True, exist_ok=True)
-
-        try:
-            with open(self.filename, 'w') as outfile:
-                outfile.write(self.data.read())
-        except TypeError:
-            self.data.seek(0)
-            # raw_data is BytesIO not StringIO
-            with open(self.filename, 'wb') as outfile:
-                outfile.write(self.data.read())
-
-        return self.filename
-
-
-class SaveS3:
-
-    def __init__(self, data, filename, context, metadata=None,
-                 content_type=None):
-        self.body = self._format_body(data)
-        self.filename = filename
-        self.context = context
-        self.metadata = self._format_metadata(metadata)
-        self.content_type = content_type
-
-        self.s3 = get_s3_resource(context)
-
-    def _get_bucket_name(self):
-        context_type = get_context_type(self.context)
-        bucket_name_key = f'{context_type}_SAVE_DATA_BUCKET_NAME'
-        return self.scraper.config[bucket_name_key]
-
-    def _format_body(self, data):
-        try:
-            return data.getvalue().encode()
-        except AttributeError:
-            return data.read()
-
-    def _format_metadata(self, metadata):
-        """Make sure all values in the metadata are strings
-
-        For s3 files the values must be strings
-
-        Arguments:
-            metadata {dict} -- The metadat to save
-
-        Returns:
-            dict -- The metadata that gets written into the file
-        """
-        if metadata is None:
-            metadata = {}
-
-        # Need to convert all values to strings to save as metadata in the file
-        for k, v in metadata.items():
-            metadata[k] = str(v)
-
-        return metadata
-
-    def save(self):
-        bucket = self._get_bucket_name()
-
-        response = self.s3.Object(bucket, self.filename)\
-                          .put(Body=self.body,
-                               ContentType=self.content_type,
-                               Metadata=self.metadata)
-
-        if response['ResponseMetadata']['HTTPStatusCode'] != 200:
-            logger.error(f"S3 upload response: {response}",
-                         extra={'task': self.context.task,
-                                'scraper_name': self.scraper.config['SCRAPER_NAME']})
-        else:
-            logger.debug(f"S3 upload response: {response}",
-                         extra={'task': self.context.task,
-                                'scraper_name': self.scraper.config['SCRAPER_NAME']})
-
-        return f"s3://{bucket}/{self.filename}"
+                            'file': target_path})
+        return target_path

@@ -1,31 +1,8 @@
 import time
 import logging
-import tempfile
 import threading
-# from .config import config
 
 logger = logging.getLogger(__name__)
-
-
-def get_file_from_s3(s3, bucket, key):
-    """Download file from s3 and store in a local tmp file to be read in
-
-    Arguments:
-        s3 {boto3.resource} -- s3 resource from boto3
-        bucket {str} -- Bucket the file is stored in
-        key {str} -- The path of the file in the bucket
-
-    Returns:
-        str -- the name to a local tmp file
-    """
-    # TODO: Add support for getting metadata from the file
-
-    tf = tempfile.NamedTemporaryFile(delete=False)
-    with open(tf.name, 'w') as source_file:
-        file_object = s3.Object(bucket, key)
-        file_object.download_file(source_file.name)
-
-    return tf.name
 
 
 def get_context_type(context):
@@ -46,14 +23,18 @@ def get_context_type(context):
     return context_type
 
 
-def get_s3_resource(context):
+def _get_s3_params(scraper, context=None, context_type=None):
     import boto3
+    if context_type is None:
+        context_type = get_context_type(context)
 
-    context_type = get_context_type(context)
-    endpoint_url_key = f'{context_type}_SAVE_DATA_ENDPOINT_URL'
-    endpoint_url = context.scraper.config[endpoint_url_key]
-
-    return boto3.resource('s3', endpoint_url=endpoint_url)
+    endpoint_url = scraper.config[f'{context_type}_SAVE_DATA_ENDPOINT_URL']
+    return {
+        'session': boto3.Session(),
+        'resource_kwargs': {
+            'endpoint_url': endpoint_url,
+        },
+    }
 
 
 def rate_limited(num_calls=1, every=1.0):
