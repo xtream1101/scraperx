@@ -37,10 +37,6 @@ shared_parser.add_argument('--local', action='store_true',
 dispatch_download_parser = argparse.ArgumentParser(add_help=False)
 dispatch_download_parser.add_argument('--standalone', action='store_true',
                                       help="Do not trigger the next action")
-dispatch_download_parser.add_argument('--tasks',
-                                      type=_read_tasks,
-                                      help=("Output file from dispatch's"
-                                            " --dump-tasks"))
 
 ###
 # Parser for subparsers
@@ -76,6 +72,9 @@ parser_dispatch.add_argument('--dump-tasks', action='store_true',
                              help="Save the tasks as json")
 parser_dispatch.add_argument('-l', '--limit', type=int,
                              help='Limit the amount of tasks dispatch')
+parser_dispatch.add_argument('--tasks',
+                             type=_read_tasks,
+                             help=("Output file from dispatch's --dump-tasks"))
 ratelimit_group = parser_dispatch.add_mutually_exclusive_group()
 ratelimit_group.add_argument('--qps',
                              help='Number of tasks to dispatch a second')
@@ -88,6 +87,10 @@ parser_download = subparsers.add_parser('download',
                                         help="Run the Downloader",
                                         parents=[shared_parser,
                                                  dispatch_download_parser])
+parser_download.add_argument('--tasks',
+                             type=_read_tasks,
+                             required=True,
+                             help=("Output file from dispatch's --dump-tasks"))
 ###
 # Extract Arguments
 ###

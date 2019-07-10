@@ -9,17 +9,15 @@ from .write import Write
 logger = logging.getLogger(__name__)
 
 
-def _create_test(cli_args, extract_cls):
+def _create_test(cli_args, scraper):
     # TODO: Support pulling files from s3
     # Move the metadata file and all sources into the test sample data dir
     # Update the metadata file to include the new source paths
-    #
 
     metadata_file = cli_args.metadata
     if not metadata_file.endswith('_metadata.json'):
         logger.critical("Input file must be the source metadata file",
-                        extra={'task': None,
-                               'scraper_name': config['SCRAPER_NAME']})
+                        extra={'scraper_name': scraper.config['SCRAPER_NAME']})
         sys.exit(1)
 
     with open(metadata_file, 'r') as f:
@@ -27,16 +25,14 @@ def _create_test(cli_args, extract_cls):
 
     dst_base = os.path.join('tests',
                             'sample_data',
-                            config['SCRAPER_NAME'],
+                            scraper.config['SCRAPER_NAME'],
                             metadata['download_manifest']['time_downloaded']
                             .replace('-', '').replace(':', ''),
                             )
 
-    # make sure dir esists
-    try:
-        os.makedirs(os.path.dirname(dst_base))
-    except OSError:
-        pass
+    # make sure dir exists
+    try: os.makedirs(os.path.dirname(dst_base))  # noqa:E701
+    except OSError: pass  # noqa:E701
 
     current_sources = metadata['download_manifest']['source_files'].copy()
     metadata_sources = []
@@ -60,8 +56,7 @@ def _create_test(cli_args, extract_cls):
         data_name = f'{dst_base}_extracted_(qa)_{name}_{source_idx}.json'
         Write(data).write_json().save_local(data_name)
 
-    extractor = extract_cls(metadata['task'],
-                            metadata['download_manifest'])
+    extractor = scraper.extract(metadata['task'], metadata['download_manifest'])
     for source_idx, source in enumerate(metadata_sources):
         raw_source = None
         with open(source['file'], 'r') as f:
@@ -78,14 +73,11 @@ def _create_test(cli_args, extract_cls):
     logger.info((f"Test files created under {dst_base}*."
                  f" Please QA the extracted files"),
                 extra={'task': metadata['task'],
-                       'scraper_name': config['SCRAPER_NAME']})
+                       'scraper_name': scraper.config['SCRAPER_NAME']})
 
 
 def _run_dispatch(cli_args, scraper):
     """Kick off the dispatcher for the scraper
-
-    Arguments:
-        dispatch_cls {class} -- Class of the dispatch action from the scraper
     """
     tasks = None
     if cli_args.tasks:
@@ -96,8 +88,7 @@ def _run_dispatch(cli_args, scraper):
         task_file = Write(tasks).write_json().save_local('tasks.json')
         num_tasks = len(tasks)
         logger.info(f"Saved {num_tasks} tasks to {task_file}",
-                    extra={'task': None,
-                           'scraper_name': scraper.config['SCRAPER_NAME']})
+                    extra={'scraper_name': scraper.config['SCRAPER_NAME']})
 
     dispatcher = scraper.dispatch(tasks=tasks)
     try_dump_after = False
@@ -117,22 +108,16 @@ def _run_dispatch(cli_args, scraper):
         dump_tasks(dispatcher.tasks)
 
 
-def _run_download(cli_args, download_cls, extract_cls):
+def _run_download(cli_args, scraper):
     """Kick off the downloader for the scraper
-
-    Arguments:
-        download_cls {class} -- Class of the download action from the scraper
     """
     for task in cli_args.tasks:
-        downloader = download_cls(task, extract_cls=extract_cls)
+        downloader = scraper.dispatch(task)
         downloader.run()
 
 
 def _run_extract(cli_args, scraper):
     """Kick off the extractor for the scraper
-
-    Arguments:
-        extract_cls {class} -- Class of the extract action from the scraper
     """
     if os.path.isdir(cli_args.source):
         metadata_files = []
@@ -162,18 +147,17 @@ def run_cli(scraper):
     if cli_args.action == 'validate':
         from pprint import pprint
         logger.info("Testing the config....",
-                    extra={'task': None,
-                           'scraper_name': scraper.config['SCRAPER_NAME']})
+                    extra={'scraper_name': scraper.config['SCRAPER_NAME']})
         pprint(scraper.config.values)
 
     # elif cli_args.action == 'create-test':
-    #     _create_test(cli_args, extract_cls)
+    #     _create_test(cli_args, scraper)
 
     elif cli_args.action == 'dispatch':
         _run_dispatch(cli_args, scraper)
 
-    # elif cli_args.action == 'download':
-    #     _run_download(cli_args, download_cls, extract_cls)
+    elif cli_args.action == 'download':
+        _run_download(cli_args, scraper)
 
     elif cli_args.action == 'extract':
         _run_extract(cli_args, scraper)
