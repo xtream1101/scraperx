@@ -162,7 +162,6 @@ def run_cli(scraper):
     elif cli_args.action == 'create-test':
         _create_test(cli_args, scraper)
 
-
     elif cli_args.action == 'dispatch':
         _run_dispatch(cli_args, scraper)
 
