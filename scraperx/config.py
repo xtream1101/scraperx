@@ -138,8 +138,8 @@ class ConfigGen:
         self._scraper_name = os.path.basename(sys.argv[0]).rsplit('.', 1)[0]
 
     def load_config(self, config_file=None, cli_args=None, scraper_name=None):
-        if config_file is None:
-            config_file = self.file
+        if config_file is not None:
+            self.file = config_file
 
         if scraper_name is not None:
             self._scraper_name = scraper_name
