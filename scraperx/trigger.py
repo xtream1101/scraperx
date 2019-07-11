@@ -39,7 +39,7 @@ def _dispatch_locally(scraper, task, task_cls, **kwargs):
     if task_cls is None:
         logger.error("Cannot dispatch locally if no task class is passed in",
                      extra={'task': task,
-                            'scraper_name': config['SCRAPER_NAME']})
+                            'scraper_name': scraper.config['SCRAPER_NAME']})
         return
 
     from multiprocessing import Process
