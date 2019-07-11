@@ -54,23 +54,32 @@ def _create_test(cli_args, scraper):
     # Run the extractor
     def save_extracted(data, source_idx, name):
         data_name = f'{dst_base}_extracted_(qa)_{name}_{source_idx}.json'
-        Write(data).write_json().save_local(data_name)
+        Write(scraper, data).write_json().save_local(data_name)
+
+    extractor = scraper.extract(metadata['task'],
+                                metadata['download_manifest'])
+    # Override post_extract values to force it to save locally in a json format
+    extractor.original_format_extract_task = extractor._format_extract_task
+
+    def _tester_format_extract_task(inputs):
+        inputs = extractor.original_format_extract_task(inputs)
+        inputs['post_extract'] = save_extracted
+        inputs['post_extract_kwargs'] = {'source_idx': source_idx,
+                                         'name': inputs['name'],
+                                         }
+        return inputs
+    extractor._format_extract_task = _tester_format_extract_task
 
     extractor = scraper.extract(metadata['task'], metadata['download_manifest'])
     for source_idx, source in enumerate(metadata_sources):
         raw_source = None
         with open(source['file'], 'r') as f:
             raw_source = f.read()
-        e_tasks = extractor._get_extraction_tasks(raw_source, source_idx)
-        for e_task in e_tasks:
-            # Override what happens with the extracted data
-            e_task['post_extract'] = save_extracted
-            e_task['post_extract_kwargs'] = {'source_idx': source_idx,
-                                             'name': e_task['name'],
-                                             }
-            extractor._extraction_task(e_task, raw_source)
 
-    logger.info((f"Test files created under {dst_base}*."
+        for e_task in extractor._get_extraction_tasks(raw_source, source_idx):
+            e_task(raw_source)
+
+    logger.info((f"Test files created under {dst_base}_*."
                  f" Please QA the extracted files"),
                 extra={'task': metadata['task'],
                        'scraper_name': scraper.config['SCRAPER_NAME']})
@@ -85,7 +94,7 @@ def _run_dispatch(cli_args, scraper):
 
     def dump_tasks(tasks):
         # Dump all tasks to local json file
-        task_file = Write(tasks).write_json().save_local('tasks.json')
+        task_file = Write(scraper, tasks).write_json().save_local('tasks.json')
         num_tasks = len(tasks)
         logger.info(f"Saved {num_tasks} tasks to {task_file}",
                     extra={'scraper_name': scraper.config['SCRAPER_NAME']})
@@ -112,7 +121,7 @@ def _run_download(cli_args, scraper):
     """Kick off the downloader for the scraper
     """
     for task in cli_args.tasks:
-        downloader = scraper.dispatch(task)
+        downloader = scraper.download(task)
         downloader.run()
 
 
@@ -150,8 +159,9 @@ def run_cli(scraper):
                     extra={'scraper_name': scraper.config['SCRAPER_NAME']})
         pprint(scraper.config.values)
 
-    # elif cli_args.action == 'create-test':
-    #     _create_test(cli_args, scraper)
+    elif cli_args.action == 'create-test':
+        _create_test(cli_args, scraper)
+
 
     elif cli_args.action == 'dispatch':
         _run_dispatch(cli_args, scraper)
