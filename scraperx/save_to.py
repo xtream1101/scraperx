@@ -1,3 +1,4 @@
+import os
 import logging
 from smart_open import open
 
@@ -99,6 +100,11 @@ class SaveTo:
         else:
             target_path = filename
             transport_params = {}
+
+        if '://' not in target_path:
+            # Make sure dir is created
+            try: os.makedirs(os.path.dirname(target_path))  # noqa: E701
+            except OSError: pass  # noqa: E701
 
         try:
             with open(target_path, 'w', transport_params=transport_params) as outfile:
