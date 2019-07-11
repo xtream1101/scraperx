@@ -22,5 +22,6 @@ setup(name='scraperx',
                         'requests',
                         'boto3',
                         'deepdiff',
+                        'smart_open==1.8.4',
                         ],
       )
