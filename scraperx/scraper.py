@@ -10,8 +10,7 @@ class Scraper:
 
     def __init__(self, config_file=None, cli_args=None, scraper_name=None,
                  dispatch_cls=None, download_cls=None, extract_cls=None):
-        self.config = ConfigGen()
-        self.config.load_config(config_file=config_file,
+        self.config = ConfigGen(config_file=config_file,
                                 cli_args=cli_args,
                                 scraper_name=scraper_name)
         self.set_download_cls(download_cls)

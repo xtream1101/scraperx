@@ -131,24 +131,33 @@ _CONFIG_STRUCTURE = {
 
 class ConfigGen:
 
-    def __init__(self):
+    def __init__(self, config_file=None, cli_args=None, scraper_name=None):
         self.values = {}
-        self.file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])),
-                                 'config.yaml')
-        self._scraper_name = os.path.basename(sys.argv[0]).rsplit('.', 1)[0]
+        self._cli_args = cli_args
+        if scraper_name:
+            self._scraper_name = scraper_name
+        else:
+            self._scraper_name = os.path.basename(sys.argv[0]).rsplit('.', 1)[0]
+
+        if config_file:
+            self._file = config_file
+        else:
+            self._file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])),
+                                      'config.yaml')
 
     def load_config(self, config_file=None, cli_args=None, scraper_name=None):
-        if config_file is not None:
-            self.file = config_file
+        if config_file:
+            self._file = config_file
 
         if scraper_name is not None:
             self._scraper_name = scraper_name
 
-        file_values = self._ingest_file(config_file)
+        if not cli_args:
+            cli_args = self._cli_args
 
-        cli_values = {}
-        if cli_args is not None:
-            cli_values = self._ingest_cli_args(cli_args)
+        file_values = self._ingest_file(self._file)
+
+        cli_values = self._ingest_cli_args(cli_args)
 
         raw_values = self._join_values(file_values=file_values,
                                        cli_values=cli_values)
