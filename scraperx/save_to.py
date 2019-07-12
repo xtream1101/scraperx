@@ -83,6 +83,7 @@ class SaveTo:
         save_service = self.scraper.config[f'{context_type}_SAVE_DATA_SERVICE']
         if save_service == 's3':
             transport_params = _get_s3_params(self.scraper, context=context)
+            transport_params['multipart_upload_kwargs'] = {'ContentType': self.content_type}
             if filename.startswith('s3://'):
                 target_path = filename
 
