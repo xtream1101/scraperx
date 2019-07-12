@@ -95,8 +95,8 @@ class SaveTo:
 
                 if filename.startswith('s3://'):
                     target_path = filename
-
-                target_path = f's3://{bucket_name}{filename}'
+                else:
+                    target_path = f's3://{bucket_name}{filename}'
 
         else:
             target_path = filename
