@@ -346,6 +346,7 @@ class Extract(ABC):
             if len(results) > 0:
                 # Found results, save selector
                 return source.css(selector)
+        return []
 
     @abstractmethod
     def extract(self):
