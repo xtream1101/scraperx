@@ -112,7 +112,7 @@ class SaveTo:
                 outfile.write(self.raw_data.read())
 
         except TypeError:
-            self.data.seek(0)
+            self.raw_data.seek(0)
             # raw_data is BytesIO not StringIO
             with open(target_path, 'wb', transport_params=transport_params) as outfile:
                 outfile.write(self.raw_data.read())

@@ -84,9 +84,15 @@ class Write:
         Returns:
             StringIO -- The data
         """
-        output_io = io.StringIO()
-        output_io.write(self.data)
-        output_io.seek(0)
+        try:
+            output_io = io.StringIO()
+            output_io.write(self.data)
+            output_io.seek(0)
+        except TypeError:
+            output_io = io.BytesIO()
+            output_io.write(self.data)
+            output_io.seek(0)
+
         return SaveTo(self.scraper,
                       output_io,
                       content_type=content_type)
