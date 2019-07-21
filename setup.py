@@ -8,7 +8,7 @@ except FileNotFoundError:
 
 setup(name='scraperx',
       packages=find_packages(),
-      version='0.2.8',
+      version='0.3.0',
       python_requires='>=3.6.0',
       license='MIT',
       description='ScraperX SDK',

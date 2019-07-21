@@ -132,21 +132,29 @@ class Download:
                             'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
                             })
 
-    def save_request(self, r, source_file=None, **save_kwargs):
+    def save_request(self, r, content=None, source_file=None, content_type=None, **save_kwargs):
         """Save the request and the source file
 
         Arguments:
             r {requests.request} -- The request that was made
 
         Keyword Arguments:
+            content {} -- Data of the request to be saved
             source_file {str} -- The name of a file that has already been saved
+            content_type {str} -- Content type of the data being saved.
+                                  If none is passed in a best guess will be made
             **saved_kwargs {named args} -- Named args that will be passed into `SaveTo.save` fn
 
         Returns:
-            {None}
+            {str} -- Path to the source file
         """
+        if content is None:
+            content = r.text
+
         if source_file is None:
-            source_file = Write(self.scraper, r.text).write_file().save(self, **save_kwargs)
+            source_file = Write(self.scraper, content)\
+                .write_file(content_type=content_type)\
+                .save(self, **save_kwargs)
 
         self._manifest['source_files'].append(
             {
@@ -160,6 +168,8 @@ class Download:
                 },
             }
         )
+
+        return source_file
 
     def _save_metadata(self):
         """Save the metadata with the download source

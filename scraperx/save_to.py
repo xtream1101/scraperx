@@ -9,11 +9,10 @@ logger = logging.getLogger(__name__)
 
 class SaveTo:
 
-    def __init__(self, scraper, raw_data, content_type='text/html', file_ext=''):
+    def __init__(self, scraper, raw_data, content_type=None):
         self.scraper = scraper
         self.raw_data = raw_data
         self.content_type = content_type
-        self.file_ext = file_ext
 
     def _get_filename(self, context, template_values={}, name_template=None):
         """Generate the filename based on the config template
@@ -76,14 +75,15 @@ class SaveTo:
         filename = self._get_filename(context,
                                       template_values=template_values,
                                       name_template=filename)
-
-        if not filename.endswith(self.file_ext):
-            filename += f'.{self.file_ext}'
+        content_type = self.content_type
+        if content_type is None:
+            import mimetypes
+            content_type, _ = mimetypes.guess_type(filename)
 
         save_service = self.scraper.config[f'{context_type}_SAVE_DATA_SERVICE']
         if save_service == 's3':
             transport_params = _get_s3_params(self.scraper, context=context)
-            transport_params['multipart_upload_kwargs'] = {'ContentType': self.content_type}
+            transport_params['multipart_upload_kwargs'] = {'ContentType': content_type}
             if filename.startswith('s3://'):
                 target_path = filename
 

@@ -41,8 +41,7 @@ class Write:
         output_io.seek(0)
         return SaveTo(self.scraper,
                       output_io,
-                      content_type='application/json',
-                      file_ext='json')
+                      content_type='application/json')
 
     def write_json_lines(self, json_args=None):
         """Write json data to a StringIO object
@@ -71,18 +70,17 @@ class Write:
         output_io.seek(0)
         return SaveTo(self.scraper,
                       output_io,
-                      content_type='application/json',
-                      file_ext='json')
+                      content_type='application/json')
 
-    def write_file(self, content_type='text/html'):
+    def write_file(self, content_type=None):
         """Write data to a StringIO object without any additional formatting
 
         Keyword Arguments:
             content_type {str} -- Used when saving the file
-                                  (default: {'text/html'})
+                                  (default: {})
 
         Returns:
-            StringIO -- The data
+            StringIO/BytesIO -- The data
         """
         try:
             output_io = io.StringIO()
@@ -96,24 +94,6 @@ class Write:
         return SaveTo(self.scraper,
                       output_io,
                       content_type=content_type)
-
-    def write_zip(self, content_type='application/zip'):
-        """Write data to a StringIO object without any additional formatting
-
-        Keyword Arguments:
-            content_type {str} -- Used when saving the file
-                                  (default: {'text/html'})
-
-        Returns:
-            StringIO -- The data
-        """
-        output_io = io.BytesIO()
-        output_io.write(self.data)
-        output_io.seek(0)
-        return SaveTo(self.scraper,
-                      output_io,
-                      content_type=content_type,
-                      file_ext='zip')
 
     def write_csv(self, filename):
         # TODO
@@ -159,5 +139,4 @@ class Write:
         # TODO: Is this the correct content type for a parquet file?
         return SaveTo(self.scraper,
                       output_io,
-                      content_type='application/octet-stream',
-                      file_ext='parquet')
+                      content_type='application/octet-stream')
