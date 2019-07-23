@@ -5,6 +5,17 @@ logger = logging.getLogger(__name__)
 
 
 def run_task(scraper, task, task_cls=None, **kwargs):
+    """Trigger the next step dispatch -> download -> extract
+
+    Trigger the `task_cls` base on the config value `dispatch_service_type`
+
+    Args:
+        scraper (obj): The users Scraper instance
+        task (list|dict): The task to pass to the class. Can only be list for `dispatch`
+        task_cls (obj): The next part to run.
+            Options are: `scraper.dispatch`, `scraper.download`, `scraper.extract`.
+        **kwargs: Keyword arguments to send to pass into the `task_cls`
+    """
     if task_cls is None:
         logger.warning("No tasks passed into run_task",
                        extra={'scraper_name': scraper.config['SCRAPER_NAME']})
@@ -30,12 +41,7 @@ def run_task(scraper, task, task_cls=None, **kwargs):
 
 
 def _dispatch_locally(scraper, task, task_cls, **kwargs):
-    """Send the task directly to the download class
-
-    Arguments:
-        task {dict} -- Single task to be run
-        task_cls {object} -- The class to init and run
-    """
+    """Send the task directly to the download class"""
     if task_cls is None:
         logger.error("Cannot dispatch locally if no task class is passed in",
                      extra={'task': task,
@@ -60,16 +66,7 @@ def _dispatch_locally(scraper, task, task_cls, **kwargs):
 
 
 def _dispatch_sns(scraper, task, arn=None, **kwargs):
-    """Send the task to a lambda via an SNS Topic
-
-    Arguments:
-        task {dict} -- Single task to be passed along
-        **kwargs {} -- All other keyword arguments passed in will be sent to
-                       the SNS topic in the message
-
-    Keyword Arguments:
-        arn {str} -- ARN of the SNS topic (default: {None}, pull from config)
-    """
+    """Send the task to an AWS SNS Topic"""
     try:
         import boto3
         client = boto3.client('sns')

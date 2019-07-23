@@ -34,33 +34,31 @@ class ExtractorBaseTest:
         def __init__(self, sample_data_dir, extract_cls, ignore_keys=None, *args, **kwargs):
             """Test QA'd extracted data against the current extractor code
 
-            `ignore_keys` usage:
-            test_data = [{'foo': 'bar0',
-                          'a': 1,
-                          'b': {'1': 'one',
-                                '2': 'two',
-                                },
-                          },
-                         {'foo': 'bar1',
-                          'a': 1,
-                          'b': {'1': 'one again',
-                                '2': 'two once more',
-                                },
-                          },
-                         ]
-            To ignore the value that is set in the keys
-            `test_data['foo']` and in `test_data['b']['2']`
-            `ignore_keys = ['foo', {'b': ['2']}]`
+            `ignore_keys` usage::
+                test_data = [{'foo': 'bar0',
+                            'a': 1,
+                            'b': {'1': 'one',
+                                    '2': 'two',
+                                    },
+                            },
+                            {'foo': 'bar1',
+                            'a': 1,
+                            'b': {'1': 'one again',
+                                    '2': 'two once more',
+                                    },
+                            },
+                            ]
+            To ignore the value that is set in the keys::
+                `test_data['foo']` and in `test_data['b']['2']`
+                `ignore_keys = ['foo', {'b': ['2']}]`
 
-            Arguments:
-                sample_data_dir {str} -- Path to the sample data for the scraper.
-                                         Relative from the root of the repo
-                extract_cls {objet} -- Extract class of the scraper
-
-            Keyword Arguments:
-                ignore_keys {list} -- A list of keys to ignore.
-                                      Useful when dealing with timestamps that change
-                                      on each re-extract (default: {None})
+            Args:
+                sample_data_dir (str): Path to the sample data for the scraper.
+                    Relative from the root of the repo
+                extract_cls (obj): Extract class of the scraper
+                ignore_keys (list, optional): A list of keys to ignore.
+                    Useful when dealing with timestamps that change
+                    on each re-extract. Default is None.
             """
             super().__init__(*args, **kwargs)
             self.directory = os.fsencode(sample_data_dir)

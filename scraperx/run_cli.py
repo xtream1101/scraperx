@@ -151,6 +151,18 @@ def _run_extract(cli_args, scraper):
 
 
 def run_cli(scraper):
+    """Called by the user when running the scraper
+
+    This should be called in the scrapers __main__ like so::
+        scraper = Scraper(dispatch_cls=MyDispatch,
+                          download_cls=MyDownload,
+                          extract_cls=MyExtract)
+        if __name__ == '__main__':
+            run_cli(scraper)
+
+    Args:
+        scraper (class): The scraperx.Scraper class that was setup in the users scraper
+    """
     from .arguments import cli_args
     scraper.config.load_config(cli_args=cli_args)
     if cli_args.action == 'validate':

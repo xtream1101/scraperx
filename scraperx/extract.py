@@ -13,29 +13,31 @@ logger = logging.getLogger(__name__)
 
 
 class Extract(ABC):
-    def __init__(self, scraper, task, download_manifest={}, **kwargs):
+    def __init__(self, scraper, task, download_manifest, **kwargs):
+        """Base Extract class to inherent from
+
+        Args:
+            scraper (scraperx.Scraper): The Scraper class. Scraper Will take care of
+                passing itself in here.
+            task (dict): Task to be processed.
+            download_manifest (dict): Metadata created from the Download portion of the scraper.
+            **kwargs: Arbitrary keyword arguments.
+        """
         self.scraper = scraper
-
         self.task = task
-
         self.download_manifest = download_manifest
 
         self.time_extracted = datetime.datetime.utcnow().isoformat() + 'Z'
         self.date_extracted = str(datetime.datetime.utcnow().date())
 
     def run(self):
-        """Run the extraction
+        """Starts extracting data from the source files
 
-        Triggers the `self.extract` for each source file,
-        passing in the files raw contents
+        Loops over each source file passing it to the users scrapers `self.extract` method.
+        Passing in the source files raw content
 
-        User must override this fn if they want to extract the source
-        files at the same time
-
-        Use the data passed in to the __init__ to extract the data
-
-        Returns:
-            list -- Files generated in the extraction process
+        If all the sources need to be passed in and extracted at the same time, then the user may
+        override this method to do so.
         """
         logger.info("Start Extract",
                     extra={'task': self.task,
@@ -77,31 +79,30 @@ class Extract(ABC):
                      post_extract_kwargs={}):
         """Create an extraction task to run on the source file
 
-        Arguments:
-            callback {function} -- The function to call on each item
-
-        Keyword Arguments:
-            name {str} -- Name of the extract task (currently not used) (default: {''})
-            callback_kwargs {dict} -- Keyword arguments to pass into the callback function
-                                      (default: {{}})
-            selectors {tuple} -- CSS selectors used to select a list of elements that will
-                                 be passed into the callback (default: {()})
-            raw_source {str, list} -- Change the source content before its processed
-                                      (default: {None})
-            idx_offset {int} -- Starting count passed into the callback when looping over items
-                                (default: {0})
-            qa {dict} -- Extracted fields to qa and their rules (default: {{}})
-            post_extract {function} -- Function to run on the list of outputs from the callback
-                                       (default: {None})
-            post_extract_kwargs {dict} -- Keyword arguments to pass into the post_extract function
-                                         (default: {{}})
+        Args:
+            callback (function): function to get called on each item based on the `selectors`
+            name (str, optional): Name of the extract task (currently not used). Defaults to ''.
+            callback_kwargs (dict, optional): Keyword arguments to pass into the callback function.
+                Defaults to {}.
+            selectors (tuple, optional): CSS selectors used to select a list of elements that will
+                be passed into the callback. If no selectors are passed in and `raw_source` is
+                not a list, then the full page source is passed in as one element. Defaults to ().
+            raw_source (str|list, optional): Change the source content before its processed.
+                Defaults to None.
+            idx_offset (int, optional): Starting count passed into the callback when looping over
+                items. Defaults to 0.
+            qa (dict, optional): Extracted fields to qa and their rules. Defaults to {}.
+            post_extract (function, optional): Function to run on the list of outputs from the
+                callback. Defaults to None.
+            post_extract_kwargs (dict, optional): Keyword arguments to pass into the post_extract
+                function. Defaults to {}.
 
         Returns:
-            function -- Function to pass the raw_source into for it to be processed
+            function: Function to pass the raw_source into for it to be processed
         """
         inputs = self._format_extract_task(locals())
 
-        def run_extract_task(raw_source):
+        def _run_extract_task(raw_source):
             if inputs.get('raw_source') is None:
                 extract_source = raw_source
             else:
@@ -152,9 +153,28 @@ class Extract(ABC):
                                      extra={'task': self.task,
                                             'scraper_name': self.scraper.config['SCRAPER_NAME']})
 
-        return run_extract_task
+        return _run_extract_task
 
     def _format_extract_task(self, inputs):
+        """Validate and foramt each argument passed into `self.extract_task`
+
+        Args:
+            inputs (dict): Arguments from `self.extract_task`
+
+        Raises:
+            ValueError: `callback` is required
+            ValueError: `callback` has to be a function
+            ValueError: `callback_kwargs` must be dict
+            ValueError: `name` must be a string or None
+            ValueError: All `selectors` must strings
+            ValueError: `idx_offset` must be an integer
+            ValueError: `qa` must be dict
+            ValueError: `post_extract` has to be a function
+            ValueError: `post_extract_kwargs` must be dict
+
+        Returns:
+            dict: The validated inputs
+        """
         if 'self' in inputs:
             del inputs['self']
 
@@ -198,6 +218,7 @@ class Extract(ABC):
         ###
         # Raw Source
         ###
+        # N/A
 
         ###
         # Index Offset
@@ -238,6 +259,15 @@ class Extract(ABC):
         return inputs
 
     def _get_extraction_tasks(self, raw_source, source_idx):
+        """Get the extraction tasks from the users `self.extract` method
+
+        Args:
+            raw_source (str|bytes): Raw content of the source file to extract
+            source_idx (int): The index of the source file that was downloaded
+
+        Returns:
+            list: Extraction task functions to run on the raw_source
+        """
         extraction_tasks = self.extract(raw_source, source_idx)
         if not extraction_tasks:
             return
@@ -248,16 +278,14 @@ class Extract(ABC):
         return extraction_tasks
 
     def save_as(self, data, file_format='json', template_values={}):
-        """Save data to a file
+        """Save the extracted data to a file
 
-        Arguments:
-            data {list or dict} -- Extracted data to be saved
-
-        Keyword Arguments:
-            file_format {str} -- The file format to save the data in.
-                                 Options are `json` & `json_lines` (Default: json)
-            template_values {dict} -- Key/Values to be used in the file_template.
-                                      Gets passed along to SaveTo.save fn
+        Args:
+            data (list): List of dicts to be saved
+            file_format (str, optional): File type to save data to.
+                Current options are `json` & `json_lines`. Defaults to 'json'.
+            template_values (dict, optional): Key/values used when createing the file name from
+                the `file_template` from the config yaml. Defaults to {}.
         """
         write_data = Write(self.scraper, data)
         save_as_map = {
@@ -265,13 +293,27 @@ class Extract(ABC):
             'json_lines': write_data.write_json_lines,
         }
         if file_format not in save_as_map:
-            logger.error(f"Format `{file_format}` is not supported",
-                         extra={'task': self.task,
-                                'scraper_name': self.scraper.config['SCRAPER_NAME']})
-
-        save_as_map[file_format]().save(self, template_values=template_values)
+            logger.critical(f"Format `{file_format}` is not supported",
+                            extra={'task': self.task,
+                                   'scraper_name': self.scraper.config['SCRAPER_NAME']})
+        else:
+            save_as_map[file_format]().save(self, template_values=template_values)
 
     def _qa_result(self, idx, qa_rules, result):
+        """QA the data as it gets extracted
+
+        Args:
+            idx (int): index of the item being extracted
+            qa_rules (dict): QA Rules set in the scrapers self.extract_task
+            result (dict): Single row of data that was extracted
+
+        Raises:
+            QAValueError: Filed is missing in result
+            QAValueError: Field is required to have a value
+            QAValueError: Type of result field does not match
+            QAValueError: Result field is to long
+            QAValueError: Result field is to short
+        """
         if not qa_rules:
             return
 
@@ -326,10 +368,10 @@ class Extract(ABC):
         pass
 
     def _get_sources(self):
-        """Get source files and its metadata if possible
+        """Gets a list of source filed from the download_manifest
 
         Returns:
-            {list} - List of tmp files saved to disk
+            list: Paths of source files
         """
         source_files = []
         for source in self.download_manifest['source_files']:
@@ -338,9 +380,20 @@ class Extract(ABC):
         return source_files
 
     def find_css_elements(self, source, css_selectors):
-        # TODO: Add options on which selector is used (first/last/most)
-        # Loop through each selector to see which ones return results,
-        # Stop after the first one
+        """Find a element from a list of css selectors
+
+        TODO: Add options on which selector is used (first/last/most)
+
+        Given a list of css selectors, this will loop through the selectors and
+        the first one to return results will return the selected elements.
+
+        Args:
+            source (Parsel object): A Parsel html element
+            css_selectors (list): List of css selectors to try to find an element
+
+        Returns:
+            list: Parsel elements if any are found, else an empty list
+        """
         for selector in css_selectors:
             results = source.css(selector)
             if len(results) > 0:
@@ -349,13 +402,14 @@ class Extract(ABC):
         return []
 
     @abstractmethod
-    def extract(self):
+    def extract(self, raw_source, source_idx):
         """User created function to extract the source data
 
-        Returns:
-            list|str -- Either a list or a single extracted file
+        Args:
+            raw_source (str|bytes): Raw content of the source file to extract
+            source_idx (int): The index of the source file that was downloaded
 
-        Decorators:
-            abstractmethod
+        Yields:
+            function: `self.extract_task()` based on the users extraction needs
         """
         pass

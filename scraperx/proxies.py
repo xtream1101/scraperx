@@ -33,13 +33,18 @@ def _load_proxies(scraper):
 
 
 def get_proxy(scraper, country=None):
-    """Get a proxy string to use for the request
+    """Get a proxy from the proxy file if set
 
-    Keyword Arguments:
-        country {str} -- ISO alpha2 country code. (default: {None})
+    Set the env var `PROXY_FILE` to a csv that has the header `country,proxy`
+    Get a random proxy from the proxy file based on the `country` passed in
+
+    Args:
+        scraper (obj): Users Scraper instance. Used to know which scraper is trying to load proxies.
+        country (str, optional): 2 letter country code to get the proxy for.
+            If None it will get any proxy. Defaults to None.
 
     Returns:
-        str/None -- The proxy string (or None) of the choosen proxy
+        str|None: Full proxy url or None if no proxy is found.
     """
     global proxies
     try:

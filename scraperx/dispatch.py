@@ -11,9 +11,16 @@ logger = logging.getLogger(__name__)
 
 
 class Dispatch():
-    num_tasks = None
 
-    def __init__(self, scraper, tasks=None, triggered_kwargs={}, **kwargs):
+    def __init__(self, scraper, tasks=None, **kwargs):
+        """Base Dispatch class to inherent from
+
+        Args:
+            scraper (scraperx.Scraper): The Scraper class. Scraper Will take care of
+                passing itself in here
+            tasks (dict|list|generator, optional): Tasks to be processed.
+                Each task should be a dict. Calls submit_tasks() if None. Defaults to None.
+        """
         self.scraper = scraper
 
         if not tasks:
@@ -22,6 +29,7 @@ class Dispatch():
         if isinstance(tasks, types.GeneratorType):
             self.tasks_generator = tasks
             self.tasks = []
+            self.num_tasks = None
         else:
             if not isinstance(tasks, (list, tuple)):
                 # Make sure tasks is a list and not just a single task
@@ -33,21 +41,20 @@ class Dispatch():
             self.tasks_generator = iter(tasks)
 
     def submit_tasks(self):
-        """Return/yield tasks to be dispatched
-
-        Scraper must implement this
+        """User should override with their scrapers tasks
 
         Returns:
-            list|dict|yield -- list of tasks (dicts) or a dict of a single task
-                               or a generator which yields dict's
+            list|dict|generator: list of tasks (dicts) or a dict of a single task
+                or a generator which yields dict
         """
         return []
 
     def _get_qps(self):
-        """Get the rate limit from the config
+        """Gets the queries per second from the config/cli args
+        If period is set, it will convert that to the correct qps based on the number of tasks
 
         Returns:
-            float -- The rate limit as qps
+            float: Queries per second to dispatch tasks at
         """
         rate_limit_type = self.scraper.config['DISPATCH_RATELIMIT_TYPE']
         rate_limit_value = self.scraper.config['DISPATCH_RATELIMIT_VALUE']
@@ -57,15 +64,21 @@ class Dispatch():
             return rate_limit_value
 
     def run(self, **download_kwargs):
-        """Spin up the threads to send the tasks in
+        """Starts dispatching the tasks using threads and a local queue
+
+        Will trigger the download for each task
+
+        Args:
+            **download_kwargs: keyword arguments to be passed into the scrapers Download class
+
+        Raises:
+            ValueError: If `self.num_tasks` is not set. Needs to be set manually if using a
+                generator to submit tasks.
         """
         if self.num_tasks is None:
-            # a generator must have been passed in
             logger.critical(("Dispatch self.num_tasks must be set if using"
                              " a generator for tasks"),
-                            extra={'scraper_name': self.scraper.config['SCRAPER_NAME'],
-                                   'task': None,  # No task yet
-                                   })
+                            extra={'scraper_name': self.scraper.config['SCRAPER_NAME']})
             raise ValueError("Dispatch.num_tasks must be set when using a generator")
 
         if self.scraper.config['DISPATCH_LIMIT']:
@@ -74,7 +87,6 @@ class Dispatch():
         qps = self._get_qps()
         logger.info(f"Dispatch {self.num_tasks}",
                     extra={'scraper_name': self.scraper.config['SCRAPER_NAME'],
-                           'task': None,  # No task yet
                            'qps': qps,
                            'dispatch_service': self.scraper.config['DISPATCH_SERVICE_NAME'],
                            'num_tasks': self.num_tasks})
@@ -102,7 +114,7 @@ class Dispatch():
             t.start()
 
         @rate_limited(num_calls=qps)
-        def rate_limit_tasks():
+        def _rate_limit_tasks():
             task = next(self.tasks_generator)
             logger.debug("Adding task",
                          extra={'task': task,
@@ -112,7 +124,7 @@ class Dispatch():
 
         # Fill the Queue with the data to process
         for _ in range(self.num_tasks):
-            rate_limit_tasks()
+            _rate_limit_tasks()
 
-        # Process the data
+        # Process the data and wait until its complete
         q.join()

@@ -55,11 +55,17 @@ def _load_user_agents(scraper):
 def get_user_agent(scraper, device_type='desktop'):
     """Get a user-agent to use for the request
 
-    Keyword Arguments:
-        device_type {str} -- The device the user-agent string is for (default: {desktop})
+    Set the env var `UA_FILE` to a csv that has the header `device_type,user_agent`
+    Get a random user-agent from the ua file based on the `device_type` passed in.
+    If `UA_FILE` is nto set, then a hard-coded list of desktop & mobile user-agents will be used
+
+    Args:
+        scraper (obj): Users Scraper instance. Used to know which scraper is trying to load proxies
+        device_type (str, optional): Name of the device type to get a user-agent for.
+            Defaults to 'desktop'.
 
     Returns:
-        str -- The user-agent string
+        str|None: User-Agent string or None if no user-agent is found.
     """
     global user_agents
     try:

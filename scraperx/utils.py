@@ -8,11 +8,11 @@ logger = logging.getLogger(__name__)
 def get_context_type(context):
     """Check which Base class this is
 
-    Arguments:
-        context {class} -- Either the BaseDownload or BaseExtractor class.
+    Args:
+        context (obj): Either the Download or Extract class.
 
     Returns:
-        str -- either downloader or extractor
+        str: either 'downloader' or 'extractor'
     """
     try:
         context.download
@@ -38,26 +38,28 @@ def _get_s3_params(scraper, context=None, context_type=None):
 
 
 def rate_limited(num_calls=1, every=1.0):
-    """
+    """Rate limit a function on how often it can be called
+
     Source: https://github.com/tomasbasham/ratelimit/tree/0ca5a616fa6d184fa180b9ad0b6fd0cf54c46936  # noqa E501
-    Keyword Arguments:
-        num_calls {float}: Maximum method invocations within a period.
-                           Must be greater than 0.
-        every {float}: A dampening factor (in seconds).
-                       Can be any number greater than 0.
-    Return:
+    Args:
+        num_calls (float, optional): Maximum method invocations within a period.
+            Must be greater than 0. Defaults to 1
+        every (float): A dampening factor (in seconds).
+            Can be any number greater than 0. Defaults to 1.0
+
+    Returns:
         function: Decorated function that will forward method invocations
-                    if the time window has elapsed.
+            if the time window has elapsed.
     """
     frequency = abs(every) / float(num_calls)
 
     def decorator(func):
         """
-        Extend the behaviour of the following
-        function, forwarding method invocations
-        if the time window hes elapsed.
-        Arguments:
-            func {function}: The function to decorate
+        Extend the behavior of the following function,
+        forwarding method invocations if the time window hes elapsed.
+
+        Args:
+            func (function): The function to decorate
 
         Returns:
             function: Decorated function
@@ -74,7 +76,7 @@ def rate_limited(num_calls=1, every=1.0):
         # Add thread safety
         lock = threading.RLock()
 
-        def wrapper(*args, **kargs):
+        def wrapper(*args, **kwargs):
             """Decorator wrapper function"""
             with lock:
                 elapsed = time.time() - last_called[0]
@@ -82,7 +84,7 @@ def rate_limited(num_calls=1, every=1.0):
                 if left_to_wait > 0:
                     time.sleep(left_to_wait)
                 last_called[0] = time.time()
-            return func(*args, **kargs)
+            return func(*args, **kwargs)
         return wrapper
     return decorator
 
@@ -91,14 +93,11 @@ def rate_limit_from_period(num_ref_data, period):
     """Generate the QPS from a period (hrs)
 
     Args:
-        num_ref_data {int}: Number of lambda calls needed
-
-    Keyword Args:
-        period {float}: Number of hours to spread out the calls
+        num_ref_data (int): Number of lambda calls needed
+        period (float): Number of hours to spread out the calls
 
     Returns:
         float: Queries per second
-
     """
     seconds = period * 60 * 60
     qps = num_ref_data / seconds

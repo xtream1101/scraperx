@@ -15,6 +15,20 @@ logger = logging.getLogger(__name__)
 class Download:
     def __init__(self, scraper, task, headers=None, proxy=None, ignore_codes=(),
                  triggered_kwargs={}, **kwargs):
+        """Base Download class to inherent from
+
+        Args:
+            scraper (scraperx.Scraper): The Scraper class. Scraper Will take care of
+                passing itself in here.
+            tasks (dict): Task to be processed.
+            headers (dict, optional): Headers to be set for all requests. Defaults to None.
+            proxy (str, optional): Full url of a proxy to use for all requests. Defaults to None.
+            ignore_codes (tuple, optional): Tuple of http status codes to not re-try on.
+                Defaults to ().
+            triggered_kwargs (dict, optional): Dict of keyword arguments to pass into the
+                scrapers Extract class. Defaults to {}.
+            **kwargs: Arbitrary keyword arguments.
+        """
         self.scraper = scraper
         self._triggered_kwargs = triggered_kwargs
 
@@ -44,58 +58,54 @@ class Download:
         self._init_http_methods()
 
     def download(self):
-        """User created download function
+        """Scrapers download class should override this method if more then the default is needed.
+        The default download method does::
 
-        Returns:
-            list|str -- Either a list or a single downloaded file
+            r = self.request_get(self.task['url'])
+            self.save_request(r)
 
-        Decorators:
-            abstractmethod
         """
         r = self.request_get(self.task['url'])
         self.save_request(r)
 
-    def _get_proxy(self, country=None):
-        """Get a proxy to use
+    def get_proxy(self, country=None):
+        """Get a new proxy to use for a request
+        Users scraper should override this if a custom way to get a proxy is needed.
+        The default way can be found under `scraperx.proxy.get_proxy`
 
-        Use the scrapers fn, otherwise use the default
-
-        Keyword Arguments:
-            alpha2 {str} -- 2 letter country code (default: {None})
-            platform {str} -- The name of the platform. Ex: Google, Macys, etc
-                              (default: {None})
+        Args:
+            country (str, optional): 2 letter country code to get the proxy for.
+                If None it will get any proxy. Defaults to None.
 
         Returns:
-            str -- proxy string
+            str|None: Full url of the proxy or None if no proxy is available
         """
         try:
             return self.get_proxy(self.scraper, country=country)
         except AttributeError:
             return get_proxy(self.scraper, country=country)
 
-    def _get_user_agent(self, device_type):
-        """Get a User Agent
+    def get_user_agent(self, device_type):
+        """Get a new user-agent to use for a request
+        Users scraper should override this if a custom way to get a user-agent is needed.
+        The default way can be found under `scraperx.user_agent.get_user_agent`
 
-        Use the scrapers fn, otherwise use the default
-
-        Arguments:
-            device_type {str} -- The device the user agent should be for.
-                                 Ex: desktop, mobile
+        Args:
+            device_type (str): A way to pick the correct user-agent.
+                The options for the default function is `desktop` or `mobile`
 
         Returns:
-            str -- User Agent string
+            str: A User-Agent string
         """
         try:
             return self.get_user_agent(self.scraper, device_type)
         except AttributeError:
             return get_user_agent(self.scraper, device_type)
 
-    def run(self, standalone=False):
-        """Start the download process
+    def run(self):
+        """Starts downloading data based on the task
 
-        Keyword Arguments:
-            standalone {bool} -- Do not trigger the extractor if True
-                                 (default: {False})
+        Will trigger the extract task after its complete
         """
         try:
             self.download()
@@ -133,20 +143,22 @@ class Download:
                             })
 
     def save_request(self, r, content=None, source_file=None, content_type=None, **save_kwargs):
-        """Save the request and the source file
+        """Save the data from the request into a file and save the request data in the metadata file
+        This is needed to pass the source file into the extract class
 
-        Arguments:
-            r {requests.request} -- The request that was made
-
-        Keyword Arguments:
-            content {} -- Data of the request to be saved
-            source_file {str} -- The name of a file that has already been saved
-            content_type {str} -- Content type of the data being saved.
-                                  If none is passed in a best guess will be made
-            **saved_kwargs {named args} -- Named args that will be passed into `SaveTo.save` fn
+        Args:
+            r (requests.request): Response from the requests lib
+            content (str|bytes, optional): The data of the source to be saved.
+                If saving a binary file, set to r.contents.
+                Defaults to r.text.
+            source_file (str, optional): Path to a saved file if already saved. Defaults to None.
+            content_type (str, optional): Mimetype of the file.
+                If None, a best guess will be made. Defaults to None.
+            **saved_kwargs: Keyword arguments that will be passed into
+                `scraperx.save_to.SaveTo.save` function
 
         Returns:
-            {str} -- Path to the source file
+            str: Path to the source file that was saved
         """
         if content is None:
             content = r.text
@@ -172,11 +184,13 @@ class Download:
         return source_file
 
     def _save_metadata(self):
-        """Save the metadata with the download source
+        """Save the metadata of the download portion of the scraper to a json file.
+        This is used to pass to the extract class as well as debugging if
+        anything goes wrong with the request.
 
-        Saves a file as the same name as the source with '.metadata.json'
-        appended to the name
+        Saves a file ending in `_metadata.json` in the same path as the first source file saved.
         """
+
         metadata = self._get_metadata()
         if metadata['download_manifest']['source_files']:
             metadata_file = Write(self.scraper, metadata).write_json_lines()
@@ -187,13 +201,10 @@ class Download:
             metadata_file.save(self, filename=filename + '_metadata.json')
 
     def _get_metadata(self):
-        """Create the metadata dict
-
-        Arguments:
-            download_manifest {dict} -- The downloads manifest
+        """Create the dict of metadata to be saved
 
         Returns:
-            {dict} -- metadata
+            dict: Data to be saved in the metadata file
         """
         metadata = {'task': self.task,
                     'scraper': self.scraper.config['SCRAPER_NAME'],
@@ -202,13 +213,14 @@ class Download:
         return metadata
 
     def _format_proxy(self, proxy):
-        """Convert the proxy string into a dict the way requests likes it
+        """Format the proxy in a way the requests lib can handle
 
-        Arguments:
-            proxy {str} -- Proxy string
+        Args:
+            proxy (str|dict): Full url of the proxy or a dict that the
+                requests library can use when setting a proxy
 
         Returns:
-            dict -- Format that requests wants proxies in
+            dict: This is what the requests library uses when setting a proxy
         """
         logger.debug(f"Setting proxy {proxy}",
                      extra={'task': self.task,
@@ -222,12 +234,13 @@ class Download:
                 }
 
     def _init_headers(self, headers):
-        """Set up the default session headers
+        """Set headers for all requests
 
-        If no user agent is set then a default one is set
+        If no user-agent is passed in, one will be provided.
+        This is the only header that this will set by default
 
-        Arguments:
-            headers {dict} -- Headers passed in to the __init__
+        Args:
+            headers (dict): Dict of headers to set for all requests
         """
         # Set headers from init, then update with task headers
         self.session.headers = {} if headers is None else headers
@@ -237,28 +250,21 @@ class Download:
             self._set_session_ua()
 
     def _init_proxy(self, proxy):
-        """Set the default session proxy
+        """Set the default proxy for all requests.
+        Only sets a proxy if a proxy file is set or a custom `self.get_proxy()` is set
 
-        If no proxy is passed in to __init__ or in the task data,
-        then set one using the task `proxy_country` key.
-        If they are not set then a random proxy will be choosen
-
-        Arguments:
-            proxy {str} -- Proxy passed in to the __init__
+        Args:
+            proxy (str): Full url of proxy
         """
         proxy_str = proxy
         if self.task.get('proxy') is not None:
             proxy_str = self.task.get('proxy')
         # If no proxy has been passed in, try and set one
         if not proxy_str:
-            proxy_str = self._get_proxy(country=self.task.get('proxy_country'))
+            proxy_str = self.get_proxy(country=self.task.get('proxy_country'))
         self.session.proxies = self._format_proxy(proxy_str)
 
     def _init_http_methods(self):
-        """Generate functions for each http method
-
-        Makes it simpler to use
-        """
         # Create http methods
         self.request_get = self._set_http_method('GET')
         self.request_post = self._set_http_method('POST')
@@ -269,37 +275,60 @@ class Download:
         self.request_delete = self._set_http_method('DELETE')
 
     def _set_http_method(self, http_method):
-        """Closure for creating the http method functions
+        def make_request(url, max_tries=3, _try_count=1, custom_source_checks=(), **r_kwargs):
+            """Makes the requests to get the source file
 
-        Arguments:
-            http_method {str} -- Method to return a function for
+            Must be accessed using::
+                self.request_get()
+                self.request_post()
+                self.request_head()
+                self.request_put()
+                self.request_patch()
+                self.request_delete()
 
-        Returns:
-            function -- the Closure
+            Args:
+                max_tries (int, optional): Max times to try to get a source file.
+                    Each time `self.new_profile` will be called which will
+                    try and get a new proxy and new user-agent. Defaults to 3.
+                _try_count (int, optional): Used to keep track of current number of tries.
+                    Defaults to 1.
+                custom_source_checks (list, optional): List of tuples, each inner tuple has 3 parts
+                    `(regex, http_status_code, message)`
+                    regex (str): A regex to try and match something in the source file
+                    http status code (int): If regex gets a match, set the request status
+                        code to this value
+                    message (str): Custom status message to set to know this is not a normal
+                        status code being thrown
+                    Defaults to ().
+                **r_kwargs: Keyword Arguments to be passed to requests.Session().requests
 
-        Raises:
-            ValueError -- If the max number of attempts have been met
-        """
-        def make_request(url, max_tries=3, _try_count=1, custom_source_checks=(),
-                         **kwargs):
+            Raises:
+                ValueError: If max_tries is 0 or negative.
+                HTTPIgnoreCodeError: If an ignore_code is found
+                DownloadValueError: If the download failed for any reason and
+                    max_tries was reached
+
+            Returns:
+                object: requests library object
+            """
             if max_tries < 1:
                 # TODO: Find a better error to raise
                 raise ValueError("max_tries must be >= 1")
 
             proxy_used = self.session.proxies.get('http')
-            if 'proxy' in kwargs:
+            if 'proxy' in r_kwargs:
                 # Proxy is not a valid arg to pass in, so fix it
-                kwargs['proxies'] = self._format_proxy(kwargs['proxy'])
-                proxy_used = kwargs['proxies'].get('http')
-                del kwargs['proxy']
-            elif 'proxies' in kwargs:
+                r_kwargs['proxies'] = self._format_proxy(r_kwargs['proxy'])
+                proxy_used = r_kwargs['proxies'].get('http')
+                del r_kwargs['proxy']
+            elif 'proxies' in r_kwargs:
                 # Make sure they are in the correct format
-                kwargs['proxies'] = self._format_proxy(kwargs['proxies'])
-                proxy_used = kwargs['proxies'].get('http')
+                r_kwargs['proxies'] = self._format_proxy(r_kwargs['proxies'])
+                proxy_used = r_kwargs['proxies'].get('http')
 
             time_of_request = datetime.datetime.utcnow().isoformat() + 'Z'
             try:
-                r = self.session.request(http_method, url, **kwargs)
+                r = self.session.request(http_method, url, **r_kwargs)
 
                 custom_status_message = None
                 if custom_source_checks:
@@ -331,13 +360,13 @@ class Download:
                 if r.status_code != requests.codes.ok:
                     if (_try_count < max_tries
                        and r.status_code not in self._ignore_codes):
-                        kwargs = self.new_profile(**kwargs)
+                        kwargs = self.new_profile(**r_kwargs)
                         request_method = self._set_http_method(http_method)
                         return request_method(url,
                                               max_tries=max_tries,
                                               _try_count=_try_count + 1,
                                               custom_source_checks=custom_source_checks,
-                                              **kwargs)
+                                              **r_kwargs)
                     else:
                         if r.status_code in self._ignore_codes:
                             raise HTTPIgnoreCodeError(f"Got Ignore Code {r.status_code}",
@@ -374,28 +403,24 @@ class Download:
 
         return make_request
 
-    def get_file(self, url, **kwargs):
-        r = self.session.get(url, stream=True, **kwargs)
-        return r
-
     def _set_session_ua(self):
-        """Set up the session user agent
-
-        Try and set a default user agent for the session
+        """Set a user-agent for the request session to use
+        If no `device_type` was set in the task, `desktop` will be used by default
         """
         device_type = self.task.get('device_type', 'desktop')
-        ua = self._get_user_agent(device_type)
+        ua = self.get_user_agent(device_type)
         self.session.headers.update({'user-agent': ua})
 
-    def new_profile(self, **kwargs):
-        """Set a new user agent and proxy to be used for the request
+    def new_profile(self, **r_kwargs):
+        """Rotate proxies and headers to retry the request again
+        Users scraper can override this to rotate things their own way
 
-        Arguments:
-            **kwargs {kwargs} -- Used when only changing the request,
-                                 not the session
+        Args:
+            **r_kwargs: Keyword arguments passed into the request.
+                Will be updated and returned back
 
         Returns:
-            kwargs -- The args for the new request
+            dict: Dict to be passed as keyword arguments to requests.Session().requests
         """
         # Set new UA
         # TODO: make this for headers in general
@@ -404,17 +429,17 @@ class Download:
         self._set_session_ua()
 
         # Set new proxy
-        proxy_str = self._get_proxy(country=self.task.get('proxy_country'))
-        if 'proxy' in kwargs:
+        proxy_str = self.get_proxy(country=self.task.get('proxy_country'))
+        if 'proxy' in r_kwargs:
             # Replace the request specific
-            kwargs['proxy'] = proxy_str
+            r_kwargs['proxy'] = proxy_str
 
-        elif 'proxies' in kwargs:
+        elif 'proxies' in r_kwargs:
             # Replace the request specific
-            kwargs['proxies'] = proxy_str
+            r_kwargs['proxies'] = proxy_str
 
         else:
             # Replace the session proxy
             self.session.proxies = self._format_proxy(proxy_str)
 
-        return kwargs
+        return r_kwargs

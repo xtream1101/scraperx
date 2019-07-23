@@ -6,27 +6,22 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def _try_make_float(value):
-    """Try and convert the value to a float
+def _make_float(value):
+    """Convert the value to a float
 
-    Useful if the value is "1/2"
+    # Needed if the value is "1/2"
 
-    Arguments:
-        value {str} -- The value to try and convert
+    Args:
+        value (str): The value to convert
 
     Returns:
-        float/str -- The float value or the original string if unable
+        float: value as a float
     """
-    try:
-        if '/' in value:
-            return (float(value.split('/')[0])
-                    / float(value.split('/')[1]))
-        else:
-            return float(value)
-    except Exception:
-        pass
-
-    return value
+    if '/' in value:
+        return (float(value.split('/')[0])
+                / float(value.split('/')[1]))
+    else:
+        return float(value)
 
 
 # All config keys must be UPPERCASE
@@ -82,7 +77,7 @@ _CONFIG_STRUCTURE = {
     },
     'DISPATCH_RATELIMIT_VALUE': {
         'type': float,
-        'transformer': _try_make_float,
+        'transformer': _make_float,
     },
     'DISPATCH_LIMIT': {
         'type': int,
@@ -132,6 +127,18 @@ _CONFIG_STRUCTURE = {
 class ConfigGen:
 
     def __init__(self, config_file=None, cli_args=None, scraper_name=None):
+        """Creates a config instance for a scraper
+
+        All arguments can be set later using self.load_config()
+
+        Args:
+            config_file (str, optional): Path to the config file. If not set, the default
+                path of `./config.yaml` will be used. Defaults to None.
+            cli_args (argparse, optional): Arguments from scraperx.arguments That can override
+                all config values. Defaults to None.
+            scraper_name (str, optional): Use this as the scraper name. If not set the filename
+                is used. Defaults to None.
+        """
         self.values = {}
         self._cli_args = cli_args
         if scraper_name:
@@ -146,6 +153,16 @@ class ConfigGen:
                                       'config.yaml')
 
     def load_config(self, config_file=None, cli_args=None, scraper_name=None):
+        """Load the config values for a scraper
+
+        Args:
+            config_file (str, optional): Path to the config file. If not set, the default
+                path of `./config.yaml` will be used. Defaults to None.
+            cli_args (argparse, optional): Arguments from scraperx.arguments That can override
+                all config values. Defaults to None.
+            scraper_name (str, optional): Use this as the scraper name. If not set the filename
+                is used. Defaults to None.
+        """
         if config_file:
             self._file = config_file
 
@@ -167,11 +184,11 @@ class ConfigGen:
     def __getitem__(self, key):
         """Get the config value from the class via config['KEYNAME']
 
-        Arguments:
-            key {str} -- The key to get from the config values
+        Args:
+            key (str): The key to get from the config values
 
         Returns:
-            str/None -- Value of the key passed in, or None if not found
+            str/None: Value of the key passed in, or None if not found
         """
         return self.values.get(key.upper())
 
@@ -181,24 +198,21 @@ class ConfigGen:
         Nothing else should use this except tests, which is why its private
         TODO: Is there a better way for tests then doing this?
 
-        Arguments:
-            key {str} -- config key to change
-            value {str} -- value to set
+        Args:
+            key (str): config key to change
+            value (str): value to set
         """
         self.values[key.upper()] = value
 
     def _join_values(self, file_values, cli_values):
         """Join the values from the config file, cli args, and env vars
 
-        Arguments:
-            file_values {dict} -- Values from the config file
-            cli_values {dict} -- Values from the command line
+        Args:
+            file_values (dict): Values from the config file
+            cli_values (dict) Values from the command line
 
         Returns:
-            dict -- A single value for each config key
-
-        Raises:
-            ValueError -- If any of the config values are invalid
+            dict: A single value for each config key
         """
         final_config = {}
         for key, struct in _CONFIG_STRUCTURE.items():
@@ -223,11 +237,11 @@ class ConfigGen:
     def _validate_config_values(self, raw_values):
         """Validate the config values
 
-        Arguments:
-            raw_values {dict} -- flattened keys with their values
+        Args:
+            raw_values (dict): flattened keys with their values
 
         Returns:
-            dict -- Vlaues that have been validated and cast
+            dict: Values that have been validated and cast
         """
         validated_values = {}
 
@@ -254,14 +268,14 @@ class ConfigGen:
                     elif isinstance(item, dict):
                         # Care about what the value of the key is set to
                         required_key = list(item.keys())[0]
-                        possiable_values = item[required_key]
-                        if isinstance(possiable_values, str):
+                        possible_values = item[required_key]
+                        if isinstance(possible_values, str):
                             # Could be a single item or a list
                             # Make into a list so the checks work the same
-                            possiable_values = [possiable_values]
+                            possible_values = [possible_values]
 
                         required_value = raw_values[required_key]
-                        if required_value in possiable_values and value is None:
+                        if required_value in possible_values and value is None:
                             err = (f"Config key {key} is required if"
                                    f" {required_key} is {required_value}")
                             logger.critical(err,
@@ -311,16 +325,6 @@ class ConfigGen:
         return validated_values
 
     def _ingest_file(self, config_file):
-        """Read in config yaml
-
-        Only get the values for the scraper that is running
-
-        Arguments:
-            config_file {str} -- Scrapers config file
-
-        Returns:
-            dict -- Dict of config keys flattened using underscores
-        """
         current_config = {}
         with open(config_file, 'r') as stream:
             try:
@@ -329,27 +333,24 @@ class ConfigGen:
                 # Version of pyyaml that does not have yaml.FullLoader
                 all_config_values = yaml.load(stream)
             default_config_raw = all_config_values.get('default', {})
-            current_config.update(ConfigGen.flatten(default_config_raw))
+            current_config.update(ConfigGen._flatten(default_config_raw))
             # Get scraper values
             scraper_config_raw = all_config_values.get(self._scraper_name, {})
-            current_config.update(ConfigGen.flatten(scraper_config_raw))
+            current_config.update(ConfigGen._flatten(scraper_config_raw))
 
         return current_config
 
     @staticmethod
-    def flatten(dict_obj, prev_key='', sep='_'):
-        """Take a nested dict and un nest all values
+    def _flatten(dict_obj, prev_key='', sep='_'):
+        """Take a nested dict and un-nest all values
 
-        Arguments:
-            dict_obj {dict} -- The dict that needs to be flattened
-
-        Keyword Arguments:
-            prev_key {str} -- Used for recursion (default: {''})
-            sep {str} -- How the nested keys should be seperated
-                         (default: {'_'})
+        Args:
+            dict_obj (dict): The dict that needs to be flattened
+            prev_key (str, optional): Used for recursion. Defaults to ''.
+            sep (str, optional): How the nested keys should be seperated. Defaults to '_'.
 
         Returns:
-            dict -- All values are now just one key away
+            dict: All values are now just one key away
         """
         items = {}
         for key, value in dict_obj.items():
@@ -357,7 +358,7 @@ class ConfigGen:
 
             new_key = new_key.upper()
             if isinstance(value, dict):
-                items.update(ConfigGen.flatten(value, new_key))
+                items.update(ConfigGen._flatten(value, new_key))
             else:
                 items[new_key] = value
 
@@ -370,13 +371,13 @@ class ConfigGen:
         This is so that `None` can be a valid overide type if needed since we
         can check if the key is even set or not.
 
-        Set the key without default/scraper_name in front
+        Set the key without default/scraper_name as prefix here
 
-        Arguments:
-            cli_args {argparser} -- The cli arguments from argparser
+        Args:
+            cli_args (argparser): The cli arguments from argparser
 
         Returns:
-            dict -- Dict of flatten config keys that each cli argument maps to
+            dict: Dict of flatten config keys that each cli argument maps to
         """
         cli_config = {}
 

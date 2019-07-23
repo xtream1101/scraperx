@@ -13,14 +13,14 @@ class Write:
         self.data = data
 
     def write(self):
-        pass
-        # TODO (will work like .save())
+        # TODO: (will work like .save())
+        raise NotImplementedError
 
     def write_json(self, json_args=None):
         """Write json data to a StringIO object
 
         Returns:
-            StringIO -- The data in a json format
+            class: scraper.save_to.SaveTo, Used to then save the file
         """
         if json_args is None:
             json_args = {'sort_keys': True,
@@ -39,15 +39,13 @@ class Write:
         output_io = io.StringIO()
         json.dump(json_data, output_io, **json_args)
         output_io.seek(0)
-        return SaveTo(self.scraper,
-                      output_io,
-                      content_type='application/json')
+        return SaveTo(self.scraper, output_io, content_type='application/json')
 
     def write_json_lines(self, json_args=None):
         """Write json data to a StringIO object
 
         Returns:
-            StringIO -- The data in a json format
+            class: scraper.save_to.SaveTo, Used to then save the file
         """
         if json_args is None:
             json_args = {'sort_keys': True,
@@ -68,19 +66,16 @@ class Write:
             output_io.write('\n')
 
         output_io.seek(0)
-        return SaveTo(self.scraper,
-                      output_io,
-                      content_type='application/json')
+        return SaveTo(self.scraper, output_io, content_type='application/json')
 
     def write_file(self, content_type=None):
-        """Write data to a StringIO object without any additional formatting
+        """Write data to a StringIO/BytesIO object without any additional formatting
 
-        Keyword Arguments:
-            content_type {str} -- Used when saving the file
-                                  (default: {})
+        Args:
+            content_type (str): Used when saving the file. Defaults to None.
 
         Returns:
-            StringIO/BytesIO -- The data
+            class: scraper.save_to.SaveTo, Used to then save the file
         """
         try:
             output_io = io.StringIO()
@@ -91,9 +86,7 @@ class Write:
             output_io.write(self.data)
             output_io.seek(0)
 
-        return SaveTo(self.scraper,
-                      output_io,
-                      content_type=content_type)
+        return SaveTo(self.scraper, output_io, content_type=content_type)
 
     def write_csv(self, filename):
         # TODO
@@ -104,6 +97,7 @@ class Write:
         raise NotImplementedError
 
     def write_parquet(self):
+        # TODO: Test and create docs for
         import pyarrow as pa
         import pyarrow.parquet as pq
 
@@ -137,6 +131,4 @@ class Write:
         output_io.seek(0)
 
         # TODO: Is this the correct content type for a parquet file?
-        return SaveTo(self.scraper,
-                      output_io,
-                      content_type='application/octet-stream')
+        return SaveTo(self.scraper, output_io, content_type='application/octet-stream')

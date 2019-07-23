@@ -17,16 +17,17 @@ class SaveTo:
     def _get_filename(self, context, template_values={}, name_template=None):
         """Generate the filename based on the config template
 
-        Arguments:
-            context {class} -- Either the BaseDownload or BaseExtractor class.
-                               Used to get timestamps and the correct template.
-
-        Keyword Arguments:
-            template_values {dict} -- Additional keys to use in the template
-                                      (default: {{}})
+        Args:
+            context (class): Either the Download or Extract class's self.
+                Used to get timestamps and the correct template.
+            template_values (dict, optional): Additional keys to use in the template.
+                Defaults to {}.
+            name_template (str, optional): The config key for the template to use.
+                If None is set then the `context` will be used.
+                Defaults to None.
 
         Returns:
-            str -- The filename with the template values filled in
+            str: The filename with the template values filled in
         """
         context_type = get_context_type(context)
         additional_args = {'scraper_name': self.scraper.config['SCRAPER_NAME']}
@@ -53,22 +54,19 @@ class SaveTo:
 
         return filename
 
-    def save(self, context, template_values={}, filename=None, metadata=None):
+    def save(self, context, template_values={}, filename=None):
         """Save the file based on the config
 
-        Arguments:
-            context {class} -- Either the BaseDownload or BaseExtractor class.
-
-        Keyword Arguments:
-            template_values {dict} -- Additional keys to use in the template
-                                      (default: {{}})
-            filename {str} -- Filename to use rather then the template
-                              (default: {None})
-            metadata {dict} -- Data to be saved into the s3 file
-                               (default: {None})
+        Args:
+            context (class): Either the Download or Extract class's self.
+                Used to get timestamps and the correct template.
+            template_values (dict, optional): Additional keys to use in the template.
+                Defaults to {}.
+            filename (str, optional): Use this as the filename. If None then the
+                config file_template will be used. Defaults to None.
 
         Returns:
-            str -- File path to where it was saved
+            str: File path to where it was saved
         """
         context_type = get_context_type(context)
 

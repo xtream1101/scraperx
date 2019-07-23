@@ -6,15 +6,15 @@ price_pattern = re.compile(r'(?P<low>[\d,.\s]+)(?:\D*(?P<high>[\d,.\s]+))?')
 
 
 def rating(rating_str):
-    """Parse the rating from a string
+    """Parse the rating from a string using a regex
 
     Testing & debugging are here: https://regex101.com/r/ChmgmF/3
 
-    Arguments:
-        rating_str {str} -- string that needs to be parsed
+    Args:
+        rating_str (str): String that needs to be parsed.
 
     Returns:
-        float -- Rating as a float
+        float: Rating as a float
     """
     rating = None
     if rating_str is not None:
@@ -26,16 +26,16 @@ def rating(rating_str):
 
 
 def price(price_str):
-    """Parse the price(s) out of a string
+    """Parse the price(s) out of a string using a regex
 
     Testing & debugging are here: <TODO>
 
-    Arguments:
-        price_str {str} -- string of the price to parse out
+    Args:
+        price_str (str): String of the price to parse out.
 
     Returns:
-        dict -- Contains the `low` price and the `high` price as floats.
-                Just `low` is used in the case of a single price
+        dict: Contains the `low` price and the `high` price as floats.
+            Just `low` is set in the case of a single price.
     """
     found_price = {'low': None,
                    'high': None
