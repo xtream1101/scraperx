@@ -17,6 +17,7 @@ def _make_float(value):
     Returns:
         float: value as a float
     """
+    value = str(value)
     if '/' in value:
         return (float(value.split('/')[0])
                 / float(value.split('/')[1]))
@@ -73,10 +74,12 @@ _CONFIG_STRUCTURE = {
     },
     'DISPATCH_RATELIMIT_TYPE': {
         'type': str,
+        'default': 'qps',
         'must_be': ['period', 'qps'],
     },
     'DISPATCH_RATELIMIT_VALUE': {
         'type': float,
+        'default': 1.0,
         'transformer': _make_float,
     },
     'DISPATCH_LIMIT': {
@@ -87,6 +90,7 @@ _CONFIG_STRUCTURE = {
     ###
     'DOWNLOADER_SAVE_DATA_SERVICE': {
         'type': str,
+        'default': 'local',
         'must_be': ['local', 's3'],
     },
     'DOWNLOADER_SAVE_DATA_BUCKET_NAME': {
@@ -107,6 +111,7 @@ _CONFIG_STRUCTURE = {
     ###
     'EXTRACTOR_SAVE_DATA_SERVICE': {
         'type': str,
+        'default': 'local',
         'must_be': ['local', 's3'],
     },
     'EXTRACTOR_SAVE_DATA_BUCKET_NAME': {

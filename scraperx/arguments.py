@@ -99,6 +99,3 @@ parser_extract = subparsers.add_parser('extract',
                                                 ])
 parser_extract.add_argument('source',
                             help="Local dir or source file to extract")
-
-
-cli_args = parser.parse_known_args()[0]

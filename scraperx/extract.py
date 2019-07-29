@@ -114,6 +114,8 @@ class Extract(ABC):
                     parsel_source = Selector(text=extract_source)
                     source_items = self.find_css_elements(parsel_source,
                                                           inputs['selectors'])
+                    if source_items is None:
+                        source_items = []
 
                 elif inputs['selectors'] == [] and inputs['raw_source'] is None:
                     # Want to parse the entire html source as one

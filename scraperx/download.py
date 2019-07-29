@@ -68,7 +68,7 @@ class Download:
         r = self.request_get(self.task['url'])
         self.save_request(r)
 
-    def get_proxy(self, country=None):
+    def _get_proxy(self, country=None):
         """Get a new proxy to use for a request
         Users scraper should override this if a custom way to get a proxy is needed.
         The default way can be found under `scraperx.proxy.get_proxy`
@@ -85,7 +85,7 @@ class Download:
         except AttributeError:
             return get_proxy(self.scraper, country=country)
 
-    def get_user_agent(self, device_type):
+    def _get_user_agent(self, device_type):
         """Get a new user-agent to use for a request
         Users scraper should override this if a custom way to get a user-agent is needed.
         The default way can be found under `scraperx.user_agent.get_user_agent`
@@ -261,7 +261,7 @@ class Download:
             proxy_str = self.task.get('proxy')
         # If no proxy has been passed in, try and set one
         if not proxy_str:
-            proxy_str = self.get_proxy(country=self.task.get('proxy_country'))
+            proxy_str = self._get_proxy(country=self.task.get('proxy_country'))
         self.session.proxies = self._format_proxy(proxy_str)
 
     def _init_http_methods(self):
@@ -408,7 +408,7 @@ class Download:
         If no `device_type` was set in the task, `desktop` will be used by default
         """
         device_type = self.task.get('device_type', 'desktop')
-        ua = self.get_user_agent(device_type)
+        ua = self._get_user_agent(device_type)
         self.session.headers.update({'user-agent': ua})
 
     def new_profile(self, **r_kwargs):
@@ -429,7 +429,7 @@ class Download:
         self._set_session_ua()
 
         # Set new proxy
-        proxy_str = self.get_proxy(country=self.task.get('proxy_country'))
+        proxy_str = self._get_proxy(country=self.task.get('proxy_country'))
         if 'proxy' in r_kwargs:
             # Replace the request specific
             r_kwargs['proxy'] = proxy_str

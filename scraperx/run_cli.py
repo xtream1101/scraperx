@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import logging
+import argparse
 from shutil import copyfile
 
 from .write import Write
@@ -154,6 +155,7 @@ def run_cli(scraper):
     """Called by the user when running the scraper
 
     This should be called in the scrapers __main__ like so::
+
         scraper = Scraper(dispatch_cls=MyDispatch,
                           download_cls=MyDownload,
                           extract_cls=MyExtract)
@@ -163,7 +165,9 @@ def run_cli(scraper):
     Args:
         scraper (class): The scraperx.Scraper class that was setup in the users scraper
     """
-    from .arguments import cli_args
+    from .arguments import parser
+
+    cli_args = parser.parse_known_args()[0]
     scraper.config.load_config(cli_args=cli_args)
     if cli_args.action == 'validate':
         from pprint import pprint

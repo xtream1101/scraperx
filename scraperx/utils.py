@@ -39,8 +39,8 @@ def _get_s3_params(scraper, context=None, context_type=None):
 
 def rate_limited(num_calls=1, every=1.0):
     """Rate limit a function on how often it can be called
-
     Source: https://github.com/tomasbasham/ratelimit/tree/0ca5a616fa6d184fa180b9ad0b6fd0cf54c46936  # noqa E501
+
     Args:
         num_calls (float, optional): Maximum method invocations within a period.
             Must be greater than 0. Defaults to 1

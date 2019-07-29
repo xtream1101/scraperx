@@ -5,4 +5,3 @@ scraperx
    :maxdepth: 4
 
    scraperx
-   setup
