@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import logging
-import argparse
 from shutil import copyfile
 
 from .write import Write

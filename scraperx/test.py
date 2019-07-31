@@ -109,21 +109,6 @@ class ExtractorBaseTest:
                 .replace('-', '').replace(':', ''),
             )
 
-
-            # e_tasks = extractor._get_extraction_tasks(raw_source, s_idx)
-            # for e_task in e_tasks:
-            #     # Check if there si a qa file for this source
-            #     qa_file = f"{dst_base}_extracted_qa_{e_task['name']}_{s_idx}.json"  # noqa: E501
-            #     if not os.path.isfile(qa_file):
-            #         logger.warning(f"QA file not found: {qa_file}",
-            #                        extra={'task': metadata['task'],
-            #                               'scraper_name': self.scraper.config['SCRAPER_NAME']})  # noqa: E501
-            #         continue
-            #     # Override what happens with the extracted data
-            #     e_task['post_extract'] = self._compare_data
-            #     e_task['post_extract_kwargs'] = {'qa_file': qa_file}
-            #     extractor._extraction_task(e_task, raw_source)
-
             # Override post_extract values to force it to save locally in a json format
             extractor.original_format_extract_task = extractor._format_extract_task
 
@@ -145,7 +130,7 @@ class ExtractorBaseTest:
                     metadata = json.load(f)
 
                 extractor = self.scraper.extract(metadata['task'],
-                                                      metadata['download_manifest'])
+                                                 metadata['download_manifest'])
                 metadata_sources = metadata['download_manifest']['source_files']
                 for source_idx, source in enumerate(metadata_sources):
                     self._test_source_file(extractor,
