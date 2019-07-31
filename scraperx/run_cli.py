@@ -52,15 +52,14 @@ def _create_test(cli_args, scraper):
                   indent=4,
                   ensure_ascii=False)
 
-    # Run the extractor
-    def save_extracted(data, source_idx, name):
-        data_name = f'{dst_base}_extracted_(qa)_{name}_{source_idx}.json'
-        Write(scraper, data).write_json().save_local(data_name)
-
     extractor = scraper.extract(metadata['task'],
                                 metadata['download_manifest'])
     # Override post_extract values to force it to save locally in a json format
     extractor.original_format_extract_task = extractor._format_extract_task
+
+    def save_extracted(data, source_idx, name):
+        data_name = f'{dst_base}_extracted_(qa)_{name}_{source_idx}.json'
+        Write(scraper, data).write_json().save(extractor, filename=data_name)
 
     def _tester_format_extract_task(inputs):
         inputs = extractor.original_format_extract_task(inputs)
@@ -71,7 +70,6 @@ def _create_test(cli_args, scraper):
         return inputs
     extractor._format_extract_task = _tester_format_extract_task
 
-    extractor = scraper.extract(metadata['task'], metadata['download_manifest'])
     for source_idx, source in enumerate(metadata_sources):
         raw_source = None
         with open(source['file'], 'r') as f:
