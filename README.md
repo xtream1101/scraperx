@@ -181,9 +181,8 @@ When updating the extractors there is a chance that it will not work with the pr
 ```python
 import unittest  # The testingframe work to use
 from scraperx.test import ExtractorBaseTest  # Does all the heavy lifting for the test
-from your_scraper import Extract as YourScraperExtract  # Your scrapers extract class
+from your_scraper import scraper as my_scraper  # The scrapers Scraper class
 # If you have multiple scrapers, then import their extract classes here as well
-
 
 # This test will loop through all the test files for the scraper
 class YourScraper(ExtractorBaseTest.TestCase):
@@ -192,7 +191,7 @@ class YourScraper(ExtractorBaseTest.TestCase):
         # The directory that the test files for your scraper are in
         data_dir = 'tests/sample_data/your_scraper'
         # ignore_keys will not test the qa values to the current extracted test value. This is most useful when dealing with timestamps or other values that will change on each time the data is extracted
-        super().__init__(data_dir, YourScraperExtract, ignore_keys=['time_extracted'], *args, **kwargs)
+        super().__init__(data_dir, my_scraper, ignore_keys=['time_extracted'], *args, **kwargs)
 
 # If you have multiple scrapers, then create a class for each
 

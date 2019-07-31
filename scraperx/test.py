@@ -5,8 +5,6 @@ import unittest
 from pprint import pprint
 from deepdiff import DeepDiff
 
-from .config import config
-
 logger = logging.getLogger(__name__)
 
 
@@ -31,7 +29,7 @@ class ExtractorBaseTest:
 
     class TestCase(unittest.TestCase):
 
-        def __init__(self, sample_data_dir, extract_cls, ignore_keys=None, *args, **kwargs):
+        def __init__(self, sample_data_dir, scraper, ignore_keys=None, *args, **kwargs):
             """Test QA'd extracted data against the current extractor code
 
             `ignore_keys` usage::
@@ -55,15 +53,15 @@ class ExtractorBaseTest:
             Args:
                 sample_data_dir (str): Path to the sample data for the scraper.
                     Relative from the root of the repo
-                extract_cls (obj): Extract class of the scraper
+                scraper (scraperx.Scraper): The scrapers scraper class
                 ignore_keys (list, optional): A list of keys to ignore.
                     Useful when dealing with timestamps that change
                     on each re-extract. Default is None.
             """
             super().__init__(*args, **kwargs)
             self.directory = os.fsencode(sample_data_dir)
-            config._set_value('SCRAPER_NAME', sample_data_dir.split(os.path.sep)[2])
-            self.extract_cls = extract_cls
+            self.scraper = scraper
+            self.scraper.config._set_value('SCRAPER_NAME', sample_data_dir.split(os.path.sep)[2])
             if ignore_keys is None:
                 ignore_keys = []
             self._ignore_keys = _clean_keys(ignore_keys, {})
@@ -106,24 +104,39 @@ class ExtractorBaseTest:
             dst_base = os.path.join(
                 'tests',
                 'sample_data',
-                config['SCRAPER_NAME'],
+                self.scraper.config['SCRAPER_NAME'],
                 metadata['download_manifest']['time_downloaded']
                 .replace('-', '').replace(':', ''),
             )
 
-            e_tasks = extractor._get_extraction_tasks(raw_source, s_idx)
-            for e_task in e_tasks:
-                # Check if there si a qa file for this source
-                qa_file = f"{dst_base}_extracted_qa_{e_task['name']}_{s_idx}.json"  # noqa: E501
-                if not os.path.isfile(qa_file):
-                    logger.warning(f"QA file not found: {qa_file}",
-                                   extra={'task': metadata['task'],
-                                          'scraper_name': config['SCRAPER_NAME']})  # noqa: E501
-                    continue
-                # Override what happens with the extracted data
-                e_task['post_extract'] = self._compare_data
-                e_task['post_extract_kwargs'] = {'qa_file': qa_file}
-                extractor._extraction_task(e_task, raw_source)
+
+            # e_tasks = extractor._get_extraction_tasks(raw_source, s_idx)
+            # for e_task in e_tasks:
+            #     # Check if there si a qa file for this source
+            #     qa_file = f"{dst_base}_extracted_qa_{e_task['name']}_{s_idx}.json"  # noqa: E501
+            #     if not os.path.isfile(qa_file):
+            #         logger.warning(f"QA file not found: {qa_file}",
+            #                        extra={'task': metadata['task'],
+            #                               'scraper_name': self.scraper.config['SCRAPER_NAME']})  # noqa: E501
+            #         continue
+            #     # Override what happens with the extracted data
+            #     e_task['post_extract'] = self._compare_data
+            #     e_task['post_extract_kwargs'] = {'qa_file': qa_file}
+            #     extractor._extraction_task(e_task, raw_source)
+
+            # Override post_extract values to force it to save locally in a json format
+            extractor.original_format_extract_task = extractor._format_extract_task
+
+            def _tester_format_extract_task(inputs):
+                inputs = extractor.original_format_extract_task(inputs)
+                inputs['post_extract'] = self._compare_data
+                qa_file = f"{dst_base}_extracted_qa_{inputs['name']}_{s_idx}.json"
+                inputs['post_extract_kwargs'] = {'qa_file': qa_file}
+                return inputs
+            extractor._format_extract_task = _tester_format_extract_task
+
+            for e_task in extractor._get_extraction_tasks(raw_source, s_idx):
+                e_task(raw_source)
 
         def runTest(self):  # noqa: N802
             for metadata_file in self.metadata_files:
@@ -131,8 +144,8 @@ class ExtractorBaseTest:
                 with open(metadata_file, 'r') as f:
                     metadata = json.load(f)
 
-                extractor = self.extract_cls(metadata['task'],
-                                             metadata['download_manifest'])
+                extractor = self.scraper.extract(metadata['task'],
+                                                      metadata['download_manifest'])
                 metadata_sources = metadata['download_manifest']['source_files']
                 for source_idx, source in enumerate(metadata_sources):
                     self._test_source_file(extractor,
