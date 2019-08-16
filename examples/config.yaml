@@ -9,6 +9,7 @@ default:
       value: 1
 
   downloader:
+    save_metadata: true
     save_data:
       service: local
     file_template: "source/{scraper_name}.html"

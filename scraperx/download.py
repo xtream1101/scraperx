@@ -190,15 +190,15 @@ class Download:
 
         Saves a file ending in `_metadata.json` in the same path as the first source file saved.
         """
-
-        metadata = self._get_metadata()
-        if metadata['download_manifest']['source_files']:
-            metadata_file = Write(self.scraper, metadata).write_json_lines()
-            filename = metadata['download_manifest']['source_files'][0]['file']
-            logger.debug("Saving metadata file",
-                         extra={'task': self.task,
-                                'scraper_name': self.scraper.config['SCRAPER_NAME']})
-            metadata_file.save(self, filename=filename + '_metadata.json')
+        if self.scraper.config['DOWNLOADER_SAVE_METADATA']:
+            metadata = self._get_metadata()
+            if metadata['download_manifest']['source_files']:
+                metadata_file = Write(self.scraper, metadata).write_json_lines()
+                filename = metadata['download_manifest']['source_files'][0]['file']
+                logger.debug("Saving metadata file",
+                            extra={'task': self.task,
+                                    'scraper_name': self.scraper.config['SCRAPER_NAME']})
+                metadata_file.save(self, filename=filename + '_metadata.json')
 
     def _get_metadata(self):
         """Create the dict of metadata to be saved
