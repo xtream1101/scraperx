@@ -196,7 +196,7 @@ class Download:
                 metadata_file = Write(self.scraper, metadata).write_json_lines()
                 filename = metadata['download_manifest']['source_files'][0]['file']
                 logger.debug("Saving metadata file",
-                            extra={'task': self.task,
+                             extra={'task': self.task,
                                     'scraper_name': self.scraper.config['SCRAPER_NAME']})
                 metadata_file.save(self, filename=filename + '_metadata.json')
 
