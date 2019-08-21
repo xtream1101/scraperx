@@ -8,8 +8,7 @@ logger = logging.getLogger(__name__)
 
 def _make_float(value):
     """Convert the value to a float
-
-    # Needed if the value is "1/2"
+    Needed if the value is "1/2"
 
     Args:
         value (str): The value to convert
@@ -100,6 +99,10 @@ _CONFIG_STRUCTURE = {
     'DOWNLOADER_SAVE_DATA_ENDPOINT_URL': {
         'default': None,
         'type': str,
+    },
+    'DOWNLOADER_SAVE_METADATA': {
+        'default': True,
+        'type': bool,
     },
     'DOWNLOADER_FILE_TEMPLATE': {
         'default': "output/source.html",

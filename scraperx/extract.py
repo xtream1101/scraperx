@@ -63,9 +63,10 @@ class Extract(ABC):
                 for extraction_task in extraction_tasks:
                     extraction_task(raw_source)
 
-            except Exception:
-                logger.exception("Extraction Failed",
+            except Exception as e:
+                logger.exception(f"Extraction Failed: {e}",
                                  extra={'task': self.task,
+                                        'source_file': source_file,
                                         'scraper_name': self.scraper.config['SCRAPER_NAME']})
 
         logger.debug('Extract finished',
@@ -129,31 +130,24 @@ class Extract(ABC):
                 # source is already a list
                 source_items = extract_source
 
+            output = []
+            # Used when you want to start at a different number
+            for idx, item in enumerate(source_items, start=inputs['idx_offset']):
+                result = inputs['callback'](item, idx, **inputs['callback_kwargs'])
+                if not result:
+                    continue
+                # QA Result
+                # TODO: Should the QA cast to the types?
+                #       Or just make sure it is that type
+                self._qa_result(idx, inputs['qa'], result)
+                output.append(result)
+
             try:
-                output = []
-                # Used when you want to start at a different number
-                for idx, item in enumerate(source_items, start=inputs['idx_offset']):
-                    result = inputs['callback'](item, idx, **inputs['callback_kwargs'])
-                    if not result:
-                        continue
-                    # QA Result
-                    # TODO: Should the QA cast to the types?
-                    #       Or just make sure it is that type
-                    self._qa_result(idx, inputs['qa'], result)
-                    output.append(result)
-
-            except QAValueError as e:
-                logger.error(f"Extraction Failed: {e}",
-                             extra={'task': self.task,
-                                    'scraper_name': self.scraper.config['SCRAPER_NAME']})
-
-            else:
-                try:
-                    inputs['post_extract'](output, **inputs['post_extract_kwargs'])
-                except Exception:
-                    logger.exception("Post extract Failed",
-                                     extra={'task': self.task,
-                                            'scraper_name': self.scraper.config['SCRAPER_NAME']})
+                inputs['post_extract'](output, **inputs['post_extract_kwargs'])
+            except Exception:
+                logger.exception("Post extract Failed",
+                                 extra={'task': self.task,
+                                        'scraper_name': self.scraper.config['SCRAPER_NAME']})
 
         return _run_extract_task
 

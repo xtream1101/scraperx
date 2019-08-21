@@ -222,6 +222,7 @@ default:
     file_template: test_output/{scraper_name}/{id}_extracted.json  # Optional, Default is "output/source.html"
 
   downloader:
+    save_metadata: true  # (true, false) Default: true. If false, a metadata file will NOT be saved with the downloaded source.
     save_data:
       service: local  # (local, s3) Default: local
       bucket_name: my-downloaded-data  # Required if `service` is s3, if local this is not needed
