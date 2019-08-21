@@ -146,7 +146,7 @@ class Extract(ABC):
                 inputs['post_extract'](output, **inputs['post_extract_kwargs'])
             except Exception:
                 logger.exception("Post extract Failed",
-                                    extra={'task': self.task,
+                                 extra={'task': self.task,
                                         'scraper_name': self.scraper.config['SCRAPER_NAME']})
 
         return _run_extract_task
