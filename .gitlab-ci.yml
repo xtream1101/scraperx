@@ -4,6 +4,12 @@ stages:
   - test
   - release
 
+pytest:
+  stage: test
+  script:
+    - pip install tox
+    - tox -e py37
+
 flake8:
   stage: test
   script:
