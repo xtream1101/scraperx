@@ -24,6 +24,9 @@ def test_rating_int_out_of():
 def test_rating_5_out_of_5():
     assert parsers.rating('5.0 out of 5 stars') == 5
 
+def test_rating_with_comma_as_dec():
+    assert parsers.rating('5,0 von 5 Sternen') == 5
+
 
 def test_rating_text_first():
     assert parsers.rating('Rated 4.82 out of 5 stars') == 4.82
