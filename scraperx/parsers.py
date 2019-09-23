@@ -1,14 +1,14 @@
 import re
 
 # Regex's compile once to be reused on each fn call
-rating_pattern = re.compile(r'(?:5[^.])?.*?(\d(?:[.,]\d+)?).*5?')
+rating_pattern = re.compile(r'(?:5[^.,])?.*?(\d(?:[.,]\d+)?).*5?')
 price_pattern = re.compile(r'(?P<low>[\d,.\s]+)(?:\D*(?P<high>[\d,.\s]+))?')
 
 
 def rating(rating_str):
     """Parse the rating from a string using a regex
 
-    Testing & debugging are here: https://regex101.com/r/ChmgmF/3
+    Testing & debugging are here: https://regex101.com/r/ChmgmF/4
 
     Args:
         rating_str (str): String that needs to be parsed.
