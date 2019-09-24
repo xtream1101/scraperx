@@ -360,7 +360,7 @@ class Download:
                 if r.status_code != requests.codes.ok:
                     if (_try_count < max_tries
                        and r.status_code not in self._ignore_codes):
-                        kwargs = self.new_profile(**r_kwargs)
+                        r_kwargs = self.new_profile(**r_kwargs)
                         request_method = self._set_http_method(http_method)
                         return request_method(url,
                                               max_tries=max_tries,
