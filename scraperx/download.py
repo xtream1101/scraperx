@@ -381,17 +381,17 @@ class Download:
 
             except Exception as e:
                 if _try_count < max_tries:
-                    kwargs = self.new_profile(**kwargs)
+                    r_kwargs = self.new_profile(**r_kwargs)
                     request_method = self._set_http_method(http_method)
                     return request_method(url,
                                           max_tries=max_tries,
                                           _try_count=_try_count + 1,
-                                          **kwargs)
+                                          **r_kwargs)
                 else:
                     logger.exception(f"Download failed: {str(e)}",
                                      extra={'url': url,
                                             'session_headers': self.session.headers,
-                                            'request_kwargs': kwargs,
+                                            'request_kwargs': r_kwargs,
                                             'num_tries': _try_count,
                                             'max_tries': max_tries,
                                             'task': self.task,
