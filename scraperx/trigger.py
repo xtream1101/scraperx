@@ -48,7 +48,6 @@ def _dispatch_locally(scraper, task, task_cls, **kwargs):
                             'scraper_name': scraper.config['SCRAPER_NAME']})
         return
 
-    from multiprocessing import Process
     try:
         if 'triggered_kwargs' in kwargs:
             del kwargs['triggered_kwargs']
@@ -56,8 +55,11 @@ def _dispatch_locally(scraper, task, task_cls, **kwargs):
         if action is None:
             # Prob the scraper does not have an extract class
             return
-        p = Process(target=action.run)
-        p.start()
+        # Do not run in a multi process if running locally,
+        # this is to prevent the computer from getting overloaded.
+        # Also this makes it so that all processes are finished before
+        # returning to the users code
+        action.run()
     except Exception:
         logger.critical("Local task failed",
                         extra={'task': task,
