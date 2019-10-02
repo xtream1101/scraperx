@@ -109,9 +109,6 @@ class ExtractorBaseTest:
                 .replace('-', '').replace(':', ''),
             )
 
-            # Override post_extract values to force it to save locally in a json format
-            extractor.original_format_extract_task = extractor._format_extract_task
-
             def _tester_format_extract_task(inputs):
                 inputs = extractor.original_format_extract_task(inputs)
                 inputs['post_extract'] = self._compare_data
@@ -131,6 +128,8 @@ class ExtractorBaseTest:
 
                 extractor = self.scraper.extract(metadata['task'],
                                                  metadata['download_manifest'])
+                # Override post_extract values to force it to save locally in a json format
+                extractor.original_format_extract_task = extractor._format_extract_task
                 metadata_sources = metadata['download_manifest']['source_files']
                 for source_idx, source in enumerate(metadata_sources):
                     self._test_source_file(extractor,
