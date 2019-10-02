@@ -149,10 +149,11 @@ class ConfigGen:
         """
         self.values = {}
         self._cli_args = cli_args
+        self._scraper_file_name = os.path.basename(sys.argv[0]).rsplit('.', 1)[0]
         if scraper_name:
             self._scraper_name = scraper_name
         else:
-            self._scraper_name = os.path.basename(sys.argv[0]).rsplit('.', 1)[0]
+            self._scraper_name = self._scraper_file_name
 
         if config_file:
             self._file = config_file
@@ -343,7 +344,9 @@ class ConfigGen:
             default_config_raw = all_config_values.get('default', {})
             current_config.update(ConfigGen._flatten(default_config_raw))
             # Get scraper values
-            scraper_config_raw = all_config_values.get(self._scraper_name, {})
+            # No matter what custom name the scraper is given,
+            # the scrapers filename will be used for config lookup
+            scraper_config_raw = all_config_values.get(self._scraper_file_name, {})
             current_config.update(ConfigGen._flatten(scraper_config_raw))
 
         return current_config
