@@ -2,7 +2,7 @@ import re
 
 # Regex's compile once to be reused on each fn call
 rating_pattern = re.compile(r'(?:5[^.,])?.*?(\d(?:[.,]\d+)?).*5?')
-price_pattern = re.compile(r'(?P<low>[\d,.\s]+)(?:\D*(?P<high>[\d,.\s]+))?')
+price_pattern = re.compile(r'(?P<low>[\d,.]+)(?:\D*(?P<high>[\d,.]+))?')
 
 
 def rating(rating_str):
@@ -27,8 +27,6 @@ def rating(rating_str):
 
 def price(price_str):
     """Parse the price(s) out of a string using a regex
-
-    Testing & debugging are here: <TODO>
 
     Args:
         price_str (str): String of the price to parse out.

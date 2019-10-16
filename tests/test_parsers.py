@@ -39,3 +39,11 @@ def test_price_basic_low_only():
 
 def test_price_basic_low_high():
     assert parsers.price('$23 - $27.89') == {'low': 23, 'high': 27.89}
+
+
+def test_price_low_in_string_first():
+    assert parsers.price('$1.10 off') == {'low': 1.1, 'high': None}
+
+
+def test_price_low_in_string_last():
+    assert parsers.price('Save $1.00') == {'low': 1.0, 'high': None}
