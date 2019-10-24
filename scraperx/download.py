@@ -173,6 +173,8 @@ class Download:
                 'file': source_file,
                 'request': {
                     'url': r.url,
+                    'method': r.request.method,
+                    'status_code': r.status_code,
                     'headers': {
                         'request': dict(r.request.headers),
                         'response': dict(r.headers),
@@ -330,22 +332,16 @@ class Download:
             try:
                 r = self.session.request(http_method, url, **r_kwargs)
 
-                custom_status_message = None
                 if custom_source_checks:
                     for re_text, status_code, message in custom_source_checks:
                         if re.search(re_text, r.text):
                             r.status_code = status_code
-                            custom_status_message = message
-
-                if custom_status_message:
-                    r.status_message = custom_status_message
-                else:
-                    r.status_message = requests.status_codes._codes[r.status_code][0]
+                            r.reason = message
 
                 log_extra = {'url': r.url,
                              'method': http_method,
                              'status_code': r.status_code,
-                             'status_message': r.status_message,
+                             'reason': r.reason,
                              'headers': {'request': dict(r.request.headers),
                                          'response': dict(r.headers)},
                              'response_time': r.elapsed.total_seconds(),

@@ -60,7 +60,7 @@ Named arguments:
     - This will look to see if the words _captcha_ are in the source page and set that response status code to a 403, with the status message being _Capacha Found_. The status message is there so you know if it is a real 403 or your custom status.
         -  `[(re.compile(r'captcha', re.I), 403, 'Capacha Found')]`
 
-When using `self.request_*`, it will return a normal requests.request response, but with the added field `status_message`. This is set to the text value of the status code. This is most useful when you are passing in custom status messages so you know if the status code is from the server or the passed in custom source check.
+When using `self.request_*`, it will return a normal requests.request response, If using custom source checks, `response.reason` will be set to the custom message passed in. This is useful if you have multiple ways a custom 403 happens and you need to do different actions depending on why.
 
 #### Saving the source
 This is required for the extractor to run on the downloaded data. Inside of `self.download()` just call `self.save_request(r)` on the request that was made. This will add the source file to a list of saved sources that will be passed to the extractor for parsing.  
