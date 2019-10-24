@@ -360,7 +360,7 @@ class Download:
                 if r.status_code != requests.codes.ok:
                     if (_try_count < max_tries
                        and r.status_code not in self._ignore_codes):
-                        r_kwargs = self.new_profile(**r_kwargs)
+                        r_kwargs = self.new_profile(failed_response=r, **r_kwargs)
                         request_method = self._set_http_method(http_method)
                         return request_method(url,
                                               max_tries=max_tries,
@@ -381,7 +381,7 @@ class Download:
 
             except Exception as e:
                 if _try_count < max_tries:
-                    r_kwargs = self.new_profile(**r_kwargs)
+                    r_kwargs = self.new_profile(failed_response=e.response, **r_kwargs)
                     request_method = self._set_http_method(http_method)
                     return request_method(url,
                                           max_tries=max_tries,
@@ -411,7 +411,7 @@ class Download:
         ua = self._get_user_agent(device_type)
         self.session.headers.update({'user-agent': ua})
 
-    def new_profile(self, **r_kwargs):
+    def new_profile(self, failed_response=None, **r_kwargs):
         """Rotate proxies and headers to retry the request again
         Users scraper can override this to rotate things their own way
 
@@ -429,17 +429,6 @@ class Download:
         self._set_session_ua()
 
         # Set new proxy
-        proxy_str = self._get_proxy(country=self.task.get('proxy_country'))
-        if 'proxy' in r_kwargs:
-            # Replace the request specific
-            r_kwargs['proxy'] = proxy_str
-
-        elif 'proxies' in r_kwargs:
-            # Replace the request specific
-            r_kwargs['proxies'] = proxy_str
-
-        else:
-            # Replace the session proxy
-            self.session.proxies = self._format_proxy(proxy_str)
+        r_kwargs['proxy'] = self._get_proxy(country=self.task.get('proxy_country'))
 
         return r_kwargs
