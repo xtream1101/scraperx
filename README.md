@@ -29,7 +29,7 @@ def __init__(self, *args, **kwargs):
 ### Dispatching
 
 #### Task data
-This is a dict of values that is passed to each step of the process. The scraper can put anything it wants here that it may need. But here are a few build in values that are not requiored, but are used if you do supply them:
+This is a dict of values that is passed to each step of the process. The scraper can put anything it wants here that it may need. But here are a few build in values that are not required, but are used if you do supply them:
 
 - `headers`: Dict of headers to use each request
 - `proxy`: Full proxy string to be used
@@ -47,7 +47,7 @@ The `__init__` of the `BaseDownload` class can take the following args:
 
 
 When using BaseDownloader, a requests session is created under `self.session`, so every get/post you make will use the same session per task.
-Headers can also be set per call by pasing the keyword args to `self.request_get()` and `self.request_post()`. Any kwargs you pass to self.request_get/post will be pased to the sessions get/post methods.
+Headers can also be set per call by passing the keyword args to `self.request_get()` and `self.request_post()`. Any kwargs you pass to self.request_get/post will be passed to the sessions get/post methods.
 
 When using BaseDownloader's get & post functions, it will use the requests session created in __init__ and a python `requests` response object.
 
@@ -60,14 +60,16 @@ Named arguments:
     - This will look to see if the words _captcha_ are in the source page and set that response status code to a 403, with the status message being _Capacha Found_. The status message is there so you know if it is a real 403 or your custom status.
         -  `[(re.compile(r'captcha', re.I), 403, 'Capacha Found')]`
 
+When using `self.request_*`, it will return a normal requests.request response, but with the added field `status_message`. This is set to the text value of the status code. This is most useful when you are passing in custom status messages so you know if the status code is from the server or the passed in custom source check.
+
 #### Saving the source
 This is required for the extractor to run on the downloaded data. Inside of `self.download()` just call `self.save_request(r)` on the request that was made. This will add the source file to a list of saved sources that will be passed to the extractor for parsing.  
 Some keyword arguments that can be passed into `self.save_request`  
-- **template_values** _{dict}_ - Additonal keys to use in the template
-- **filename** _{str}_ - Overide the filename from the template_name in the config
+- **template_values** _{dict}_ - Additional keys to use in the template
+- **filename** _{str}_ - Override the filename from the template_name in the config
 
 #### Download Exceptions
-These exceptions will be raised when calling `self.request_*`. They will be caught saftly so the scraper does not need to catch them. But if the scraper wanted to do something based on the exception, there can be a `try/except` around the scrapers `self.request_*`.  
+These exceptions will be raised when calling `self.request_*`. They will be caught safely so the scraper does not need to catch them. But if the scraper wanted to do something based on the exception, there can be a `try/except` around the scrapers `self.request_*`.  
 
  - `scraperx.exceptions.DownloadValueError`: If there is an exception that is not caught by the others
  - `scraperx.exceptions.HTTPIgnoreCodeError`: When the status code of the request is found in the `ignore_codes` argument of BaseDownload
@@ -179,7 +181,7 @@ When updating the extractors there is a chance that it will not work with the pr
 4. Create an empty file `tests/__init__.py`. This is needed for the tests to run.
 5. Next is to create the code that will run the tests. Create the file `tests/tests.py` with the contents below
 ```python
-import unittest  # The testingframe work to use
+import unittest  # The testing frame work to use
 from scraperx.test import ExtractorBaseTest  # Does all the heavy lifting for the test
 from your_scraper import scraper as my_scraper  # The scrapers Scraper class
 # If you have multiple scrapers, then import their extract classes here as well
@@ -215,19 +217,6 @@ class YourScraper(ExtractorBaseTest.TestCase):
 # Required fields are marked as such
 
 default:
-  extractor:
-    save_data:
-      service: local  # (local, s3) Default: local
-      bucket_name: my-extracted-data  # Required if `service` is s3, if local this is not needed
-    file_template: test_output/{scraper_name}/{id}_extracted.json  # Optional, Default is "output/source.html"
-
-  downloader:
-    save_metadata: true  # (true, false) Default: true. If false, a metadata file will NOT be saved with the downloaded source.
-    save_data:
-      service: local  # (local, s3) Default: local
-      bucket_name: my-downloaded-data  # Required if `service` is s3, if local this is not needed
-    file_template: test_output/{scraper_name}/{id}_source.html  # Optional, Default is "output/extracted.json"
-
   dispatch:
     limit: 5  # Default None. Max number of tasks to dispatch. If not set, all tasks will run
     service:
@@ -237,13 +226,26 @@ default:
     ratelimit:
       type: qps  # (qps, period) Required. `qps`: Queries per second to dispatch the tasks at. `period`: The time in hours to dispatch all of the tasks in.
       value: 1  # Required. Can be an int or a float. When using period, value is in hours
+  
+  downloader:
+    save_metadata: true  # (true, false) Default: true. If false, a metadata file will NOT be saved with the downloaded source.
+    save_data:
+      service: local  # (local, s3) Default: local
+      bucket_name: my-downloaded-data  # Required if `service` is s3, if local this is not needed
+    file_template: test_output/{scraper_name}/{id}_source.html  # Optional, Default is "output/extracted.json"
+
+  extractor:
+    save_data:
+      service: local  # (local, s3) Default: local
+      bucket_name: my-extracted-data  # Required if `service` is s3, if local this is not needed
+    file_template: test_output/{scraper_name}/{id}_extracted.json  # Optional, Default is "output/source.html"
 ```
 
 If you are using the `file_template` config, a python `.format()` runs on this string so you can use `{key_name}` to make it dynamic. The keys you will have direct access to are the following:
   - All keys in your task that was dispatched
   - Any thing you pass into the `template_values={}` kwarg for the `.save()` fn
-  - `time_downloaded`: time (utc) passed from the downloader (in both the downlaoder and extractor)
-  - `date_downloaded`: date (utc) passed from the downloader (in both the downlaoder and extractor)
+  - `time_downloaded`: time (utc) passed from the downloader (in both the downloader and extractor)
+  - `date_downloaded`: date (utc) passed from the downloader (in both the downloader and extractor)
   - `time_extracted`: time (utc) passed from the extractor (just in the extractor)
   - `date_extracted`: date (utc) passed from the extractor (just in the extractor)
 
@@ -257,7 +259,7 @@ search:
       value: 5
 ```
 
-To override the `value` in the above snippet using an environment variable, set `DISPATCH_RATELIMIT_VALUE=1`. This will overide all dispatch ratelimit values in default and custom.
+To override the `value` in the above snippet using an environment variable, set `DISPATCH_RATELIMIT_VALUE=1`. This will override all dispatch ratelimit values in default and custom.
 
 
 ## Issues

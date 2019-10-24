@@ -338,14 +338,14 @@ class Download:
                             custom_status_message = message
 
                 if custom_status_message:
-                    status_message = custom_status_message
+                    r.status_message = custom_status_message
                 else:
-                    status_message = requests.status_codes._codes[r.status_code][0]
+                    r.status_message = requests.status_codes._codes[r.status_code][0]
 
                 log_extra = {'url': r.url,
                              'method': http_method,
                              'status_code': r.status_code,
-                             'status_message': status_message,
+                             'status_message': r.status_message,
                              'headers': {'request': dict(r.request.headers),
                                          'response': dict(r.headers)},
                              'response_time': r.elapsed.total_seconds(),
