@@ -5,15 +5,19 @@ import threading
 logger = logging.getLogger(__name__)
 
 
-def get_context_type(context):
+def get_context_type(context=None):
     """Check which Base class this is
 
     Args:
-        context (obj): Either the Download or Extract class.
+        context (obj, None): Either the Download or Extract class.
+            Defaults to None.
 
     Returns:
         str: either 'downloader' or 'extractor'
     """
+    if context is None:
+        return None
+
     try:
         context.download
         context_type = 'downloader'
@@ -25,10 +29,11 @@ def get_context_type(context):
 
 def _get_s3_params(scraper, context=None, context_type=None):
     import boto3
+    endpoint_url = None
     if context_type is None:
         context_type = get_context_type(context)
+        endpoint_url = scraper.config[f'{context_type}_SAVE_DATA_ENDPOINT_URL']
 
-    endpoint_url = scraper.config[f'{context_type}_SAVE_DATA_ENDPOINT_URL']
     return {
         'session': boto3.Session(),
         'resource_kwargs': {

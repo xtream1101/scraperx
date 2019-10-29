@@ -92,7 +92,7 @@ def _run_dispatch(cli_args, scraper):
 
     def dump_tasks(tasks):
         # Dump all tasks to local json file
-        task_file = Write(scraper, tasks).write_json().save_local('tasks.json')
+        task_file = Write(scraper, tasks).write_json().save(None, filename='tasks.json')
         num_tasks = len(tasks)
         logger.info(f"Saved {num_tasks} tasks to {task_file}",
                     extra={'scraper_name': scraper.config['SCRAPER_NAME']})

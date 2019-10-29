@@ -14,12 +14,12 @@ class SaveTo:
         self.raw_data = raw_data
         self.content_type = content_type
 
-    def _get_filename(self, context, template_values={}, name_template=None):
+    def _get_filename(self, context=None, template_values={}, name_template=None):
         """Generate the filename based on the config template
 
         Args:
-            context (class): Either the Download or Extract class's self.
-                Used to get timestamps and the correct template.
+            context (class, optional): Either the Download or Extract class's self.
+                Used to get timestamps and the correct template. Defaults to None.
             template_values (dict, optional): Additional keys to use in the template.
                 Defaults to {}.
             name_template (str, optional): The config key for the template to use.
@@ -47,28 +47,34 @@ class SaveTo:
         if not name_template:
             name_template = self.scraper.config[f'{context_type}_FILE_TEMPLATE']
 
-        task_safe = {k: str(v) for k, v in context.task.items()}
+        task_safe = {}
+        if context is not None:
+            task_safe = {k: str(v) for k, v in context.task.items()}
         filename = name_template.format(**task_safe,
                                         **template_values,
                                         **additional_args)
 
         return filename
 
-    def save(self, context, template_values={}, filename=None):
+    def save(self, context=None, template_values={}, filename=None, save_service=None):
         """Save the file based on the config
 
         Args:
-            context (class): Either the Download or Extract class's self.
-                Used to get timestamps and the correct template.
+            context (class, optional): Either the Download or Extract class's self.
+                Used to get timestamps and the correct template. Defaults to None.
             template_values (dict, optional): Additional keys to use in the template.
                 Defaults to {}.
             filename (str, optional): Use this as the filename. If None then the
                 config file_template will be used. Defaults to None.
+            save_service (str, optional): Override the service in the context.
+                Defaults to None.
 
         Returns:
             str: File path to where it was saved
         """
-        context_type = get_context_type(context)
+        if save_service is None and context is not None:
+            context_type = get_context_type(context)
+            save_service = self.scraper.config[f'{context_type}_SAVE_DATA_SERVICE']
 
         filename = self._get_filename(context,
                                       template_values=template_values,
@@ -78,7 +84,6 @@ class SaveTo:
             import mimetypes
             content_type, _ = mimetypes.guess_type(filename)
 
-        save_service = self.scraper.config[f'{context_type}_SAVE_DATA_SERVICE']
         if save_service == 's3':
             transport_params = _get_s3_params(self.scraper, context=context)
             transport_params['multipart_upload_kwargs'] = {'ContentType': content_type}
@@ -115,8 +120,4 @@ class SaveTo:
             with open(target_path, 'wb', transport_params=transport_params) as outfile:
                 outfile.write(self.raw_data.read())
 
-        logger.debug(f"Saved file",
-                     extra={'task': context.task,
-                            'scraper_name': self.scraper.config['SCRAPER_NAME'],
-                            'file': target_path})
         return target_path
