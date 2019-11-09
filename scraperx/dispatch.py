@@ -90,6 +90,11 @@ class Dispatch():
                            'qps': qps,
                            'dispatch_service': self.scraper.config['DISPATCH_SERVICE_NAME'],
                            'num_tasks': self.num_tasks})
+
+        if self.num_tasks == 0:
+            # No reason to continue
+            return
+
         # Have 3 times the numbers of threads so a task will not bottleneck
         num_threads = math.ceil(qps * 3)
         q = queue.Queue()
