@@ -120,4 +120,6 @@ class SaveTo:
             with open(target_path, 'wb', transport_params=transport_params) as outfile:
                 outfile.write(self.raw_data.read())
 
+        self.raw_data.close()
+
         return target_path
