@@ -102,6 +102,9 @@ class Dispatch():
         def _thread_run():
             while True:
                 task = q.get()
+                if task is None:
+                    break
+
                 try:
                     run_task(self.scraper, task,
                              task_cls=self.scraper.download,
@@ -113,10 +116,12 @@ class Dispatch():
                                     exc_info=True)
                 q.task_done()
 
+        threads = []
         for i in range(num_threads):
             t = threading.Thread(target=_thread_run)
             t.daemon = True
             t.start()
+            threads.append(t)
 
         @rate_limited(num_calls=qps)
         def _rate_limit_tasks():
@@ -133,3 +138,9 @@ class Dispatch():
 
         # Process the data and wait until its complete
         q.join()
+
+        # Stop and cleanup workers
+        for i in range(num_threads):
+            q.put(None)
+        for t in threads:
+            t.join()
