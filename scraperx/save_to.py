@@ -84,6 +84,9 @@ class SaveTo:
             import mimetypes
             content_type, _ = mimetypes.guess_type(filename)
 
+        if content_type is None:  # still....
+            content_type = 'binary/octet-stream'
+
         if save_service == 's3':
             transport_params = _get_s3_params(self.scraper, context=context)
             transport_params['multipart_upload_kwargs'] = {'ContentType': content_type}
