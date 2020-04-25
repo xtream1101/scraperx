@@ -122,7 +122,15 @@ class SaveTo:
             # raw_data is BytesIO not StringIO
             with open(target_path, 'wb', transport_params=transport_params) as outfile:
                 outfile.write(self.raw_data.read())
+        except AttributeError:
+            # Data is bytes and does not need .read()
+            with open(target_path, 'wb', transport_params=transport_params) as outfile:
+                outfile.write(self.raw_data)
 
-        self.raw_data.close()
+        try:
+            # Try and close if needed
+            self.raw_data.close()
+        except AttributeError:
+            pass
 
         return target_path
