@@ -244,6 +244,7 @@ default:
 If you are using the `file_template` config, a python `.format()` runs on this string so you can use `{key_name}` to make it dynamic. The keys you will have direct access to are the following:
   - All keys in your task that was dispatched
   - Any thing you pass into the `template_values={}` kwarg for the `.save()` fn
+  - All values in `scraper.log_extras`. Currently `scraper_name` & `run_id`
   - `time_downloaded`: time (utc) passed from the downloader (in both the downloader and extractor)
   - `date_downloaded`: date (utc) passed from the downloader (in both the downloader and extractor)
   - `time_extracted`: time (utc) passed from the extractor (just in the extractor)

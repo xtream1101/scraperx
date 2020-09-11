@@ -161,6 +161,9 @@ class ConfigGen:
             self._file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])),
                                       'config.yaml')
 
+        # Do an initial  load of current config
+        self.load_config()
+
     def load_config(self, config_file=None, cli_args=None, scraper_name=None):
         """Load the config values for a scraper
 

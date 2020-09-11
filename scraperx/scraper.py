@@ -1,3 +1,4 @@
+import uuid
 import logging
 from .config import ConfigGen
 from .dispatch import Dispatch
@@ -29,6 +30,10 @@ class Scraper:
         self._set_download_cls(download_cls)
         self._set_dispatch_cls(dispatch_cls)
         self._set_extract_cls(extract_cls)
+        self.log_extras = {
+            'scraper_name': self.config['SCRAPER_NAME'],
+            'run_id': str(uuid.uuid4()),
+        }
 
     def _set_download_cls(self, download_cls):
         if download_cls:
