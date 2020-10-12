@@ -1,4 +1,3 @@
-import uuid
 import logging
 from .config import ConfigGen
 from .dispatch import Dispatch

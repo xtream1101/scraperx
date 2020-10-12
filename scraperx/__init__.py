@@ -3,7 +3,8 @@ import logging
 import traceback
 
 
-def makeRecord(self, name, level, fn, lno, msg, args, exc_info, func=None, extra=None, sinfo=None):
+def makeRecord(self, name, level, fn, lno, msg, args, exc_info,  # noqa: N802
+               func=None, extra=None, sinfo=None):
     """
     A factory method which can be overridden in subclasses to create
     specialized LogRecords.
