@@ -41,7 +41,7 @@ class Download:
 
         logger.info("Start Download",
                     extra={'task': self.task,
-                           **self.scraper.log_extras,
+                           **self.scraper.log_extras(),
                            'time_started': self.time_downloaded,
                            })
 
@@ -118,7 +118,7 @@ class Download:
         except Exception:
             logger.exception("Download Exception",
                              extra={'task': self.task,
-                                    **self.scraper.log_extras})
+                                    **self.scraper.log_extras()})
         else:
             if self._manifest['source_files']:
                 self._save_metadata()
@@ -132,13 +132,13 @@ class Download:
                 # If it got here and there is not saved file then thats an issue
                 logger.error("No source file saved",
                              extra={'task': self.task,
-                                    **self.scraper.log_extras,
+                                    **self.scraper.log_extras(),
                                     'manifest': self._manifest,
                                     })
 
         logger.debug('Download finished',
                      extra={'task': self.task,
-                            **self.scraper.log_extras,
+                            **self.scraper.log_extras(),
                             'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
                             })
 
@@ -199,7 +199,7 @@ class Download:
                 filename = metadata['download_manifest']['source_files'][0]['file']
                 logger.debug("Saving metadata file",
                              extra={'task': self.task,
-                                    **self.scraper.log_extras})
+                                    **self.scraper.log_extras()})
                 metadata_file.save(self, filename=filename + '_metadata.json')
 
     def _get_metadata(self):
@@ -226,7 +226,7 @@ class Download:
         """
         logger.debug(f"Setting proxy {proxy}",
                      extra={'task': self.task,
-                            **self.scraper.log_extras})
+                            **self.scraper.log_extras()})
         if isinstance(proxy, dict) and 'http' in proxy and 'https' in proxy:
             # Nothing more to do
             return proxy
@@ -349,7 +349,7 @@ class Download:
                              'num_tries': _try_count,
                              'max_tries': max_tries,
                              'task': self.task,
-                             **self.scraper.log_extras,
+                             **self.scraper.log_extras(),
                              'proxy': proxy_used}
                 logger.info("Request finished", extra=log_extra)
 
@@ -391,7 +391,7 @@ class Download:
                                             'num_tries': _try_count,
                                             'max_tries': max_tries,
                                             'task': self.task,
-                                            **self.scraper.log_extras,
+                                            **self.scraper.log_extras(),
                                             'proxy': proxy_used})
                     raise DownloadValueError(f"Download failed: {str(e)}")
 

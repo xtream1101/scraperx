@@ -30,7 +30,7 @@ class SaveTo:
             str: The filename with the template values filled in
         """
         context_type = get_context_type(context)
-        additional_args = {**self.scraper.log_extras}
+        additional_args = {**self.scraper.log_extras()}
         if context_type == 'extractor':
             time_downloaded = context.download_manifest['time_downloaded']
             date_downloaded = context.download_manifest['date_downloaded']

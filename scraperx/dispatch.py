@@ -23,6 +23,8 @@ class Dispatch():
         """
         self.scraper = scraper
 
+        logger.info("Start Gathering Tasks...", extra={**self.scraper.log_extras()})
+
         if not tasks:
             tasks = self.submit_tasks()
 
@@ -78,7 +80,7 @@ class Dispatch():
         if self.num_tasks is None:
             logger.critical(("Dispatch self.num_tasks must be set if using"
                              " a generator for tasks"),
-                            extra={**self.scraper.log_extras})
+                            extra={**self.scraper.log_extras()})
             raise ValueError("Dispatch.num_tasks must be set when using a generator")
 
         if self.scraper.config['DISPATCH_LIMIT']:
@@ -86,7 +88,7 @@ class Dispatch():
 
         qps = self._get_qps()
         logger.info(f"Dispatch {self.num_tasks}",
-                    extra={**self.scraper.log_extras,
+                    extra={**self.scraper.log_extras(),
                            'qps': qps,
                            'dispatch_service': self.scraper.config['DISPATCH_SERVICE_NAME'],
                            'num_tasks': self.num_tasks})
@@ -112,7 +114,7 @@ class Dispatch():
                 except Exception:
                     logger.critical("Dispatch failed",
                                     extra={'task': task,
-                                           **self.scraper.log_extras},
+                                           **self.scraper.log_extras()},
                                     exc_info=True)
                 q.task_done()
 
@@ -128,7 +130,7 @@ class Dispatch():
             task = next(self.tasks_generator)
             logger.debug("Adding task",
                          extra={'task': task,
-                                **self.scraper.log_extras})
+                                **self.scraper.log_extras()})
             self.tasks.append(task)
             q.put(task)
 

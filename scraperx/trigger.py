@@ -17,15 +17,14 @@ def run_task(scraper, task, task_cls=None, **kwargs):
         **kwargs: Keyword arguments to send to pass into the `task_cls`
     """
     if task_cls is None:
-        logger.warning("No tasks passed into run_task",
-                       extra={'scraper_name': scraper.config['SCRAPER_NAME']})
+        logger.warning("No tasks passed into run_task", extra={**scraper.log_extras()})
         return
 
     msg = "Dummy Trigger" if scraper.config['STANDALONE'] else "Trigger"
     logger.debug(msg,
                  extra={'dispatch_service': scraper.config['DISPATCH_SERVICE_NAME'],
                         'task': task,
-                        'scraper_name': scraper.config['SCRAPER_NAME']})
+                        **scraper.log_extras()})
 
     if not scraper.config['STANDALONE']:
         if scraper.config['DISPATCH_SERVICE_NAME'] == 'local':
@@ -36,16 +35,14 @@ def run_task(scraper, task, task_cls=None, **kwargs):
 
         else:
             logger.error(f"{scraper.config['DISPATCH_SERVICE_NAME']} is not setup",
-                         extra={'task': task,
-                                'scraper_name': scraper.config['SCRAPER_NAME']})
+                         extra={'task': task, **scraper.log_extras()})
 
 
 def _dispatch_locally(scraper, task, task_cls, **kwargs):
     """Send the task directly to the download class"""
     if task_cls is None:
         logger.error("Cannot dispatch locally if no task class is passed in",
-                     extra={'task': task,
-                            'scraper_name': scraper.config['SCRAPER_NAME']})
+                     extra={'task': task, **scraper.log_extras()})
         return
 
     try:
@@ -62,8 +59,7 @@ def _dispatch_locally(scraper, task, task_cls, **kwargs):
         action.run()
     except Exception:
         logger.critical("Local task failed",
-                        extra={'task': task,
-                               'scraper_name': scraper.config['SCRAPER_NAME']},
+                        extra={'task': task, **scraper.log_extras()},
                         exc_info=True)
 
 
@@ -75,6 +71,7 @@ def _dispatch_sns(scraper, task, arn=None, **kwargs):
         target_arn = arn if arn else scraper.config['DISPATCH_SERVICE_SNS_ARN']
         message = {'task': task,
                    'scraper_name': scraper.config['SCRAPER_NAME'],
+                   'run_id': scraper.config['RUN_ID'],
                    **kwargs,
                    }
         if target_arn is not None:
@@ -84,14 +81,11 @@ def _dispatch_sns(scraper, task, arn=None, **kwargs):
                                       MessageStructure='json'
                                       )
             logger.debug(f"SNS Response: {response}",
-                         extra={'task': task,
-                                'scraper_name': scraper.config['SCRAPER_NAME']})
+                         extra={'task': task, **scraper.log_extras()})
         else:
             logger.error("Must configure sns_arn if using sns",
-                         extra={'task': task,
-                                'scraper_name': scraper.config['SCRAPER_NAME']})
+                         extra={'task': task, **scraper.log_extras()})
     except Exception:
         logger.critical("Failed to dispatch lambda",
-                        extra={'task': task,
-                               'scraper_name': scraper.config['SCRAPER_NAME']},
+                        extra={'task': task, **scraper.log_extras()},
                         exc_info=True)

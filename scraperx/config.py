@@ -1,5 +1,6 @@
 import os
 import sys
+import uuid
 import yaml
 import logging
 
@@ -58,6 +59,10 @@ _CONFIG_STRUCTURE = {
     },
     'SCRAPER_NAME': {
         'type': str,
+    },
+    'RUN_ID': {
+        'type': str,
+        'default': str(uuid.uuid4()),
     },
     ###
     # Dispatch
@@ -161,7 +166,7 @@ class ConfigGen:
             self._file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])),
                                       'config.yaml')
 
-        # Do an initial  load of current config
+        # Do an initial load of current config
         self.load_config()
 
     def load_config(self, config_file=None, cli_args=None, scraper_name=None):
@@ -190,7 +195,10 @@ class ConfigGen:
 
         raw_values = self._join_values(file_values=file_values,
                                        cli_values=cli_values)
-        raw_values.update({'SCRAPER_NAME': self._scraper_name})
+
+        if raw_values['SCRAPER_NAME'] is None:
+            raw_values.update({'SCRAPER_NAME': self._scraper_name})
+
         self.values = self._validate_config_values(raw_values)
 
     def __getitem__(self, key):
