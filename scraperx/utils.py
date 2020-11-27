@@ -51,7 +51,7 @@ def _get_s3_params(scraper, context=None, context_type=None):
     endpoint_url = None
     if context_type is None:
         context_type = get_context_type(context)
-        endpoint_url = scraper.config[f'{context_type}_SAVE_DATA_ENDPOINT_URL']
+    endpoint_url = scraper.config[f'{context_type}_SAVE_DATA_ENDPOINT_URL']
 
     return {
         'session': boto3.Session(),
