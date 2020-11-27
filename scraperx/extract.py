@@ -30,6 +30,13 @@ class Extract(ABC):
         self.time_extracted = datetime.datetime.utcnow().isoformat() + 'Z'
         self.date_extracted = str(datetime.datetime.utcnow().date())
 
+        self.pre_extract()
+
+    def pre_extract(self):
+        """User to override if any setup is needed
+        """
+        pass
+
     def run(self):
         """Starts extracting data from the source files
 

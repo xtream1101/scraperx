@@ -116,6 +116,9 @@ Set the env var `UA_FILE` to the path of the above csv for the scraper to load i
 [Parsel documentation](https://parsel.readthedocs.io/en/latest/)  
 
 #### Data extraction helpers
+`self.pre_extract()`  
+  - User can override to do their own setup after the `__init__` and before any extraction happens  
+  
 `self.find_css_elements(source, css_selectors)`  
   - `source` - Parsel object to run the css selectors on
   - `css_selectors` - A list of css selectors to try and extract the data
