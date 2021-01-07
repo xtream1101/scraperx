@@ -105,6 +105,12 @@ _CONFIG_STRUCTURE = {
         'default': None,
         'type': str,
     },
+    'DOWNLOADER_SAVE_DATA_AWS_ACCESS_KEY_ID': {
+        'type': str,
+    },
+    'DOWNLOADER_SAVE_DATA_AWS_SECRET_ACCESS_KEY': {
+        'type': str,
+    },
     'DOWNLOADER_SAVE_METADATA': {
         'default': True,
         'type': bool,
@@ -128,6 +134,12 @@ _CONFIG_STRUCTURE = {
     },
     'EXTRACTOR_SAVE_DATA_ENDPOINT_URL': {
         'default': None,
+        'type': str,
+    },
+    'EXTRACTOR_SAVE_DATA_AWS_ACCESS_KEY_ID': {
+        'type': str,
+    },
+    'EXTRACTOR_SAVE_DATA_AWS_SECRET_ACCESS_KEY': {
         'type': str,
     },
     'EXTRACTOR_FILE_TEMPLATE': {
@@ -189,7 +201,11 @@ class ConfigGen:
         if not cli_args:
             cli_args = self._cli_args
 
-        file_values = self._ingest_file(self._file)
+        try:
+            file_values = self._ingest_file(self._file)
+        except FileNotFoundError as e:
+            logger.error(str(e))
+            file_values = {}
 
         cli_values = self._ingest_cli_args(cli_args)
 

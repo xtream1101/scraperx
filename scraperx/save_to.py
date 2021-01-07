@@ -50,9 +50,10 @@ class SaveTo:
         task_safe = {}
         if context is not None:
             task_safe = {k: str(v) for k, v in context.task.items()}
-        filename = name_template.format(**task_safe,
-                                        **template_values,
-                                        **additional_args)
+        # Update so there cannot be duplicate keys, update order matters here
+        additional_args.update(task_safe)
+        additional_args.update(template_values)
+        filename = name_template.format(**additional_args)
 
         return filename
 

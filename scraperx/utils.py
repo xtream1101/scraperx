@@ -53,8 +53,16 @@ def _get_s3_params(scraper, context=None, context_type=None):
         context_type = get_context_type(context)
     endpoint_url = scraper.config[f'{context_type}_SAVE_DATA_ENDPOINT_URL']
 
+    aws_access_key = {}
+    aws_access_key_id = scraper.config[f'{context_type}_SAVE_DATA_AWS_ACCESS_KEY_ID']
+    if aws_access_key_id:
+        aws_access_key['aws_access_key_id'] = aws_access_key_id
+    aws_secret_access_key = scraper.config[f'{context_type}_SAVE_DATA_AWS_SECRET_ACCESS_KEY']
+    if aws_secret_access_key:
+        aws_access_key['aws_secret_access_key'] = aws_secret_access_key
+
     return {
-        'session': boto3.Session(),
+        'session': boto3.Session(**aws_access_key),
         'resource_kwargs': {
             'endpoint_url': endpoint_url,
         },

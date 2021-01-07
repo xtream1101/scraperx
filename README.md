@@ -213,7 +213,7 @@ class YourScraper(ExtractorBaseTest.TestCase):
 - Yaml file: Will use these values if no other way is set for a key
 
 ### Config values
-
+_If you are using any aws service for any part of this, it will use the [boto3 library](https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html) and will try and get credentials from the system 
 ```yaml
 # config.yaml
 # This is a config file with all config values
@@ -234,13 +234,23 @@ default:
     save_metadata: true  # (true, false) Default: true. If false, a metadata file will NOT be saved with the downloaded source.
     save_data:
       service: local  # (local, s3) Default: local
-      bucket_name: my-downloaded-data  # Required if `service` is s3, if local this is not needed
+      # Required if `service` is s3, if local these are not needed
+      bucket_name: my-downloaded-data-bucket 
+      endpoint_url: https://s3.my-server.com  # Used if not using AWS s3 bucket
+      # Only needed if aws creds are not setup on the system or you want to not use the system creds
+      aws_access_key_id: abcde  # Auth key to access the s3 server.
+      aws_secret_access_key: abcde123  # Auth secret to access the s3 server
     file_template: test_output/{scraper_name}/{id}_source.html  # Optional, Default is "output/extracted.json"
 
   extractor:
     save_data:
       service: local  # (local, s3) Default: local
-      bucket_name: my-extracted-data  # Required if `service` is s3, if local this is not needed
+      # Required if `service` is s3, if local these are not needed
+      bucket_name: my-extracted-data-bucket 
+      endpoint_url: https://s3.my-server.com  # Used if not using AWS s3 bucket
+      # Only needed if aws creds are not setup on the system or you want to not use the system creds
+      aws_access_key_id: abcde  # Auth key to access the s3 server
+      aws_secret_access_key: abcde123  # Auth secret to access the s3 server
     file_template: test_output/{scraper_name}/{id}_extracted.json  # Optional, Default is "output/source.html"
 ```
 

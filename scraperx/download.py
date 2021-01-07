@@ -209,7 +209,8 @@ class Download:
             dict: Data to be saved in the metadata file
         """
         metadata = {'task': self.task,
-                    'scraper': self.scraper.config['SCRAPER_NAME'],
+                    'scraper_name': self.scraper.config['SCRAPER_NAME'],
+                    'run_id': self.scraper.config['RUN_ID'],
                     'download_manifest': self._manifest,
                     }
         return metadata

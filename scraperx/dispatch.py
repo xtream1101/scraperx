@@ -116,6 +116,7 @@ class Dispatch():
                                     extra={'task': task,
                                            **self.scraper.log_extras()},
                                     exc_info=True)
+                task = None
                 q.task_done()
 
         threads = []
