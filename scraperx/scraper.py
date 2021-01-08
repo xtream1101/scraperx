@@ -30,6 +30,17 @@ class Scraper:
         self._set_dispatch_cls(dispatch_cls)
         self._set_extract_cls(extract_cls)
 
+    def log_extras(self):
+        """Extra data to always add to log messages
+
+        Returns:
+            dict: Data that should go into the extras kwarg of all log messages
+        """
+        return {
+            'scraper_name': self.config['SCRAPER_NAME'],
+            'run_id': self.config['RUN_ID'],
+        }
+
     def _set_download_cls(self, download_cls):
         if download_cls:
             self.download_cls = download_cls

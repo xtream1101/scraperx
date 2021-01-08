@@ -1,5 +1,6 @@
 import os
 import sys
+import uuid
 import yaml
 import logging
 
@@ -59,6 +60,10 @@ _CONFIG_STRUCTURE = {
     'SCRAPER_NAME': {
         'type': str,
     },
+    'RUN_ID': {
+        'type': str,
+        'default': str(uuid.uuid4()),
+    },
     ###
     # Dispatch
     ###
@@ -100,6 +105,12 @@ _CONFIG_STRUCTURE = {
         'default': None,
         'type': str,
     },
+    'DOWNLOADER_SAVE_DATA_AWS_ACCESS_KEY_ID': {
+        'type': str,
+    },
+    'DOWNLOADER_SAVE_DATA_AWS_SECRET_ACCESS_KEY': {
+        'type': str,
+    },
     'DOWNLOADER_SAVE_METADATA': {
         'default': True,
         'type': bool,
@@ -123,6 +134,12 @@ _CONFIG_STRUCTURE = {
     },
     'EXTRACTOR_SAVE_DATA_ENDPOINT_URL': {
         'default': None,
+        'type': str,
+    },
+    'EXTRACTOR_SAVE_DATA_AWS_ACCESS_KEY_ID': {
+        'type': str,
+    },
+    'EXTRACTOR_SAVE_DATA_AWS_SECRET_ACCESS_KEY': {
         'type': str,
     },
     'EXTRACTOR_FILE_TEMPLATE': {
@@ -161,6 +178,9 @@ class ConfigGen:
             self._file = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])),
                                       'config.yaml')
 
+        # Do an initial load of current config
+        self.load_config()
+
     def load_config(self, config_file=None, cli_args=None, scraper_name=None):
         """Load the config values for a scraper
 
@@ -181,13 +201,20 @@ class ConfigGen:
         if not cli_args:
             cli_args = self._cli_args
 
-        file_values = self._ingest_file(self._file)
+        try:
+            file_values = self._ingest_file(self._file)
+        except FileNotFoundError as e:
+            logger.error(str(e))
+            file_values = {}
 
         cli_values = self._ingest_cli_args(cli_args)
 
         raw_values = self._join_values(file_values=file_values,
                                        cli_values=cli_values)
-        raw_values.update({'SCRAPER_NAME': self._scraper_name})
+
+        if raw_values['SCRAPER_NAME'] is None:
+            raw_values.update({'SCRAPER_NAME': self._scraper_name})
+
         self.values = self._validate_config_values(raw_values)
 
     def __getitem__(self, key):

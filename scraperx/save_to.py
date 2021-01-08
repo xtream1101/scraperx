@@ -30,7 +30,7 @@ class SaveTo:
             str: The filename with the template values filled in
         """
         context_type = get_context_type(context)
-        additional_args = {'scraper_name': self.scraper.config['SCRAPER_NAME']}
+        additional_args = {**self.scraper.log_extras()}
         if context_type == 'extractor':
             time_downloaded = context.download_manifest['time_downloaded']
             date_downloaded = context.download_manifest['date_downloaded']
@@ -50,9 +50,10 @@ class SaveTo:
         task_safe = {}
         if context is not None:
             task_safe = {k: str(v) for k, v in context.task.items()}
-        filename = name_template.format(**task_safe,
-                                        **template_values,
-                                        **additional_args)
+        # Update so there cannot be duplicate keys, update order matters here
+        additional_args.update(task_safe)
+        additional_args.update(template_values)
+        filename = name_template.format(**additional_args)
 
         return filename
 

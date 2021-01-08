@@ -169,7 +169,7 @@ def run_cli(scraper):
     if cli_args.action == 'validate':
         from pprint import pprint
         logger.info("Testing the config....",
-                    extra={'scraper_name': scraper.config['SCRAPER_NAME']})
+                    extra={**scraper.log_extras()})
         pprint(scraper.config.values)
 
     elif cli_args.action == 'create-test':

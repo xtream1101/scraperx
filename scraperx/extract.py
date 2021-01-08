@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 
 from .write import Write
 from .exceptions import QAValueError
-from .utils import _get_s3_params
+from .utils import _get_s3_params, get_root_exc_log_overides
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,13 @@ class Extract(ABC):
         self.time_extracted = datetime.datetime.utcnow().isoformat() + 'Z'
         self.date_extracted = str(datetime.datetime.utcnow().date())
 
+        self.pre_extract()
+
+    def pre_extract(self):
+        """User to override if any setup is needed
+        """
+        pass
+
     def run(self):
         """Starts extracting data from the source files
 
@@ -41,7 +48,7 @@ class Extract(ABC):
         """
         logger.info("Start Extract",
                     extra={'task': self.task,
-                           'scraper_name': self.scraper.config['SCRAPER_NAME'],
+                           **self.scraper.log_extras(),
                            'time_started': self.time_extracted,
                            })
 
@@ -67,11 +74,13 @@ class Extract(ABC):
                 logger.exception(f"Extraction Failed: {e}",
                                  extra={'task': self.task,
                                         'source_file': source_file,
-                                        'scraper_name': self.scraper.config['SCRAPER_NAME']})
+                                        **self.scraper.log_extras(),
+                                        **get_root_exc_log_overides(),
+                                        })
 
         logger.debug('Extract finished',
                      extra={'task': self.task,
-                            'scraper_name': self.scraper.config['SCRAPER_NAME'],
+                            **self.scraper.log_extras(),
                             'time_finished': datetime.datetime.utcnow().isoformat() + 'Z',
                             })
 
@@ -147,7 +156,7 @@ class Extract(ABC):
             except Exception:
                 logger.exception("Post extract Failed",
                                  extra={'task': self.task,
-                                        'scraper_name': self.scraper.config['SCRAPER_NAME']})
+                                        **self.scraper.log_extras()})
 
         return _run_extract_task
 
@@ -291,7 +300,7 @@ class Extract(ABC):
         if file_format not in save_as_map:
             logger.critical(f"Format `{file_format}` is not supported",
                             extra={'task': self.task,
-                                   'scraper_name': self.scraper.config['SCRAPER_NAME']})
+                                   **self.scraper.log_extras()})
         else:
             save_as_map[file_format]().save(self, template_values=template_values)
 
@@ -357,7 +366,7 @@ class Extract(ABC):
                                 f" {value_type_name} does not support"
                                 " the length check"),
                                extra={'task': self.task,
-                                      'scraper_name': self.scraper.config['SCRAPER_NAME']})
+                                      **self.scraper.log_extras()})
 
     def _validate_qa_rules(self, qa_rules):
         # TODO: Validate for each extraction_task in run()

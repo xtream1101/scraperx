@@ -5,6 +5,25 @@ import threading
 logger = logging.getLogger(__name__)
 
 
+def get_root_exc_log_overides():
+    """Get a dict of values from the root exception to override in the logs
+
+    Returns:
+        dict: Overide the line number and file name the python logger gets
+    """
+    import sys
+    exception_type, exception_value, exception_traceback = sys.exc_info()
+    root_exception = exception_traceback
+    while hasattr(exception_traceback, 'tb_next'):
+        exception_traceback = root_exception.tb_next
+        if exception_traceback:
+            root_exception = exception_traceback
+
+    return {'lineno': root_exception.tb_lineno,
+            'pathname': root_exception.tb_frame.f_code.co_filename,
+            }
+
+
 def get_context_type(context=None):
     """Check which Base class this is
 
@@ -32,10 +51,18 @@ def _get_s3_params(scraper, context=None, context_type=None):
     endpoint_url = None
     if context_type is None:
         context_type = get_context_type(context)
-        endpoint_url = scraper.config[f'{context_type}_SAVE_DATA_ENDPOINT_URL']
+    endpoint_url = scraper.config[f'{context_type}_SAVE_DATA_ENDPOINT_URL']
+
+    aws_access_key = {}
+    aws_access_key_id = scraper.config[f'{context_type}_SAVE_DATA_AWS_ACCESS_KEY_ID']
+    if aws_access_key_id:
+        aws_access_key['aws_access_key_id'] = aws_access_key_id
+    aws_secret_access_key = scraper.config[f'{context_type}_SAVE_DATA_AWS_SECRET_ACCESS_KEY']
+    if aws_secret_access_key:
+        aws_access_key['aws_secret_access_key'] = aws_secret_access_key
 
     return {
-        'session': boto3.Session(),
+        'session': boto3.Session(**aws_access_key),
         'resource_kwargs': {
             'endpoint_url': endpoint_url,
         },
