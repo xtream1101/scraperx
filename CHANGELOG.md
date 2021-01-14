@@ -1,6 +1,9 @@
 # Change log
 
 
+### 0.5.1
+- Added 'default' as a QA option. If the key is not set in the dict returned by the extractor, it will use the default
+
 ### 0.5.0
 - Started this change log
 - Added `run_id` to all scraper logs. Also to the scrapers config values
