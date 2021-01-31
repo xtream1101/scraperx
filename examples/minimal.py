@@ -31,7 +31,7 @@ class MyDispatch(Dispatch):
                 used when selecting the type of User-Agent to use.
 
         """
-        return {'url': 'http://testing-ground.scraping.pro/blocks'}
+        return {'url': 'https://www.imdb.com/chart/top/'}
 
 
 class MyDownload(Download):
@@ -110,14 +110,18 @@ class MyExtract(Extract):
         # Either yield or return a list of the functions
         yield self.extract_task(
             name='products',
-            selectors=['#case1 > div:not(.ads)'],
+            selectors=['tbody.lister-list tr'],
             callback=self.extract_product,
             post_extract=self.save_as,  # TODO: add docs about what builtin's there are
             post_extract_kwargs={'file_format': 'json'},
         )
 
     def extract_product(self, element, idx, **kwargs):
-        return {'title': element.css('div.name').xpath('string()').extract_first()}
+        return {
+            'title': element.css('td.titleColumn a').xpath('string()').extract_first(),
+            'year': int(element.css('span.secondaryInfo').xpath('string()').extract_first()[1:-1]),
+            'rating': float(element.css('td.ratingColumn ').xpath('string()').extract_first()),
+        }
 
 
 # `extract_cls` is the only required argument,

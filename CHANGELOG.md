@@ -3,6 +3,7 @@
 
 ### 0.5.2
 - Updated filepaths in scraper create-test command. Now in windows it will save the path with forward slashes `/`, and not `\\` (supported by pathlib)
+- Fixed outdated examples to use a new site
 
 ### 0.5.1
 - Added 'default' as a QA option. If the key is not set in the dict returned by the extractor, it will use the default

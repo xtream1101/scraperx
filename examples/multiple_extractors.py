@@ -4,35 +4,38 @@ from scraperx import Scraper, run_cli, Dispatch, Extract
 class MyDispatch(Dispatch):
 
     def submit_tasks(self):
-        return {'url': 'http://testing-ground.scraping.pro/blocks'}
+        return {'url': 'https://www.imdb.com/search/title/?title_type=feature&num_votes=10000,&genres=history&languages=en&sort=user_rating,desc&explore=genres&view=simple'}  # noqa: E501
 
 
 class MyExtract(Extract):
 
     def extract(self, raw_source, source_idx):
         yield self.extract_task(
-            name='case1_products',
-            selectors=['#case1 > div:not(.ads)'],
-            callback=self.extract_product,
+            name='movies',
+            selectors=['div.lister-item'],
+            callback=self.extract_movie,
             post_extract=self.save_as,
             post_extract_kwargs={
                 'file_format': 'json',
-                'template_values': {'extractor_name': 'case1_products'},
+                'template_values': {'extractor_name': 'movies'},
             },
         )
         yield self.extract_task(
-            name='case2_products',
-            selectors=['#case2 > div.left > div:not(.ads)'],
-            callback=self.extract_product,
+            name='genres',
+            selectors=['div.aux-content-widget-2 td'],
+            callback=self.extract_genre,
             post_extract=self.save_as,
             post_extract_kwargs={
                 'file_format': 'json',
-                'template_values': {'extractor_name': 'case2_products'},
+                'template_values': {'extractor_name': 'genres'},
             },
         )
 
-    def extract_product(self, element, idx, **kwargs):
-        return {'title': element.css('div.name').xpath('string()').extract_first()}
+    def extract_movie(self, element, idx, **kwargs):
+        return {'title': element.css('span[title] a').xpath('string()').extract_first()}
+
+    def extract_genre(self, element, idx, **kwargs):
+        return {'name': element.css('a').xpath('string()').extract_first()}
 
 
 my_scraper = Scraper(dispatch_cls=MyDispatch,
