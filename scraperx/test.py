@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import pathlib
 import unittest
 from pprint import pprint
 from deepdiff import DeepDiff
@@ -79,7 +80,7 @@ class ExtractorBaseTest:
                     )
 
         def _compare_data(self, test_data, qa_file):
-            with open(qa_file, 'r') as f:
+            with pathlib.Path(qa_file).open(mode='r') as f:
                 qa_data = json.load(f)
 
             for row in qa_data:
@@ -98,16 +99,13 @@ class ExtractorBaseTest:
                     self.assertEqual(diff, {}, '\n' + errors)
 
         def _test_source_file(self, extractor, s_idx, s_file, metadata):
-            with open(s_file, 'r') as f:
+            with s_file.open(mode='r') as f:
                 raw_source = f.read()
 
-            dst_base = os.path.join(
-                'tests',
-                'sample_data',
-                self.scraper.config['SCRAPER_NAME'],
-                metadata['download_manifest']['time_downloaded']
-                .replace('-', '').replace(':', ''),
-            )
+            time_downloaded = (metadata['download_manifest']['time_downloaded']
+                               .replace('-', '').replace(':', ''))
+            dst_base = pathlib.Path(
+                f"tests/sample_data/{self.scraper.config['SCRAPER_NAME']}/{time_downloaded}")
 
             def _tester_format_extract_task(inputs):
                 inputs = extractor.original_format_extract_task(inputs)
@@ -122,8 +120,7 @@ class ExtractorBaseTest:
 
         def runTest(self):  # noqa: N802
             for metadata_file in self.metadata_files:
-                print(metadata_file)
-                with open(metadata_file, 'r') as f:
+                with pathlib.Path(metadata_file).open(mode='r') as f:
                     metadata = json.load(f)
 
                 extractor = self.scraper.extract(metadata['task'],
@@ -132,7 +129,8 @@ class ExtractorBaseTest:
                 extractor.original_format_extract_task = extractor._format_extract_task
                 metadata_sources = metadata['download_manifest']['source_files']
                 for source_idx, source in enumerate(metadata_sources):
+                    source_file = pathlib.Path(source['file'])
                     self._test_source_file(extractor,
                                            source_idx,
-                                           source['file'],
+                                           source_file,
                                            metadata)

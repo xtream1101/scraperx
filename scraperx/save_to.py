@@ -1,4 +1,4 @@
-import os
+import pathlib
 import logging
 from smart_open import open
 
@@ -107,12 +107,9 @@ class SaveTo:
 
         else:
             target_path = filename
+            # Create local directory if not exist
+            pathlib.Path(target_path).parent.mkdir(parents=True, exist_ok=True)
             transport_params = {}
-
-        if '://' not in target_path:
-            # Make sure dir is created
-            try: os.makedirs(os.path.dirname(target_path))  # noqa: E701
-            except OSError: pass  # noqa: E701
 
         try:
             with open(target_path, 'w', transport_params=transport_params) as outfile:

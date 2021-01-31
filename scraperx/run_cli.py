@@ -1,8 +1,9 @@
 import os
 import sys
 import json
+import shutil
 import logging
-from shutil import copyfile
+import pathlib
 
 from .write import Write
 
@@ -20,32 +21,29 @@ def _create_test(cli_args, scraper):
                         extra={'scraper_name': scraper.config['SCRAPER_NAME']})
         sys.exit(1)
 
-    with open(metadata_file, 'r') as f:
+    with pathlib.Path(metadata_file).open(mode='r') as f:
         metadata = json.load(f)
 
-    dst_base = os.path.join('tests',
-                            'sample_data',
-                            scraper.config['SCRAPER_NAME'],
-                            metadata['download_manifest']['time_downloaded']
-                            .replace('-', '').replace(':', ''),
-                            )
+    time_downloaded_cleaned = (metadata['download_manifest']['time_downloaded']
+                               .replace('-', '').replace(':', ''))
+    dst_base = pathlib.Path(
+        f"tests/sample_data/{scraper.config['SCRAPER_NAME']}/{time_downloaded_cleaned}")
 
     # make sure dir exists
-    try: os.makedirs(os.path.dirname(dst_base))  # noqa:E701
-    except OSError: pass  # noqa:E701
+    dst_base.parent.mkdir(parents=True, exist_ok=True)
 
     current_sources = metadata['download_manifest']['source_files'].copy()
     metadata_sources = []
     for idx, source in enumerate(current_sources):
-        new_file = f"{dst_base}_source_{idx}.{source['file'].split('.')[-1]}"
-        copyfile(source['file'], new_file)
-        source['file'] = new_file
+        new_file = pathlib.Path(f"{dst_base}_source_{idx}.{source['file'].split('.')[-1]}")
+        shutil.copy(source['file'], new_file)
+        source['file'] = new_file.as_posix()
         metadata_sources.append(source)
 
     metadata['download_manifest']['source_files'] = metadata_sources
 
     # Save metadata
-    with open(f'{dst_base}_metadata.json', 'w') as f:
+    with pathlib.Path(f'{dst_base}_metadata.json').open(mode='w') as f:
         json.dump(metadata, f,
                   sort_keys=True,
                   indent=4,
@@ -71,7 +69,7 @@ def _create_test(cli_args, scraper):
 
     for source_idx, source in enumerate(metadata_sources):
         raw_source = None
-        with open(source['file'], 'r') as f:
+        with pathlib.Path(source['file']).open(mode='r') as f:
             raw_source = f.read()
 
         for e_task in extractor._get_extraction_tasks(raw_source, source_idx):
