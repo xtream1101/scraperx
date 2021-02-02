@@ -99,7 +99,7 @@ class ExtractorBaseTest:
                     self.assertEqual(diff, {}, '\n' + errors)
 
         def _test_source_file(self, extractor, s_idx, s_file, metadata):
-            with s_file.open(mode='r') as f:
+            with s_file.open(mode='r', errors='ignore') as f:
                 raw_source = f.read()
 
             time_downloaded = (metadata['download_manifest']['time_downloaded']

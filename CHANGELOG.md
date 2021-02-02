@@ -1,5 +1,7 @@
 # Change log
 
+### 0.5.3
+- Ignore unicode errors when reading a file
 
 ### 0.5.2
 - Updated filepaths in scraper create-test command. Now in windows it will save the path with forward slashes `/`, and not `\\` (supported by pathlib)
