@@ -113,19 +113,19 @@ class SaveTo:
 
         try:
             with open(target_path, 'w',
-                      transport_params=transport_params, errors='ignore') as outfile:
+                      transport_params=transport_params) as outfile:
                 outfile.write(self.raw_data.read())
 
         except TypeError:
             self.raw_data.seek(0)
             # raw_data is BytesIO not StringIO
             with open(target_path, 'wb',
-                      transport_params=transport_params, errors='ignore') as outfile:
+                      transport_params=transport_params) as outfile:
                 outfile.write(self.raw_data.read())
         except AttributeError:
             # Data is bytes and does not need .read()
             with open(target_path, 'wb',
-                      transport_params=transport_params, errors='ignore') as outfile:
+                      transport_params=transport_params) as outfile:
                 outfile.write(self.raw_data)
 
         try:
