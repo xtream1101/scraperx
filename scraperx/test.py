@@ -62,7 +62,7 @@ class ExtractorBaseTest:
             super().__init__(*args, **kwargs)
             self.directory = os.fsencode(sample_data_dir)
             self.scraper = scraper
-            self.scraper.config._set_value('SCRAPER_NAME', sample_data_dir.split(os.path.sep)[2])
+            self.scraper.config._set_value('SCRAPER_NAME', sample_data_dir.split('/')[2])
             if ignore_keys is None:
                 ignore_keys = []
             self._ignore_keys = _clean_keys(ignore_keys, {})

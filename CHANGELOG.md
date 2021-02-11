@@ -1,5 +1,8 @@
 # Change log
 
+### 0.5.5
+- Fixed reading tests sample data directory on windows now that pathlib is used
+
 ### 0.5.4
 - Revert of 0.5.3, do NOT ignore the unicode errors. _Will need to find another solution to this when creating tests on both windows and mac/linux_
 
