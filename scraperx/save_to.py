@@ -9,10 +9,11 @@ logger = logging.getLogger(__name__)
 
 class SaveTo:
 
-    def __init__(self, scraper, raw_data, content_type=None):
+    def __init__(self, scraper, raw_data, content_type=None, encoding=None):
         self.scraper = scraper
         self.raw_data = raw_data
         self.content_type = content_type
+        self.encoding = encoding
 
     def _get_filename(self, context=None, template_values={}, name_template=None):
         """Generate the filename based on the config template
@@ -113,19 +114,19 @@ class SaveTo:
 
         try:
             with open(target_path, 'w',
-                      transport_params=transport_params) as outfile:
+                      transport_params=transport_params, encoding=self.encoding) as outfile:
                 outfile.write(self.raw_data.read())
 
         except TypeError:
             self.raw_data.seek(0)
             # raw_data is BytesIO not StringIO
             with open(target_path, 'wb',
-                      transport_params=transport_params) as outfile:
+                      transport_params=transport_params, encoding=self.encoding) as outfile:
                 outfile.write(self.raw_data.read())
         except AttributeError:
             # Data is bytes and does not need .read()
             with open(target_path, 'wb',
-                      transport_params=transport_params) as outfile:
+                      transport_params=transport_params, encoding=self.encoding) as outfile:
                 outfile.write(self.raw_data)
 
         try:

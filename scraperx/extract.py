@@ -1,4 +1,5 @@
 import types
+import chardet
 import logging
 import datetime
 from smart_open import open
@@ -58,8 +59,10 @@ class Extract(ABC):
             if source_file.startswith('s3://'):
                 transport_params = _get_s3_params(self.scraper,
                                                   context_type='downloader')
-
-            with open(source_file, 'r', transport_params=transport_params) as f:
+            with open(source_file, 'rb') as f:
+                file_encoding = chardet.detect(f.read())['encoding']
+            with open(source_file, 'r',
+                      transport_params=transport_params, encoding=file_encoding) as f:
                 raw_source = f.read()
 
             try:

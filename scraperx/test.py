@@ -1,5 +1,6 @@
 import os
 import json
+import chardet
 import logging
 import pathlib
 import unittest
@@ -80,7 +81,9 @@ class ExtractorBaseTest:
                     )
 
         def _compare_data(self, test_data, qa_file):
-            with pathlib.Path(qa_file).open(mode='r') as f:
+            with open(qa_file, 'rb') as f:
+                file_encoding = chardet.detect(f.read())['encoding']
+            with pathlib.Path(qa_file).open(mode='r', encoding=file_encoding) as f:
                 qa_data = json.load(f)
 
             for row in qa_data:
@@ -99,7 +102,9 @@ class ExtractorBaseTest:
                     self.assertEqual(diff, {}, '\n' + errors)
 
         def _test_source_file(self, extractor, s_idx, s_file, metadata):
-            with s_file.open(mode='r') as f:
+            with open(s_file, 'rb') as f:
+                file_encoding = chardet.detect(f.read())['encoding']
+            with s_file.open(mode='r', encoding=file_encoding) as f:
                 raw_source = f.read()
 
             time_downloaded = (metadata['download_manifest']['time_downloaded']

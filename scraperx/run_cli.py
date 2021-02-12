@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import shutil
+import chardet
 import logging
 import pathlib
 
@@ -69,7 +70,9 @@ def _create_test(cli_args, scraper):
 
     for source_idx, source in enumerate(metadata_sources):
         raw_source = None
-        with pathlib.Path(source['file']).open(mode='r') as f:
+        with open(source['file'], 'rb') as f:
+            file_encoding = chardet.detect(f.read())['encoding']
+        with pathlib.Path(source['file']).open(mode='r', encoding=file_encoding) as f:
             raw_source = f.read()
 
         for e_task in extractor._get_extraction_tasks(raw_source, source_idx):

@@ -164,7 +164,7 @@ class Download:
             content = r.text
 
         if source_file is None:
-            source_file = Write(self.scraper, content)\
+            source_file = Write(self.scraper, content, encoding=r.encoding)\
                 .write_file(content_type=content_type)\
                 .save(self, **save_kwargs)
 

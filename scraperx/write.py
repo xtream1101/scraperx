@@ -8,9 +8,10 @@ logger = logging.getLogger(__name__)
 
 class Write:
 
-    def __init__(self, scraper, data):
+    def __init__(self, scraper, data, encoding=None):
         self.scraper = scraper
         self.data = data
+        self.encoding = encoding
 
     def write(self):
         # TODO: (will work like .save())
@@ -39,7 +40,9 @@ class Write:
         output_io = io.StringIO()
         json.dump(json_data, output_io, **json_args)
         output_io.seek(0)
-        return SaveTo(self.scraper, output_io, content_type='application/json')
+        return SaveTo(self.scraper, output_io,
+                      content_type='application/json',
+                      encoding=self.encoding)
 
     def write_json_lines(self, json_args=None):
         """Write json data to a StringIO object
@@ -66,7 +69,9 @@ class Write:
             output_io.write('\n')
 
         output_io.seek(0)
-        return SaveTo(self.scraper, output_io, content_type='application/json')
+        return SaveTo(self.scraper, output_io,
+                      content_type='application/json',
+                      encoding=self.encoding)
 
     def write_file(self, content_type=None):
         """Write data to a StringIO/BytesIO object without any additional formatting
@@ -86,7 +91,9 @@ class Write:
             output_io.write(self.data)
             output_io.seek(0)
 
-        return SaveTo(self.scraper, output_io, content_type=content_type)
+        return SaveTo(self.scraper, output_io,
+                      content_type=content_type,
+                      encoding=self.encoding)
 
     def write_csv(self, filename):
         # TODO
@@ -131,4 +138,6 @@ class Write:
         output_io.seek(0)
 
         # TODO: Is this the correct content type for a parquet file?
-        return SaveTo(self.scraper, output_io, content_type='application/octet-stream')
+        return SaveTo(self.scraper, output_io,
+                      content_type='application/octet-stream',
+                      encoding=self.encoding)
