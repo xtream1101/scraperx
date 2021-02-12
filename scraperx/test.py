@@ -1,11 +1,12 @@
 import os
 import json
-import chardet
 import logging
 import pathlib
 import unittest
 from pprint import pprint
 from deepdiff import DeepDiff
+
+from .utils import get_encoding
 
 logger = logging.getLogger(__name__)
 
@@ -81,8 +82,7 @@ class ExtractorBaseTest:
                     )
 
         def _compare_data(self, test_data, qa_file):
-            with open(qa_file, 'rb') as f:
-                file_encoding = chardet.detect(f.read())['encoding']
+            file_encoding = get_encoding(qa_file)
             with pathlib.Path(qa_file).open(mode='r', encoding=file_encoding) as f:
                 qa_data = json.load(f)
 
@@ -102,8 +102,7 @@ class ExtractorBaseTest:
                     self.assertEqual(diff, {}, '\n' + errors)
 
         def _test_source_file(self, extractor, s_idx, s_file, metadata):
-            with open(s_file, 'rb') as f:
-                file_encoding = chardet.detect(f.read())['encoding']
+            file_encoding = get_encoding(s_file)
             with s_file.open(mode='r', encoding=file_encoding) as f:
                 raw_source = f.read()
 

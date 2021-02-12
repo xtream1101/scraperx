@@ -1,8 +1,17 @@
 import time
+import chardet
 import logging
+import pathlib
 import threading
 
 logger = logging.getLogger(__name__)
+
+
+def get_encoding(file_path):
+    with pathlib.Path(file_path).open('rb') as f:
+        file_encoding = chardet.detect(f.read())['encoding']
+
+    return file_encoding
 
 
 def get_root_exc_log_overides():

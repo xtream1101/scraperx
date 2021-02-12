@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 class Write:
 
-    def __init__(self, scraper, data, encoding=None):
+    def __init__(self, scraper, data, encoding='utf-8'):
         self.scraper = scraper
         self.data = data
         self.encoding = encoding

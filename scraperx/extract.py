@@ -1,5 +1,4 @@
 import types
-import chardet
 import logging
 import datetime
 from smart_open import open
@@ -8,7 +7,7 @@ from abc import ABC, abstractmethod
 
 from .write import Write
 from .exceptions import QAValueError
-from .utils import _get_s3_params, get_root_exc_log_overides
+from .utils import _get_s3_params, get_root_exc_log_overides, get_encoding
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +58,7 @@ class Extract(ABC):
             if source_file.startswith('s3://'):
                 transport_params = _get_s3_params(self.scraper,
                                                   context_type='downloader')
-            with open(source_file, 'rb') as f:
-                file_encoding = chardet.detect(f.read())['encoding']
+            file_encoding = get_encoding(source_file)
             with open(source_file, 'r',
                       transport_params=transport_params, encoding=file_encoding) as f:
                 raw_source = f.read()

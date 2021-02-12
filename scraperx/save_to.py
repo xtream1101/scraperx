@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class SaveTo:
 
-    def __init__(self, scraper, raw_data, content_type=None, encoding=None):
+    def __init__(self, scraper, raw_data, content_type=None, encoding='utf-8'):
         self.scraper = scraper
         self.raw_data = raw_data
         self.content_type = content_type

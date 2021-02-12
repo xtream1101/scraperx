@@ -2,11 +2,11 @@ import os
 import sys
 import json
 import shutil
-import chardet
 import logging
 import pathlib
 
 from .write import Write
+from .utils import get_encoding
 
 logger = logging.getLogger(__name__)
 
@@ -70,8 +70,7 @@ def _create_test(cli_args, scraper):
 
     for source_idx, source in enumerate(metadata_sources):
         raw_source = None
-        with open(source['file'], 'rb') as f:
-            file_encoding = chardet.detect(f.read())['encoding']
+        file_encoding = get_encoding(source['file'])
         with pathlib.Path(source['file']).open(mode='r', encoding=file_encoding) as f:
             raw_source = f.read()
 
