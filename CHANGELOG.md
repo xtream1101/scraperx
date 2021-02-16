@@ -1,5 +1,9 @@
 # Change log
 
+
+### 0.5.6
+- When reading & writing files, use the `cchardet` library to detect the correct file encoding
+
 ### 0.5.5
 - Fixed reading tests sample data directory on windows now that pathlib is used
 
