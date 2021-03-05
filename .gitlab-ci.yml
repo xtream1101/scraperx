@@ -3,25 +3,45 @@ image: python:3.6
 stages:
   - test
   - release
+  - package
 
 pytest:
   stage: test
+  except:
+    - tags
   script:
     - pip install tox
     - tox -e py37
 
 flake8:
   stage: test
+  except:
+    - tags
   script:
     - pip install tox
     - tox -e flake8
 
-release-package:
-  stage: release
+pypi-package:
+  stage: package
   only:
-    - master
+    - tags
   script:
     - pip install twine
     - rm -f dist/*
     - python setup.py sdist
     - twine upload -u ${PYPI_USER} -p ${PYPI_PASS} dist/*
+
+.write_permission: &write_permission |
+    git config --global user.email "gitlab-ci"; git config --global user.name "gitlab-ci"
+    url_host=`git remote get-url origin | sed -e "s/https:\/\/gitlab-ci-token:.*@//g"`
+    git remote set-url origin "https://gitlab-ci-token:${CI_TAG_UPLOAD_TOKEN}@${url_host}"
+
+tag:
+  stage: release
+  only:
+    - main
+  script:
+    - *write_permission
+    - export VERSION=$(echo $(awk -F "'" '/version=/{print $2}' setup.py))
+    - git tag -a $VERSION -m "Version created by gitlab-ci Build"
+    - git push origin $VERSION
