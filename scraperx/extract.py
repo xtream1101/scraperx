@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 
 from .write import Write
 from .exceptions import QAValueError
-from .utils import _get_s3_params, get_root_exc_log_overides, get_encoding
+from .utils import _get_s3_params, get_root_exc_log_overides, read_file_contents
 
 logger = logging.getLogger(__name__)
 
@@ -53,15 +53,9 @@ class Extract(ABC):
                            })
 
         for source_idx, source_file in enumerate(self._get_sources()):
-            raw_source = None
-            transport_params = {}
             if source_file.startswith('s3://'):
-                transport_params = _get_s3_params(self.scraper,
-                                                  context_type='downloader')
-            file_encoding = get_encoding(source_file)
-            with open(source_file, 'r',
-                      transport_params=transport_params, encoding=file_encoding) as f:
-                raw_source = f.read()
+                transport_params = _get_s3_params(self.scraper, context_type='extractor')
+            raw_source = read_file_contents(source_file, transport_params=transport_params)
 
             try:
                 extraction_tasks = self._get_extraction_tasks(raw_source, source_idx)
