@@ -11,7 +11,7 @@ pytest:
     - tags
   script:
     - pip install tox
-    - tox -e py37
+    - tox -e py38
 
 flake8:
   stage: test

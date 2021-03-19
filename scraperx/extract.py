@@ -1,7 +1,6 @@
 import types
 import logging
 import datetime
-from smart_open import open
 from parsel import Selector
 from abc import ABC, abstractmethod
 
