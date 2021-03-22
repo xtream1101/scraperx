@@ -1,5 +1,8 @@
 # Change log
 
+### 0.5.7
+- Fixed encoding detection to work when extracting files from s3
+- Added some testing around file encoding and rate limiting
 
 ### 0.5.6
 - When reading & writing files, use the `cchardet` library to detect the correct file encoding
