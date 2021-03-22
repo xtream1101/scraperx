@@ -42,3 +42,28 @@ def test_read_file_contents_local():
     """
     raw_data = json.loads(utils.read_file_contents('./tests/files/windows_1252_encoded.json'))
     assert raw_data[1]['title'] == 'No. 4 Bond Maintenance™ Shampoo'
+
+
+def test_rate_limit_from_period():
+    qps = utils.rate_limit_from_period(3600, 1)
+    assert qps == 1
+
+
+def test_rate_limit_fn():
+    import time
+
+    @utils.rate_limited(num_calls=5, every=1)
+    def run_fn():
+        return time.time()
+
+    # Run the function 4 times
+    times = []
+    for _ in range(4):
+        times.append(run_fn())
+
+    # Calc the average diff in each timestamp
+    diffs = [x - times[i - 1] for i, x in enumerate(times)][1:]
+    avg_diff = sum(diffs) / len(diffs)
+
+    # Is average diff within an error of margin?
+    assert avg_diff > 0.19 and avg_diff < 0.21
