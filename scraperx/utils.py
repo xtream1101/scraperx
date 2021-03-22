@@ -1,14 +1,33 @@
 import time
 import logging
-import pathlib
+
 import cchardet
 import threading
+from smart_open import open
 
 logger = logging.getLogger(__name__)
 
 
-def get_encoding(file_path):
-    return cchardet.detect(pathlib.Path(file_path).read_bytes())['encoding']
+def get_encoding(file_bytes):
+    """Guess the encoding that a byte object is encoded as
+
+    Args:
+        file_bytes (bytes, optional): Bytes to check the encoding on
+
+    Returns:
+        str: Name of the encoding used
+    """
+    return cchardet.detect(file_bytes)['encoding']
+
+
+def read_file_contents(file_name, transport_params={}):
+    # Read in file (local or s3) and check bytes for encoding type
+    with open(file_name, 'rb',
+              transport_params=transport_params) as f:
+        raw_bytes = f.read()
+    file_encoding = get_encoding(file_bytes=raw_bytes)
+    # Once encoding is known, decode into correct encoding
+    return raw_bytes.decode(file_encoding)
 
 
 def get_root_exc_log_overides():

@@ -1,27 +1,58 @@
-image: python:3.6
+image: python:3.8
 
 stages:
   - test
+  - tag
   - release
 
 pytest:
   stage: test
+  except:
+    - tags
   script:
     - pip install tox
-    - tox -e py37
+    - tox -e py38
 
 flake8:
   stage: test
+  except:
+    - tags
   script:
     - pip install tox
     - tox -e flake8
 
-release-package:
+
+.write_permission: &write_permission |
+    git config --global user.email "gitlab-ci"; git config --global user.name "gitlab-ci"
+    url_host=`git remote get-url origin | sed -e "s/https:\/\/gitlab-ci-token:.*@//g"`
+    git remote set-url origin "https://gitlab-ci-token:${CI_TAG_UPLOAD_TOKEN}@${url_host}"
+
+tag:
+  stage: tag
+  only:
+    - main
+  script:
+    - *write_permission
+    - export VERSION=$(echo $(awk -F "'" '/version=/{print $2}' setup.py))
+    - git tag -a $VERSION -m "Version created by gitlab-ci Build"
+    - git push origin $VERSION
+
+
+pypi-package:
   stage: release
   only:
-    - master
+    - tags
   script:
     - pip install twine
     - rm -f dist/*
-    - python setup.py sdist
-    - twine upload -u ${PYPI_USER} -p ${PYPI_PASS} dist/*
+    - python setup.py sdist bdist_wheel
+    - TWINE_PASSWORD=${PYPI_PASS} TWINE_USERNAME=${PYPI_USER} python -m twine upload dist/*
+
+gitx-package:
+  stage: release
+  only:
+    - tags
+  script:
+    - pip install twine
+    - python setup.py sdist bdist_wheel
+    - TWINE_PASSWORD=${CI_JOB_TOKEN} TWINE_USERNAME=gitlab-ci-token python -m twine upload --repository-url https://gitx.codes/api/v4/projects/${CI_PROJECT_ID}/packages/pypi dist/*

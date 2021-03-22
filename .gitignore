@@ -4,6 +4,9 @@ dist/*
 *.egg-info
 __pycache__*
 .tox/
+*.pyc
 *.log
 docs/build/
 _build/
+
+!tests/files/*
