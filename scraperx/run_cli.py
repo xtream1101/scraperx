@@ -6,7 +6,7 @@ import logging
 import pathlib
 
 from .write import Write
-from .utils import get_encoding
+from .utils import read_file_contents
 
 logger = logging.getLogger(__name__)
 
@@ -69,10 +69,7 @@ def _create_test(cli_args, scraper):
     extractor._format_extract_task = _tester_format_extract_task
 
     for source_idx, source in enumerate(metadata_sources):
-        raw_source = None
-        file_encoding = get_encoding(source['file'])
-        with pathlib.Path(source['file']).open(mode='r', encoding=file_encoding) as f:
-            raw_source = f.read()
+        raw_source = read_file_contents(source['file'])
 
         for e_task in extractor._get_extraction_tasks(raw_source, source_idx):
             e_task(raw_source)

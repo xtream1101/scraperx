@@ -6,7 +6,7 @@ import unittest
 from pprint import pprint
 from deepdiff import DeepDiff
 
-from .utils import get_encoding
+from .utils import read_file_contents
 
 logger = logging.getLogger(__name__)
 
@@ -82,9 +82,7 @@ class ExtractorBaseTest:
                     )
 
         def _compare_data(self, test_data, qa_file):
-            file_encoding = get_encoding(qa_file)
-            with pathlib.Path(qa_file).open(mode='r', encoding=file_encoding) as f:
-                qa_data = json.load(f)
+            qa_data = json.load(read_file_contents(qa_file))
 
             for row in qa_data:
                 row.update(self._ignore_keys)
@@ -102,9 +100,7 @@ class ExtractorBaseTest:
                     self.assertEqual(diff, {}, '\n' + errors)
 
         def _test_source_file(self, extractor, s_idx, s_file, metadata):
-            file_encoding = get_encoding(s_file)
-            with s_file.open(mode='r', encoding=file_encoding) as f:
-                raw_source = f.read()
+            raw_source = read_file_contents(s_file)
 
             time_downloaded = (metadata['download_manifest']['time_downloaded']
                                .replace('-', '').replace(':', ''))

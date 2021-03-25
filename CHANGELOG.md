@@ -1,5 +1,8 @@
 # Change log
 
+### 0.5.8
+- Fixed error when checking the files encoding when using the `create-test` sub command
+
 ### 0.5.7
 - Fixed encoding detection to work when extracting files from s3
 - Added some testing around file encoding and rate limiting
