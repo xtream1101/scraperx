@@ -82,7 +82,7 @@ class ExtractorBaseTest:
                     )
 
         def _compare_data(self, test_data, qa_file):
-            qa_data = json.load(read_file_contents(qa_file))
+            qa_data = json.loads(read_file_contents(qa_file))
 
             for row in qa_data:
                 row.update(self._ignore_keys)

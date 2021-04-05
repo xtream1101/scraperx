@@ -1,5 +1,8 @@
 # Change log
 
+### 0.5.9
+- Fixed bug when reading in files to compare when running the scrapers unittests
+
 ### 0.5.8
 - Fixed error when checking the files encoding when using the `create-test` sub command
 
