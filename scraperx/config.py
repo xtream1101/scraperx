@@ -371,9 +371,8 @@ class ConfigGen:
             default_config_raw = all_config_values.get('default', {})
             current_config.update(ConfigGen._flatten(default_config_raw))
             # Get scraper values
-            # No matter what custom name the scraper is given,
-            # the scrapers filename will be used for config lookup
-            scraper_config_raw = all_config_values.get(self._scraper_file_name, {})
+            # Use the custom scraper name if given
+            scraper_config_raw = all_config_values.get(self._scraper_name, {})
             current_config.update(ConfigGen._flatten(scraper_config_raw))
 
         return current_config

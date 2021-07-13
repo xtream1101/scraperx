@@ -54,6 +54,8 @@ class Extract(ABC):
         for source_idx, source_file in enumerate(self._get_sources()):
             if source_file.startswith('s3://'):
                 transport_params = _get_s3_params(self.scraper, context_type='extractor')
+            else:
+                transport_params = {}
             raw_source = read_file_contents(source_file, transport_params=transport_params)
 
             try:

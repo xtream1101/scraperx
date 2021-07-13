@@ -1,5 +1,8 @@
 # Change log
 
+### 0.5.10
+- Support for multiple scrapers in a single file, the passed in "scraper_name" will now be used for the config settings. It will still default to the file name if not supplied
+
 ### 0.5.9
 - Fixed bug when reading in files to compare when running the scrapers unittests
 
