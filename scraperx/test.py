@@ -25,6 +25,14 @@ def _clean_keys(i_keys, prev_dict):
     return prev_dict
 
 
+class CustomEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, type):
+            return obj.__name__
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, obj)
+
+
 class ExtractorBaseTest:
     # Wrap actual test case in a blank class so it's not run on its own
     #   (only when called through derived class)
@@ -94,7 +102,8 @@ class ExtractorBaseTest:
                 errors = json.dumps(diff,
                                     sort_keys=True,
                                     indent=4,
-                                    ensure_ascii=False)
+                                    ensure_ascii=False,
+                                    cls=CustomEncoder)
                 # Fail the test with the things that changed
                 with self.subTest(qa_file):
                     self.assertEqual(diff, {}, '\n' + errors)

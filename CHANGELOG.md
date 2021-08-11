@@ -1,5 +1,8 @@
 # Change log
 
+### 0.5.11
+- Fixed json encoding error in tests when displaying the `type` of a value
+
 ### 0.5.10
 - Support for multiple scrapers in a single file, the passed in "scraper_name" will now be used for the config settings. It will still default to the file name if not supplied
 
