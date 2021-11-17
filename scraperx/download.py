@@ -329,12 +329,20 @@ class Download:
                 # Make sure they are in the correct format
                 r_kwargs['proxies'] = self._format_proxy(r_kwargs['proxies'])
                 proxy_used = r_kwargs['proxies'].get('http')
-            logger.debug(
-                f"PROXY_FILE={os.getenv('PROXY_FILE')}"
-                f", Proxy_Country_Code={self.task.get('proxy_country')}"
-                f", Proxy_str={proxy_used}"
-            )
+
             time_of_request = datetime.datetime.utcnow().isoformat() + 'Z'
+            logger.debug(
+                "Proxy debug info",
+                extra={'task': self.task,
+                       **self.scraper.log_extras(),
+                       'proxy_file': os.getenv('PROXY_FILE'),
+                       'proxy_country_code': self.task.get('proxy_country'),
+                       'proxy_str': proxy_used,
+                       'num_tries': _try_count,
+                       'max_tries': max_tries,
+                       'time_of_request': time_of_request,
+                       }
+            )
             try:
                 r = self.session.request(http_method, url, **r_kwargs)
 
