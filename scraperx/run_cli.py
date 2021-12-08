@@ -37,7 +37,11 @@ def _create_test(cli_args, scraper):
     metadata_sources = []
     for idx, source in enumerate(current_sources):
         new_file = pathlib.Path(f"{dst_base}_source_{idx}.{source['file'].split('.')[-1]}")
-        shutil.copy(source['file'], new_file)
+        try:
+            shutil.copy(source['file'], new_file)
+        except shutil.SameFileError:
+            # Normally happens when trying to re-create a test qa file from the tests folder
+            pass
         source['file'] = new_file.as_posix()
         metadata_sources.append(source)
 
