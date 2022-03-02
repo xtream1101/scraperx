@@ -87,11 +87,9 @@ def _get_s3_params(scraper, context=None, context_type=None):
     if aws_secret_access_key:
         aws_access_key['aws_secret_access_key'] = aws_secret_access_key
 
+    session = boto3.Session(**aws_access_key)
     return {
-        'session': boto3.Session(**aws_access_key),
-        'resource_kwargs': {
-            'endpoint_url': endpoint_url,
-        },
+        'client': session.client('s3', endpoint_url=endpoint_url),
     }
 
 
