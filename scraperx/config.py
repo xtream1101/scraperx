@@ -204,7 +204,6 @@ class ConfigGen:
         try:
             file_values = self._ingest_file(self._file)
         except FileNotFoundError as e:
-            logger.error(str(e))
             file_values = {}
 
         cli_values = self._ingest_cli_args(cli_args)
