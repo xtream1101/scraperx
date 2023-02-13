@@ -29,6 +29,8 @@ class CustomEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, type):
             return obj.__name__
+        elif isinstance(obj, deepdiff.model.PrettyOrderedSet):
+            return list(obj)
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
 
