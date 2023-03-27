@@ -23,6 +23,6 @@ setup(name='scraperx',
                         'boto3',
                         'deepdiff',
                         'smart_open>=1.8.4',
-                        'cchardet',
+                        'charset_normalizer',
                         ],
       )

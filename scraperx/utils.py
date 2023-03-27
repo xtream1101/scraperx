@@ -1,7 +1,6 @@
 import time
 import logging
-
-import cchardet
+import charset_normalizer
 import threading
 from smart_open import open
 
@@ -18,7 +17,7 @@ def get_encoding(file_bytes):
         str: Name of the encoding used
     """
     return 'utf-8'
-    # return cchardet.detect(file_bytes)['encoding']
+    # return charset_normalizer.detect(file_bytes)['encoding']
 
 
 def read_file_contents(file_name, transport_params={}):
