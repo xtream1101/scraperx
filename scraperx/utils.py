@@ -16,8 +16,7 @@ def get_encoding(file_bytes):
     Returns:
         str: Name of the encoding used
     """
-    return 'utf-8'
-    # return charset_normalizer.detect(file_bytes)['encoding']
+    return charset_normalizer.detect(file_bytes)['encoding']
 
 
 def read_file_contents(file_name, transport_params={}):
