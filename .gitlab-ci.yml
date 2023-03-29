@@ -37,13 +37,12 @@ tag:
     - git tag -a $VERSION -m "Version created by gitlab-ci Build"
     - git push origin $VERSION
 
-
 pypi-package:
   stage: release
   only:
     - tags
   script:
     - pip install twine
-    - rm -f dist/*
+    - rm -f dist/*  # Clear any old/cached builds
     - python setup.py sdist bdist_wheel
-    - TWINE_PASSWORD=${PYPI_PASS} TWINE_USERNAME=${PYPI_USER} python -m twine upload dist/*
+    - python -m twine upload dist/*
