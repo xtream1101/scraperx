@@ -1,6 +1,6 @@
 import time
 import logging
-import charset_normalizer
+# import charset_normalizer
 import threading
 from smart_open import open
 

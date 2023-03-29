@@ -1,5 +1,11 @@
 # Change log
 
+### 0.6.0
+- Always use `utf-8` for reading and writing files
+- Fixes comparing test data (https://github.com/xtream1101/scraperx/pull/1)
+
+---
+
 ### 0.5.11
 - Fixed json encoding error in tests when displaying the `type` of a value
 
