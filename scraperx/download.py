@@ -1,3 +1,4 @@
+import os
 import re
 import logging
 import datetime
@@ -330,6 +331,18 @@ class Download:
                 proxy_used = r_kwargs['proxies'].get('http')
 
             time_of_request = datetime.datetime.utcnow().isoformat() + 'Z'
+            logger.debug(
+                "Proxy debug info",
+                extra={'task': self.task,
+                       **self.scraper.log_extras(),
+                       'proxy_file': os.getenv('PROXY_FILE'),
+                       'proxy_country_code': self.task.get('proxy_country'),
+                       'proxy_str': proxy_used,
+                       'num_tries': _try_count,
+                       'max_tries': max_tries,
+                       'time_of_request': time_of_request,
+                       }
+            )
             try:
                 r = self.session.request(http_method, url, **r_kwargs)
 

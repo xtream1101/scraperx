@@ -1,7 +1,6 @@
 import time
 import logging
-
-import cchardet
+# import charset_normalizer
 import threading
 from smart_open import open
 
@@ -17,7 +16,8 @@ def get_encoding(file_bytes):
     Returns:
         str: Name of the encoding used
     """
-    return cchardet.detect(file_bytes)['encoding']
+    return 'utf-8'
+    # return charset_normalizer.detect(file_bytes)['encoding']
 
 
 def read_file_contents(file_name, transport_params={}):
@@ -86,11 +86,9 @@ def _get_s3_params(scraper, context=None, context_type=None):
     if aws_secret_access_key:
         aws_access_key['aws_secret_access_key'] = aws_secret_access_key
 
+    session = boto3.Session(**aws_access_key)
     return {
-        'session': boto3.Session(**aws_access_key),
-        'resource_kwargs': {
-            'endpoint_url': endpoint_url,
-        },
+        'client': session.client('s3', endpoint_url=endpoint_url),
     }
 
 

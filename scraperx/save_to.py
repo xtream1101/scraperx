@@ -91,7 +91,9 @@ class SaveTo:
 
         if save_service == 's3':
             transport_params = _get_s3_params(self.scraper, context=context)
-            transport_params['multipart_upload_kwargs'] = {'ContentType': content_type}
+            transport_params['client_kwargs'] = {
+                'multipart_upload_kwargs': {'ContentType': content_type}
+            }
             if filename.startswith('s3://'):
                 target_path = filename
 

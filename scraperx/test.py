@@ -4,7 +4,7 @@ import logging
 import pathlib
 import unittest
 from pprint import pprint
-from deepdiff import DeepDiff
+import deepdiff
 
 from .utils import read_file_contents
 
@@ -29,6 +29,8 @@ class CustomEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, type):
             return obj.__name__
+        elif isinstance(obj, deepdiff.model.PrettyOrderedSet):
+            return list(obj)
         # Let the base class default method raise the TypeError
         return json.JSONEncoder.default(self, obj)
 
@@ -96,7 +98,7 @@ class ExtractorBaseTest:
                 row.update(self._ignore_keys)
             for row in test_data:
                 row.update(self._ignore_keys)
-            diff = DeepDiff(qa_data, test_data)
+            diff = deepdiff.DeepDiff(qa_data, test_data)
             if diff:
                 pprint(diff)
                 errors = json.dumps(diff,
