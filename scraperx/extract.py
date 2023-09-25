@@ -141,11 +141,15 @@ class Extract(ABC):
                 result = inputs['callback'](item, idx, **inputs['callback_kwargs'])
                 if not result:
                     continue
+
+                # Always make the result a list so it can be treated the same below
+                if not isinstance(result, (list, tuple)):
+                    result = [result]
+
                 # QA Result
-                # TODO: Should the QA cast to the types?
-                #       Or just make sure it is that type
-                self._qa_result(idx, inputs['qa'], result)
-                output.append(result)
+                for result_item in result:
+                    self._qa_result(idx, inputs['qa'], result_item)
+                    output.append(result_item)
 
             try:
                 inputs['post_extract'](output, **inputs['post_extract_kwargs'])
