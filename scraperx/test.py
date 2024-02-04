@@ -43,7 +43,11 @@ class ExtractorBaseTest:
 
     class TestCase(unittest.TestCase):
 
-        def __init__(self, sample_data_dir, scraper, ignore_keys=None, ignore_missing_null_keys=False, *args, **kwargs):
+        def __init__(
+            self, sample_data_dir, scraper,
+            ignore_keys=None, ignore_missing_null_keys=False,
+            *args, **kwargs
+        ):
             """Test QA'd extracted data against the current extractor code
 
             `ignore_keys` usage::
@@ -101,9 +105,8 @@ class ExtractorBaseTest:
             for row in test_data:
                 row.update(self._ignore_keys)
 
-
             if self._ignore_missing_null_keys:
-                # If the field is missing in the qa data, and its null in the old test data, ignore it
+                # If field is missing in the qa data, and its null in the old test data, ignore it
                 # It means that a field was added and the old test files did not have it to extract
                 for idx, row in enumerate(deepcopy(test_data)):
                     for key, value in row.items():
