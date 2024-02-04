@@ -1,5 +1,8 @@
 # Change log
 
+### 0.7.1
+- Added `ignore_missing_null_keys` argument for running tests. Defaults to `False` which is the same behavior as before. If set to `True`, it will ignore any missing keys in the test data that are `None` in the extracted data. This is useful when you aded a new filed that does not exist in the older test files. This way you do not need to alwyas updated older test files if not needed.
+
 ### 0.7.0
 - Allow a scrapers `extract_task` callback return a list of dicts, instead of just a single dict. This will allow for a scraper to extract multiple items from a single listing if needed while treating them like separate results.
   - **Warning:** If your scraper currently returns a list of extracts within its extract_task callback, the `post_extract` task now runs on each item and not the list as a whole.
